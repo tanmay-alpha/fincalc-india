@@ -38,9 +38,10 @@ export function useAutoSave<T>({ calcType, debouncedInputs, results, enabled = t
         });
 
         if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.shareId) {
-            setShareId(data.shareId);
+          const json = await response.json();
+          const responseShareId = json.data?.shareId || json.shareId;
+          if (json.success && responseShareId) {
+            setShareId(responseShareId);
             lastPayloadStr.current = currentPayload;
           }
         }

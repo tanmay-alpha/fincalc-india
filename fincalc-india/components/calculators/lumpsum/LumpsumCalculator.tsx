@@ -3,16 +3,20 @@
 import { useState, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Calculator, TrendingUp } from "lucide-react";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import InsightCard from "@/components/ui/InsightCard";
 import ShareButton from "@/components/ui/ShareButton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
+import StickyMobileResult from "@/components/ui/StickyMobileResult";
+import CollapsibleSection from "@/components/ui/CollapsibleSection";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcLumpsum } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { generateLumpsumInsights } from "@/lib/insights";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useAutoSave } from "@/hooks/useAutoSave";
 
 const LumpsumChart = dynamic(
   () => import("@/components/calculators/lumpsum/LumpsumChart"),
@@ -26,23 +30,37 @@ const related = [
 ];
 
 export default function LumpsumCalculator() {
-  const [principal, setPrincipal] = useState(500000);
-  const [annualRate, setAnnualRate] = useState(12);
-  const [years, setYears] = useState(10);
+  const [inputs, setInputs] = useState({
+    principal: 500000,
+    annualRate: 12,
+    years: 10
+  });
+
+  const debouncedInputs = useDebounce(inputs, 250);
 
   const results = useMemo(
-    () => calcLumpsum({ principal, annualRate, years }),
-    [principal, annualRate, years]
+    () => calcLumpsum(debouncedInputs),
+    [debouncedInputs]
   );
 
   const insights = useMemo(() => generateLumpsumInsights(results), [results]);
 
-  const onPrincipal = useCallback((v: number) => setPrincipal(v), []);
-  const onRate = useCallback((v: number) => setAnnualRate(v), []);
-  const onYears = useCallback((v: number) => setYears(v), []);
+  const { shareId } = useAutoSave({
+    calcType: "Lumpsum",
+    debouncedInputs,
+    results: results as unknown as Record<string, unknown>,
+    enabled: true,
+  });
+
+  const onPrincipal = useCallback((v: number) => setInputs(p => ({ ...p, principal: v })), []);
+  const onRate = useCallback((v: number) => setInputs(p => ({ ...p, annualRate: v })), []);
+  const onYears = useCallback((v: number) => setInputs(p => ({ ...p, years: v })), []);
 
   return (
-    <main className="min-h-screen bg-[#F8FAFC] dark:bg-slate-900">
+    <main className="min-h-screen bg-[#F8FAFC] dark:bg-slate-900 pb-20 lg:pb-0">
+
+      <StickyMobileResult label="Total Corpus" value={formatINR(results.totalCorpus)} />
+
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-2">
           <div className="flex items-center gap-3 mb-1">
@@ -54,7 +72,7 @@ export default function LumpsumCalculator() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6 mt-6">
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 h-fit sticky top-6 shadow-[var(--shadow-card)]">
-            <HybridInput label="Investment Amount" value={principal} onChange={onPrincipal}
+            <HybridInput label="Investment Amount" value={inputs.principal} onChange={onPrincipal}
               min={1000} max={1000000000} step={10000} prefix="₹"
               quickChips={[
                 { label: "₹1L", value: 100000 }, { label: "₹5L", value: 500000 },
@@ -62,7 +80,7 @@ export default function LumpsumCalculator() {
                 { label: "₹1Cr", value: 10000000 },
               ]}
             />
-            <HybridInput label="Expected Return" value={annualRate} onChange={onRate}
+            <HybridInput label="Expected Return" value={inputs.annualRate} onChange={onRate}
               min={1} max={50} step={0.5} suffix="%"
               quickChips={[
                 { label: "8%", value: 8 }, { label: "10%", value: 10 },
@@ -70,7 +88,7 @@ export default function LumpsumCalculator() {
                 { label: "18%", value: 18 }, { label: "24%", value: 24 },
               ]}
             />
-            <HybridInput label="Time Period" value={years} onChange={onYears}
+            <HybridInput label="Time Period" value={inputs.years} onChange={onYears}
               min={1} max={50} step={1} suffix="Yrs"
               quickChips={[
                 { label: "5 Yr", value: 5 }, { label: "10 Yr", value: 10 },
@@ -83,24 +101,25 @@ export default function LumpsumCalculator() {
           <div className="space-y-5">
             <ResultHero label="Total Corpus" value={results.totalCorpus}
               subItems={[
-                { label: "Invested", value: principal, color: "#2563EB" },
+                { label: "Invested", value: inputs.principal, color: "#2563EB" },
                 { label: "Returns", value: results.estimatedReturns, color: "#16A34A" },
               ]}
             />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {insights.map((ins, i) => <InsightCard key={i} {...ins} />)}
-            </div>
+            <CollapsibleSection title="Smart Insights" icon={<Calculator className="w-5 h-5"/>} defaultOpen>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                {insights.map((ins, i) => <InsightCard key={i} {...ins} />)}
+              </div>
+            </CollapsibleSection>
 
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
-              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Wealth Growth Curve</h3>
-              <LumpsumChart data={results.growthData} principal={principal} />
-            </div>
+            <CollapsibleSection title="Wealth Growth Curve" icon={<TrendingUp className="w-5 h-5"/>} defaultOpen>
+              <div className="pt-2">
+                <div className="h-[250px]"><LumpsumChart data={results.growthData} principal={inputs.principal} /></div>
+              </div>
+            </CollapsibleSection>
 
-            {/* Growth table */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
-              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Year-by-Year Growth</h3>
-              <div className="overflow-x-auto">
+            <CollapsibleSection title="Year-by-Year Growth" icon={<Calculator className="w-5 h-5"/>}>
+              <div className="overflow-x-auto pt-2">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400">
@@ -114,31 +133,38 @@ export default function LumpsumCalculator() {
                       <tr key={r.year} className="border-b border-slate-50 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                         <td className="py-2">{r.year}</td>
                         <td className="py-2 text-right font-medium">{formatINR(r.value)}</td>
-                        <td className="py-2 text-right text-green-600 dark:text-green-400">{formatINR(r.value - principal)}</td>
+                        <td className="py-2 text-right text-green-600 dark:text-green-400">{formatINR(r.value - inputs.principal)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
               <p className="text-xs text-slate-400 mt-4 text-center">* CAGR: {results.CAGR}% · Wealth Ratio: {results.wealthRatio}x</p>
+            </CollapsibleSection>
+
+            <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t border-slate-200 dark:border-slate-800">
+              {shareId ? <ShareButton calcType="Lumpsum" resultText={formatINR(results.totalCorpus)} /> : null}
+              <SaveCalculationButton calcType="Lumpsum" data={{ ...debouncedInputs, totalCorpus: results.totalCorpus }} />
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <ShareButton calcType="Lumpsum" resultText={formatINR(results.totalCorpus)} />
-              <SaveCalculationButton calcType="Lumpsum" data={{ principal, annualRate, years, totalCorpus: results.totalCorpus }} />
-            </div>
+            <p className="text-xs text-slate-400 text-center uppercase tracking-wide font-medium mt-6 mb-2">
+              * Disclaimer: Subject to Approval *
+            </p>
+            <p className="text-xs text-slate-400 text-center max-w-lg mx-auto">
+              This Lumpsum calculation is strictly illustrative and excludes processing fees, taxes, and other charges. Returns are not guaranteed.
+            </p>
 
-            <div className="pt-4">
-              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Related Calculators</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {related.map((c) => (
-                  <Link key={c.href} href={c.href} className="flex items-center gap-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:border-blue-300 hover:shadow-sm transition-all group">
-                    <span className="text-2xl">{c.icon}</span>
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-blue-600 transition-colors">{c.title}</span>
-                    <ArrowRight className="w-4 h-4 text-slate-400 ml-auto group-hover:text-blue-600 transition-colors" />
-                  </Link>
-                ))}
-              </div>
+            <div className="pt-8">
+               <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Related Calculators</h3>
+               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                 {related.map((c) => (
+                   <Link key={c.href} href={c.href} className="flex items-center gap-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:border-blue-300 hover:shadow-sm transition-all group">
+                     <span className="text-2xl">{c.icon}</span>
+                     <span className="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-blue-600 transition-colors">{c.title}</span>
+                     <ArrowRight className="w-4 h-4 text-slate-400 ml-auto group-hover:text-blue-600 transition-colors" />
+                   </Link>
+                 ))}
+               </div>
             </div>
           </div>
         </div>

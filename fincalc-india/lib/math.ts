@@ -198,7 +198,7 @@ export function calcSIP(input: SipInput): SipOutput {
     totalCorpus = monthlyAmount * (((Math.pow(1 + i, n) - 1) / i) * (1 + i));
   }
 
-  const estimatedReturns = totalCorpus - totalInvested;
+  const estimatedReturns = Math.round(totalCorpus) - Math.round(totalInvested);
   const absoluteReturn = totalInvested > 0
     ? (estimatedReturns / totalInvested) * 100
     : 0;
@@ -217,14 +217,14 @@ export function calcSIP(input: SipInput): SipOutput {
     yearlyBreakdown.push({
       year: y,
       invested: Math.round(inv),
-      returns: Math.round(corp - inv),
+      returns: Math.round(corp) - Math.round(inv),
       corpus: Math.round(corp),
     });
   }
 
   return {
     totalInvested: Math.round(totalInvested),
-    estimatedReturns: Math.round(estimatedReturns),
+    estimatedReturns,
     totalCorpus: Math.round(totalCorpus),
     absoluteReturn: Math.round(absoluteReturn * 100) / 100,
     yearlyBreakdown,
@@ -369,7 +369,7 @@ export function calcLumpsum(input: LumpsumInput): LumpsumOutput {
   const { principal, annualRate, years } = input;
 
   const totalCorpus = principal * Math.pow(1 + annualRate / 100, years);
-  const estimatedReturns = totalCorpus - principal;
+  const estimatedReturns = Math.round(totalCorpus) - Math.round(principal);
   const absoluteReturn = principal > 0
     ? (estimatedReturns / principal) * 100
     : 0;
@@ -389,7 +389,7 @@ export function calcLumpsum(input: LumpsumInput): LumpsumOutput {
 
   return {
     totalCorpus: Math.round(totalCorpus),
-    estimatedReturns: Math.round(estimatedReturns),
+    estimatedReturns,
     absoluteReturn: Math.round(absoluteReturn * 100) / 100,
     CAGR: Math.round(CAGR * 100) / 100,
     wealthRatio: Math.round(wealthRatio * 100) / 100,

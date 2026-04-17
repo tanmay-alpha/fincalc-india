@@ -111,10 +111,16 @@ export function parseINRInput(value: string): number {
 
 // ─── Clamp ──────────────────────────────────────────────────────
 /**
- * Clamp a number to [min, max].
+ * Clamp a number to [min, max], ensuring no infinite bounds or overflow.
  * Returns min if value is NaN.
  */
 export function clampSafe(value: number, min: number, max: number): number {
-  if (isNaN(value)) return min;
-  return Math.min(Math.max(value, min), max);
+  if (isNaN(value) || !isFinite(value)) return min;
+  
+  // Hard limit globally at 900 Million Crores (close to max safe integer / 1000)
+  // to avoid JS Number maximum overflow when parsing bizarre user inputs.
+  const SAFE_MAX = 9_000_000_00_00_000;
+  const targetMax = Math.min(max, SAFE_MAX);
+
+  return Math.min(Math.max(value, min), targetMax);
 }

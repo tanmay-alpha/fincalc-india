@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, ReactNode } from "react";
+import { useState, useEffect, ReactNode } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +18,14 @@ export default function CollapsibleSection({
   defaultOpen = false 
 }: CollapsibleSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  useEffect(() => {
+    // Gracefully collapse on mobile devices to save viewport space
+    // without breaking SSR hydration
+    if (defaultOpen && typeof window !== "undefined" && window.innerWidth < 768) {
+      setIsOpen(false);
+    }
+  }, [defaultOpen]);
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden transition-all duration-300">

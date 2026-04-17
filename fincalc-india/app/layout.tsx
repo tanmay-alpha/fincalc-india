@@ -7,6 +7,12 @@ import Footer from "@/components/Footer";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/components/AuthProvider";
 import { Toaster } from "sonner";
+import { validateEnv } from "@/lib/env";
+
+// Enforce environment validation on server boot
+if (typeof window === "undefined") {
+  validateEnv();
+}
 
 const inter = Inter({
   subsets: ["latin"],

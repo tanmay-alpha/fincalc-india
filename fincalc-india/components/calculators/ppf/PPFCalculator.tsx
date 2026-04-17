@@ -3,16 +3,20 @@
 import { useState, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Calculator, TrendingUp } from "lucide-react";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import InsightCard from "@/components/ui/InsightCard";
 import ShareButton from "@/components/ui/ShareButton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
+import StickyMobileResult from "@/components/ui/StickyMobileResult";
+import CollapsibleSection from "@/components/ui/CollapsibleSection";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcPPF } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { generatePPFInsights } from "@/lib/insights";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useAutoSave } from "@/hooks/useAutoSave";
 
 const PPFChart = dynamic(
   () => import("@/components/calculators/ppf/PPFChart"),
@@ -26,23 +30,37 @@ const related = [
 ];
 
 export default function PPFCalculator() {
-  const [yearlyInvestment, setYearlyInvestment] = useState(150000);
-  const [years, setYears] = useState(15);
-  const [rate, setRate] = useState(7.1);
+  const [inputs, setInputs] = useState({
+    yearlyInvestment: 150000,
+    years: 15,
+    rate: 7.1
+  });
+
+  const debouncedInputs = useDebounce(inputs, 250);
 
   const results = useMemo(
-    () => calcPPF({ yearlyInvestment, years, rate }),
-    [yearlyInvestment, years, rate]
+    () => calcPPF(debouncedInputs),
+    [debouncedInputs]
   );
 
   const insights = useMemo(() => generatePPFInsights(results), [results]);
 
-  const onInvestment = useCallback((v: number) => setYearlyInvestment(v), []);
-  const onYears = useCallback((v: number) => setYears(v), []);
-  const onRate = useCallback((v: number) => setRate(v), []);
+  const { shareId } = useAutoSave({
+    calcType: "PPF",
+    debouncedInputs,
+    results: results as unknown as Record<string, unknown>,
+    enabled: true,
+  });
+
+  const onInvestment = useCallback((v: number) => setInputs(p => ({ ...p, yearlyInvestment: v })), []);
+  const onYears = useCallback((v: number) => setInputs(p => ({ ...p, years: v })), []);
+  const onRate = useCallback((v: number) => setInputs(p => ({ ...p, rate: v })), []);
 
   return (
-    <main className="min-h-screen bg-[#F8FAFC] dark:bg-slate-900">
+    <main className="min-h-screen bg-[#F8FAFC] dark:bg-slate-900 pb-20 lg:pb-0">
+
+      <StickyMobileResult label="Maturity Value" value={formatINR(results.maturityValue)} />
+
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-2">
           <div className="flex items-center gap-3 mb-1">
@@ -54,7 +72,7 @@ export default function PPFCalculator() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6 mt-6">
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 h-fit sticky top-6 shadow-[var(--shadow-card)]">
-            <HybridInput label="Yearly Investment" value={yearlyInvestment} onChange={onInvestment}
+            <HybridInput label="Yearly Investment" value={inputs.yearlyInvestment} onChange={onInvestment}
               min={500} max={150000} step={500} prefix="₹"
               quickChips={[
                 { label: "₹50K", value: 50000 },
@@ -63,7 +81,7 @@ export default function PPFCalculator() {
               ]}
               hint="Max ₹1,50,000/year under Section 80C"
             />
-            <HybridInput label="Duration" value={years} onChange={onYears}
+            <HybridInput label="Duration" value={inputs.years} onChange={onYears}
               min={15} max={50} step={1} suffix="Yrs"
               quickChips={[
                 { label: "15 Yr", value: 15 }, { label: "20 Yr", value: 20 },
@@ -71,7 +89,7 @@ export default function PPFCalculator() {
               ]}
               hint="PPF minimum lock-in: 15 years"
             />
-            <HybridInput label="PPF Rate" value={rate} onChange={onRate}
+            <HybridInput label="PPF Rate" value={inputs.rate} onChange={onRate}
               min={1} max={15} step={0.1} suffix="%"
               hint="Current PPF rate: 7.1% (set by Govt. quarterly)"
             />
@@ -85,19 +103,20 @@ export default function PPFCalculator() {
               ]}
             />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {insights.map((ins, i) => <InsightCard key={i} {...ins} />)}
-            </div>
+            <CollapsibleSection title="Smart Insights" icon={<Calculator className="w-5 h-5"/>} defaultOpen>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                {insights.map((ins, i) => <InsightCard key={i} {...ins} />)}
+              </div>
+            </CollapsibleSection>
 
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
-              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Deposit vs Interest — Year by Year</h3>
-              <PPFChart data={results.yearlyData} />
-            </div>
+            <CollapsibleSection title="Deposit vs Interest — Year by Year" icon={<TrendingUp className="w-5 h-5"/>} defaultOpen>
+              <div className="pt-2">
+                <div className="h-[250px]"><PPFChart data={results.yearlyData} /></div>
+              </div>
+            </CollapsibleSection>
 
-            {/* Year-by-year table */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
-              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Year-by-Year Breakdown</h3>
-              <div className="overflow-x-auto">
+            <CollapsibleSection title="Year-by-Year Breakdown" icon={<Calculator className="w-5 h-5"/>}>
+              <div className="overflow-x-auto pt-2">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400">
@@ -123,14 +142,21 @@ export default function PPFCalculator() {
                   </tbody>
                 </table>
               </div>
+            </CollapsibleSection>
+
+            <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t border-slate-200 dark:border-slate-800">
+              {shareId ? <ShareButton calcType="PPF" resultText={formatINR(results.maturityValue)} /> : null}
+              <SaveCalculationButton calcType="PPF" data={{ ...debouncedInputs, maturity: results.maturityValue }} />
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <ShareButton calcType="PPF" resultText={formatINR(results.maturityValue)} />
-              <SaveCalculationButton calcType="PPF" data={{ yearlyInvestment, years, rate, maturity: results.maturityValue }} />
-            </div>
+            <p className="text-xs text-slate-400 text-center uppercase tracking-wide font-medium mt-6 mb-2">
+              * Disclaimer: Subject to Approval *
+            </p>
+            <p className="text-xs text-slate-400 text-center max-w-lg mx-auto">
+              This PPF calculation is strictly illustrative. Actual interest rates are mandated by the government periodically.
+            </p>
 
-            <div className="pt-4">
+            <div className="pt-8">
               <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Related Calculators</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {related.map((c) => (
