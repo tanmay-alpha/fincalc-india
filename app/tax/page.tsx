@@ -1,16 +1,15 @@
-import { Metadata } from "next";
+
 import TaxCalculator from "@/components/calculators/tax/TaxCalculator";
 import TaxInfo from "@/components/seo/TaxInfo";
 
-export const metadata: Metadata = {
-  title: 'Income Tax Calculator',
-  description: 'Free income tax calculator for FY 2024-25. Compare Old vs New regime with slab-by-slab breakdown, effective tax rate, and take-home estimate.',
+export const metadata = {
+  title: 'Income Tax Calculator FY 2024-25',
+  description: 'Compare Old vs New tax regime for FY 2024-25. Calculate income tax with slab breakdown, 80C deductions, HRA, and take-home salary.',
   openGraph: {
-    title: 'Income Tax Calculator | FinCalc India',
-    description: 'Compare Old vs New tax regime with slab-by-slab breakdown for FY 2024-25.',
-    type: 'website',
-  },
-};
+    title: 'Income Tax Calculator FY 2024-25 — FinCalc India',
+    description: 'Free income tax calculator with Old vs New regime comparison for FY 2024-25.',
+  }
+}
 
 export default function TaxPage() {
   return (

@@ -1,16 +1,15 @@
-import { Metadata } from "next";
+
 import PPFCalculator from "@/components/calculators/ppf/PPFCalculator";
 import PPFInfo from "@/components/seo/PPFInfo";
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'PPF Calculator',
-  description: 'Calculate Public Provident Fund (PPF) maturity value and tax-free interest over a 15+ year period. Plan your long-term tax-saving investments.',
+  description: 'Calculate PPF (Public Provident Fund) corpus over 15 to 50 years. See year-by-year tax-free growth at 7.1% interest rate.',
   openGraph: {
-    title: 'PPF Calculator | FinCalc India',
-    description: 'Calculate PPF maturity value and tax-free interest over 15+ years.',
-    type: 'website',
-  },
-};
+    title: 'PPF Calculator — FinCalc India',
+    description: 'Free PPF calculator with withdrawal eligibility and tax-free corpus projection.',
+  }
+}
 
 export default function PPFPage() {
   return (

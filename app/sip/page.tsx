@@ -1,16 +1,15 @@
-import { Metadata } from "next";
+
 import SIPCalculator from "@/components/calculators/sip/SIPCalculator";
 import SIPInfo from "@/components/seo/SIPInfo";
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'SIP Calculator',
-  description: 'Free SIP calculator for Indian investors. Calculate returns on monthly Systematic Investment Plan with compound interest and year-by-year breakdown.',
+  description: 'Calculate SIP returns with our free SIP calculator. See how ₹5,000/month grows to ₹11.6L in 10 years at 12% return. Year-by-year compound interest breakdown.',
   openGraph: {
-    title: 'SIP Calculator | FinCalc India',
-    description: 'Calculate SIP returns with compound interest, year-by-year corpus growth, and investment breakdown.',
-    type: 'website',
-  },
-};
+    title: 'SIP Calculator — FinCalc India',
+    description: 'Free SIP calculator for Indian mutual fund investors. Instant compound interest calculation.',
+  }
+}
 
 export default function SIPPage() {
   return (

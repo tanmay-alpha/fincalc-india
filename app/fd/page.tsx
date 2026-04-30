@@ -1,16 +1,15 @@
-import { Metadata } from "next";
+
 import FDCalculator from "@/components/calculators/fd/FDCalculator";
 import FDInfo from "@/components/seo/FDInfo";
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'FD Calculator',
-  description: 'Calculate Fixed Deposit maturity amounts with monthly, quarterly, half-yearly, or annual compounding. Compare FD rates and effective yield.',
+  description: 'Calculate Fixed Deposit maturity amount with monthly, quarterly, and annual compounding. See how ₹1 lakh grows in any FD.',
   openGraph: {
-    title: 'FD Calculator | FinCalc India',
-    description: 'Calculate maturity amounts on Fixed Deposits (FDs) with compounding options.',
-    type: 'website',
-  },
-};
+    title: 'FD Calculator — FinCalc India',
+    description: 'Free FD maturity calculator with compounding frequency options.',
+  }
+}
 
 export default function FDPage() {
   return (

@@ -1,16 +1,15 @@
-import { Metadata } from "next";
+
 import EMICalculator from "@/components/calculators/emi/EMICalculator";
 import EMIInfo from "@/components/seo/EMIInfo";
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'EMI Calculator',
-  description: 'Free EMI calculator for home, car, and personal loans. Calculate monthly EMI, total interest, and view full amortization schedule.',
+  description: 'Calculate home loan, car loan, and personal loan EMI instantly. See full amortization schedule with principal vs interest breakdown.',
   openGraph: {
-    title: 'EMI Calculator | FinCalc India',
-    description: 'Calculate loan EMI with full amortization schedule for home, car, and personal loans.',
-    type: 'website',
-  },
-};
+    title: 'EMI Calculator — FinCalc India',
+    description: 'Free loan EMI calculator with complete amortization schedule.',
+  }
+}
 
 export default function EMIPage() {
   return (

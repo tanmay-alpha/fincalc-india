@@ -11,11 +11,9 @@ import {
   Landmark,
   LineChart,
   Lock,
-  PiggyBank,
   Scale,
   Share2,
   ShieldCheck,
-  Sparkles,
   TrendingUp,
   WalletCards,
 } from "lucide-react";
@@ -101,10 +99,10 @@ const calculators: CalculatorCard[] = [
 ];
 
 const stats = [
-  { value: "6", label: "Indian finance calculators" },
-  { value: "Instant", label: "Results as inputs change" },
-  { value: "Google", label: "Sign-in for saved history" },
-  { value: "Share", label: "Create links after saving" },
+  { value: "6", label: "Calculators" },
+  { value: "100%", label: "Free forever" },
+  { value: "0", label: "Ads" },
+  { value: "FY 25", label: "Tax updated" },
 ];
 
 const whyItems = [
@@ -120,8 +118,8 @@ const whyItems = [
   },
   {
     icon: ShieldCheck,
-    title: "Honest workflow",
-    desc: "Calculations are available without login; save, history, and sharing need Google sign-in.",
+    title: "Save & Share",
+    desc: "Sign in to save calculations",
   },
   {
     icon: WalletCards,
@@ -157,84 +155,38 @@ const compareBenefits = [
 export default function HomePage() {
   return (
     <main className="page-shell">
-      <section className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-14 pt-14 lg:grid-cols-[1.05fr_0.95fr] lg:pb-20 lg:pt-20">
-        <div>
-          <div className="inline-flex items-center gap-2 bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-full px-4 py-1.5 mb-8">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute h-full w-full rounded-full bg-green-400 opacity-75" />
-              <span className="relative h-2 w-2 rounded-full bg-green-500" />
-            </span>
-            <span className="text-xs font-medium text-green-700 dark:text-green-400">
-              Free forever · No ads · Sign in to save &amp; share
-            </span>
-          </div>
-
-          <h1 className="max-w-3xl text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-            Financial calculators built for clearer money decisions.
-          </h1>
-
-          <p className="mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">
-            Calculate instantly. Sign in with Google to save history, compare scenarios, and share results.
-          </p>
-
-          <HomeHeroActions />
-
-          <div className="mt-6 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-            <div className="flex items-start gap-2">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 text-success" />
-              <span>You can calculate without signing in.</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 text-success" />
-              <span>Google sign-in unlocks save, history, and sharing.</span>
-            </div>
-          </div>
-
-          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {stats.map((stat) => (
-              <div key={stat.label} className="surface-card p-4">
-                <p className="text-lg font-bold text-foreground">{stat.value}</p>
-                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{stat.label}</p>
-              </div>
-            ))}
-          </div>
+      <section className="max-w-6xl mx-auto px-4 pt-16 pb-10 text-center">
+        {/* Trust pill */}
+        <div className="inline-flex items-center gap-2 bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-full px-4 py-1.5 mb-8">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute h-full w-full rounded-full bg-green-400 opacity-75" />
+            <span className="relative h-2 w-2 rounded-full bg-green-500" />
+          </span>
+          <span className="text-xs font-medium text-green-700 dark:text-green-400">
+            Free forever · No ads · Sign in to save results
+          </span>
         </div>
+        
+        <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 dark:text-white leading-tight mb-4">
+          Smart Financial<br />
+          <span className="text-blue-600">
+            Calculators
+          </span>
+        </h1>
+        
+        <p className="text-lg text-slate-500 dark:text-slate-400 max-w-lg mx-auto leading-relaxed mb-6">
+          Free, accurate and instant — built for every Indian investor. Sign in to save and share your calculations.
+        </p>
 
-        <div className="surface-card relative overflow-hidden p-5">
-          <div className="absolute inset-x-0 top-0 h-1 bg-primary" />
-          <div className="flex items-center justify-between border-b border-border pb-4">
-            <div>
-              <p className="text-sm font-semibold text-foreground">Planning snapshot</p>
-              <p className="mt-1 text-xs text-muted-foreground">A cleaner way to understand financial choices</p>
+        <HomeHeroActions />
+
+        <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {stats.map((stat) => (
+            <div key={stat.label} className="surface-card p-4">
+              <p className="text-lg font-bold text-foreground">{stat.value}</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{stat.label}</p>
             </div>
-            <Sparkles className="h-5 w-5 text-primary" />
-          </div>
-
-          <div className="space-y-4 py-5">
-            {[
-              { label: "Calculate", value: "Instant result", icon: PiggyBank },
-              { label: "Review", value: "Charts and breakdowns", icon: BarChart3 },
-              { label: "Save", value: "History after sign-in", icon: History },
-              { label: "Share", value: "Result links after saving", icon: Share2 },
-            ].map((item) => (
-              <div key={item.label} className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 p-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <item.icon className="h-5 w-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-foreground">{item.label}</p>
-                  <p className="text-xs text-muted-foreground">{item.value}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="rounded-xl border border-success/20 bg-success/10 p-4">
-            <p className="text-sm font-semibold text-success">Google sign-in is for saved workflows</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              Start calculating first. Sign in when you want to keep, revisit, or share a result.
-            </p>
-          </div>
+          ))}
         </div>
       </section>
 

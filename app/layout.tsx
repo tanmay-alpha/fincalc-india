@@ -14,16 +14,27 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://fincalc-india.vercel.app'),
+  metadataBase: new URL(
+    'https://fincalc-india.vercel.app'
+  ),
   title: {
     template: '%s | FinCalc India',
-    default: 'FinCalc India — Free Financial Calculators',
+    default: 'FinCalc India — Free Financial Calculators for Indian Investors',
   },
-  description: 'Free financial calculators for every Indian investor. SIP, EMI, FD, PPF, Lumpsum, and Income Tax calculators — accurate, instant, and completely free.',
-  keywords: ['SIP calculator', 'EMI calculator', 'FD calculator', 'PPF calculator', 'income tax calculator India', 'financial calculator India', 'free finance calculator'],
+  description: 'Free SIP, EMI, FD, PPF, Lumpsum, and Income Tax calculators for Indian investors. Accurate, instant results with no login required.',
+  keywords: [
+    'SIP calculator India',
+    'EMI calculator',
+    'FD calculator India', 
+    'PPF calculator',
+    'income tax calculator India 2024-25',
+    'financial calculator India',
+    'mutual fund calculator',
+    'loan calculator India',
+  ],
   openGraph: {
     title: 'FinCalc India — Free Financial Calculators',
-    description: 'Free SIP, EMI, FD, PPF, Lumpsum & Tax calculators. Built for Indian investors.',
+    description: 'Free SIP, EMI, FD, PPF & Tax calculators built for Indian investors. Instant results, no login required.',
     url: 'https://fincalc-india.vercel.app',
     siteName: 'FinCalc India',
     locale: 'en_IN',
@@ -32,13 +43,17 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'FinCalc India — Free Financial Calculators',
-    description: 'Free SIP, EMI, FD, PPF, Tax calculators for Indian investors',
+    description: 'Free SIP, EMI, FD, PPF & Tax calculators for Indian investors.',
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
   },
-};
+}
 
 export default function RootLayout({
   children,

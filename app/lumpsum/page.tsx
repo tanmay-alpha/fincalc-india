@@ -1,16 +1,15 @@
-import { Metadata } from "next";
+
 import LumpsumCalculator from "@/components/calculators/lumpsum/LumpsumCalculator";
 import LumpsumInfo from "@/components/seo/LumpsumInfo";
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'Lumpsum Calculator',
-  description: 'Calculate future value of a one-time lumpsum investment. View wealth multipliers, absolute returns, CAGR, and year-by-year growth curves.',
+  description: 'Calculate returns on one-time lumpsum investment. Compare lumpsum vs SIP returns and see CAGR on your investment.',
   openGraph: {
-    title: 'Lumpsum Calculator | FinCalc India',
-    description: 'Calculate expected returns from one-time lumpsum investments with CAGR.',
-    type: 'website',
-  },
-};
+    title: 'Lumpsum Calculator — FinCalc India',
+    description: 'Free lumpsum investment calculator with CAGR and SIP comparison.',
+  }
+}
 
 export default function LumpsumPage() {
   return (
