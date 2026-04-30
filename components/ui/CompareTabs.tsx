@@ -17,14 +17,14 @@ export default function CompareTabs({
   labelB = "Scenario B" 
 }: CompareTabsProps) {
   return (
-    <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl mb-6 shadow-inner">
+    <div className="mb-6 flex items-center rounded-xl border border-border bg-muted p-1 shadow-inner">
       <button
         onClick={() => onTabChange("A")}
         className={cn(
           "flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ease-out",
           activeTab === "A"
-            ? "bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400"
-            : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+            ? "bg-card text-primary shadow-sm"
+            : "text-muted-foreground hover:text-foreground"
         )}
       >
         {labelA}
@@ -34,8 +34,8 @@ export default function CompareTabs({
         className={cn(
           "flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ease-out",
           activeTab === "B"
-            ? "bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400"
-            : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+            ? "bg-card text-primary shadow-sm"
+            : "text-muted-foreground hover:text-foreground"
         )}
       >
         {labelB}

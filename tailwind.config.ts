@@ -1,5 +1,7 @@
 import type { Config } from "tailwindcss";
 
+const withOpacity = (variable: string) => `rgb(var(${variable}) / <alpha-value>)`;
+
 const config: Config = {
   darkMode: "class",
   content: [
@@ -10,42 +12,79 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        primary: {
-          DEFAULT: "#2563EB",
-          50: "#EFF6FF",
-          100: "#DBEAFE",
-          200: "#BFDBFE",
-          300: "#93C5FD",
-          400: "#60A5FA",
-          500: "#3B82F6",
-          600: "#2563EB",
-          700: "#1D4ED8",
-          800: "#1E40AF",
-          900: "#1E3A8A",
+        background: withOpacity("--background"),
+        foreground: withOpacity("--foreground"),
+        card: {
+          DEFAULT: withOpacity("--card"),
+          foreground: withOpacity("--card-foreground"),
         },
+        popover: {
+          DEFAULT: withOpacity("--popover"),
+          foreground: withOpacity("--popover-foreground"),
+        },
+        primary: {
+          DEFAULT: withOpacity("--primary"),
+          foreground: withOpacity("--primary-foreground"),
+          50: "#ecfdf5",
+          100: "#d1fae5",
+          200: "#a7f3d0",
+          300: "#6ee7b7",
+          400: "#34d399",
+          500: "#10b981",
+          600: "#059669",
+          700: "#047857",
+          800: "#065f46",
+          900: "#064e3b",
+          950: "#022c22",
+        },
+        secondary: {
+          DEFAULT: withOpacity("--secondary"),
+          foreground: withOpacity("--secondary-foreground"),
+        },
+        muted: {
+          DEFAULT: withOpacity("--muted"),
+          foreground: withOpacity("--muted-foreground"),
+        },
+        accent: {
+          DEFAULT: withOpacity("--accent"),
+          foreground: withOpacity("--accent-foreground"),
+        },
+        border: withOpacity("--border"),
+        input: withOpacity("--input"),
+        ring: withOpacity("--ring"),
         success: {
-          light: "#d1fae5", // emerald-100
-          DEFAULT: "#10b981", // emerald-500
-          dark: "#047857", // emerald-700
+          DEFAULT: withOpacity("--success"),
+          foreground: withOpacity("--success-foreground"),
         },
         warning: {
-          light: "#fef3c7", // amber-100
-          DEFAULT: "#f59e0b", // amber-500
-          dark: "#b45309", // amber-700
+          DEFAULT: withOpacity("--warning"),
+          foreground: withOpacity("--warning-foreground"),
         },
-        danger: {
-          light: "#ffe4e6", // rose-100
-          DEFAULT: "#f43f5e", // rose-500
-          dark: "#be123c", // rose-700
+        destructive: {
+          DEFAULT: withOpacity("--destructive"),
+          foreground: withOpacity("--destructive-foreground"),
+        },
+        chart: {
+          1: withOpacity("--chart-1"),
+          2: withOpacity("--chart-2"),
+          3: withOpacity("--chart-3"),
+          4: withOpacity("--chart-4"),
+          5: withOpacity("--chart-5"),
         },
       },
       fontFamily: {
         sans: ["var(--font-inter)", "system-ui", "sans-serif"],
       },
+      borderRadius: {
+        sm: "var(--radius-sm)",
+        md: "var(--radius-md)",
+        lg: "var(--radius-lg)",
+        xl: "var(--radius-xl)",
+      },
       boxShadow: {
-        card: "0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)",
-        "card-hover":
-          "0 4px 12px rgba(0,0,0,0.10), 0 12px 32px rgba(37,99,235,0.08)",
+        card: "var(--shadow-card)",
+        "card-hover": "var(--shadow-card-hover)",
+        soft: "var(--shadow-soft)",
       },
       keyframes: {
         "slide-up": {

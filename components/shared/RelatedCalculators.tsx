@@ -56,8 +56,8 @@ export default function RelatedCalculators({ current }: Props) {
     .slice(0, 3);
 
   return (
-    <section className="mt-8 pt-8 border-t border-slate-200 dark:border-slate-800">
-      <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-4">
+    <section className="mt-8 border-t border-border pt-8">
+      <h3 className="mb-4 text-base font-semibold text-foreground">
         Related Calculators
       </h3>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -65,20 +65,20 @@ export default function RelatedCalculators({ current }: Props) {
           <Link
             key={calc.id}
             href={calc.href}
-            className="flex items-center gap-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 group"
+            className="surface-card-hover group flex items-center gap-3 rounded-xl p-4"
           >
             <span className="text-2xl">{calc.icon}</span>
             <div>
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+              <p className="text-sm font-semibold text-card-foreground transition-colors group-hover:text-primary">
                 {calc.label} Calculator
               </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 {calc.desc}
               </p>
             </div>
             <ChevronRight
               size={14}
-              className="ml-auto text-slate-400 dark:text-slate-500 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all"
+              className="ml-auto text-muted-foreground transition-all group-hover:translate-x-0.5 group-hover:text-primary"
             />
           </Link>
         ))}

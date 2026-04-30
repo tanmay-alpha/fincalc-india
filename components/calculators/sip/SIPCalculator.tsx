@@ -18,7 +18,6 @@ import { calcSIP } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { generateSIPInsights } from "@/lib/insights";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useAutoSave } from "@/hooks/useAutoSave";
 import { clsx } from "clsx";
 
 const SIPChart = dynamic(
@@ -38,6 +37,7 @@ export default function SIPCalculator() {
   // UX State
   const [isCompare] = useState(false);
   const [activeTab, setActiveTab] = useState<"A" | "B">("A");
+  const [shareId, setShareId] = useState<string | null>(null);
 
   // Debounced inputs
   const debouncedA = useDebounce(aInputs, 250);
@@ -47,16 +47,11 @@ export default function SIPCalculator() {
   const resultsA = useMemo(() => calcSIP(debouncedA), [debouncedA]);
   const resultsB = useMemo(() => (isCompare ? calcSIP(debouncedB) : null), [debouncedB, isCompare]);
 
-  const activeInputs = activeTab === "A" ? aInputs : bInputs;
+  const activeInputs = activeTab === "A" ? debouncedA : debouncedB;
   const activeResults = activeTab === "A" ? resultsA : resultsB!;
   const insights = useMemo(() => generateSIPInsights(resultsA), [resultsA]);
 
-  const { shareId } = useAutoSave({
-    calcType: "SIP",
-    debouncedInputs: activeTab === "A" ? debouncedA : debouncedB,
-    results: activeResults as unknown as Record<string, unknown>,
-    enabled: true,
-  });
+  useEffect(() => setShareId(null), [activeInputs, activeResults]);
 
   // Callbacks
   const setA = useCallback((key: keyof typeof aInputs, v: number) => setAInputs((p) => ({ ...p, [key]: v })), []);
@@ -99,7 +94,7 @@ export default function SIPCalculator() {
   };
 
   return (
-    <main id="main-content" className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 pb-24 lg:pb-0">
+    <main id="main-content" className="page-shell pb-24 lg:pb-0">
 
       <StickyResultBar label="Total Corpus" value={activeResults.totalCorpus} />
 
@@ -112,17 +107,17 @@ export default function SIPCalculator() {
             ]} />
             <div className="flex items-center gap-3 mb-1.5">
               <span className="text-3xl">📈</span>
-              <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">SIP Calculator</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">SIP Calculator</h1>
             </div>
-            <p className="text-slate-500 dark:text-slate-400">Calculate returns on your monthly Systematic Investment Plan</p>
+            <p className="text-muted-foreground">Calculate returns on your monthly Systematic Investment Plan</p>
           </div>
 
           <button
             disabled
-            className="text-xs border border-dashed border-slate-300 rounded-full px-3 py-1.5 text-slate-400 cursor-not-allowed flex items-center gap-1.5"
+            className="flex cursor-not-allowed items-center gap-1.5 rounded-full border border-dashed border-border px-3 py-1.5 text-xs text-muted-foreground"
           >
             Compare Mode
-            <span className="bg-slate-100 text-slate-400 text-xs px-1.5 py-0.5 rounded-full">
+            <span className="rounded-full bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
               Soon
             </span>
           </button>
@@ -143,14 +138,14 @@ export default function SIPCalculator() {
             )}
 
             {isCompare ? (
-              <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
-                <div className="hidden lg:grid grid-cols-2 gap-8 divide-x divide-slate-100 dark:divide-slate-700">
+              <div className="surface-card p-6">
+                <div className="hidden lg:grid grid-cols-2 gap-8 divide-x divide-border">
                   <div className="pr-2">
-                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4 tracking-wide uppercase">Scenario A</h3>
+                    <h3 className="text-sm font-bold text-card-foreground mb-4 tracking-wide uppercase">Scenario A</h3>
                     {renderInputs("A")}
                   </div>
                   <div className="pl-6">
-                    <h3 className="text-sm font-bold text-blue-600 dark:text-blue-400 mb-4 tracking-wide uppercase">Scenario B</h3>
+                    <h3 className="text-sm font-bold text-primary mb-4 tracking-wide uppercase">Scenario B</h3>
                     {renderInputs("B")}
                   </div>
                 </div>
@@ -159,13 +154,13 @@ export default function SIPCalculator() {
                 </div>
               </div>
             ) : (
-              <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+              <div className="surface-card p-6">
                 <div className="flex items-center gap-2 mb-5">
                   <span className="text-lg">💼</span>
-                  <h2 className="text-base font-semibold text-slate-900 dark:text-white">Enter SIP Details</h2>
+                  <h2 className="text-base font-semibold text-card-foreground">Enter SIP Details</h2>
                 </div>
                 {renderInputs("A")}
-                <p className="text-xs text-slate-400 text-center mt-5">
+                <p className="text-xs text-muted-foreground text-center mt-5">
                   * Returns are estimated. Actual market returns may vary.
                 </p>
               </div>
@@ -196,10 +191,10 @@ export default function SIPCalculator() {
             )}
 
             {/* Chart */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+            <div className="surface-card p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-slate-900 dark:text-white">Growth Projection</h3>
-                <span className="text-xs text-slate-400">Year by year</span>
+                <h3 className="font-semibold text-card-foreground">Growth Projection</h3>
+                <span className="text-xs text-muted-foreground">Year by year</span>
               </div>
               <div className="h-[300px]">
                 <SIPChart
@@ -211,32 +206,31 @@ export default function SIPCalculator() {
             </div>
 
             {/* Year-by-Year Table */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700">
-                <h3 className="font-semibold text-slate-900 dark:text-white">Year-by-Year Breakdown</h3>
+            <div className="table-surface">
+              <div className="px-6 py-4 border-b border-border">
+                <h3 className="font-semibold text-card-foreground">Year-by-Year Breakdown</h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-slate-50 dark:bg-slate-800/80">
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Year</th>
-                      <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Invested</th>
-                      <th className="px-6 py-3 text-right text-xs font-semibold text-blue-600 uppercase tracking-wide">Returns</th>
-                      <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Corpus</th>
+                    <tr className="table-head">
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Year</th>
+                      <th className="px-6 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide">Invested</th>
+                      <th className="px-6 py-3 text-right text-xs font-semibold text-primary uppercase tracking-wide">Returns</th>
+                      <th className="px-6 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide">Corpus</th>
                     </tr>
                   </thead>
                   <tbody>
                     {activeResults.yearlyBreakdown.map((row, i) => (
                       <tr key={row.year}
                         className={clsx(
-                          "border-t border-slate-100 dark:border-slate-700",
-                          "hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors",
-                          i === activeResults.yearlyBreakdown.length - 1 && "bg-blue-50 dark:bg-blue-900/20 font-semibold"
+                          "table-row",
+                          i === activeResults.yearlyBreakdown.length - 1 && "bg-primary/10 font-semibold"
                         )}>
-                        <td className="px-6 py-3.5 text-slate-600 dark:text-slate-300">{row.year}</td>
-                        <td className="px-6 py-3.5 text-right text-slate-700 dark:text-slate-300">{formatINR(row.invested)}</td>
-                        <td className="px-6 py-3.5 text-right text-green-600 dark:text-green-400 font-medium">{formatINR(row.returns)}</td>
-                        <td className="px-6 py-3.5 text-right text-slate-900 dark:text-white font-semibold">{formatINR(row.corpus)}</td>
+                        <td className="px-6 py-3.5 text-muted-foreground">{row.year}</td>
+                        <td className="px-6 py-3.5 text-right text-foreground/80">{formatINR(row.invested)}</td>
+                        <td className="px-6 py-3.5 text-right text-success font-medium">{formatINR(row.returns)}</td>
+                        <td className="px-6 py-3.5 text-right text-foreground font-semibold">{formatINR(row.corpus)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -246,7 +240,11 @@ export default function SIPCalculator() {
 
             {/* Actions */}
             <div className="flex gap-3 mt-2">
-              <SaveCalculationButton calcType="SIP" data={{ ...activeInputs, totalCorpus: activeResults.totalCorpus }} />
+              <SaveCalculationButton
+                calcType="SIP"
+                data={{ inputs: activeInputs, results: activeResults as unknown as Record<string, unknown> }}
+                onSaved={setShareId}
+              />
               <ShareButton shareId={shareId} />
             </div>
 

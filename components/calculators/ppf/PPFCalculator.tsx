@@ -16,7 +16,6 @@ import { calcPPF } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { generatePPFInsights } from "@/lib/insights";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useAutoSave } from "@/hooks/useAutoSave";
 
 const PPFChart = dynamic(
   () => import("@/components/calculators/ppf/PPFChart"),
@@ -35,13 +34,9 @@ export default function PPFCalculator() {
   const debouncedInputs = useDebounce(inputs, 250);
   const results = useMemo(() => calcPPF(debouncedInputs), [debouncedInputs]);
   const insights = useMemo(() => generatePPFInsights(results), [results]);
+  const [shareId, setShareId] = useState<string | null>(null);
 
-  const { shareId } = useAutoSave({
-    calcType: "PPF",
-    debouncedInputs,
-    results: results as unknown as Record<string, unknown>,
-    enabled: true,
-  });
+  useEffect(() => setShareId(null), [debouncedInputs]);
 
   const onInvestment = useCallback((v: number) => setInputs(p => ({ ...p, yearlyInvestment: v })), []);
   const onYears = useCallback((v: number) => setInputs(p => ({ ...p, years: v })), []);
@@ -50,7 +45,7 @@ export default function PPFCalculator() {
   if (!mounted) return <CalcPageSkeleton />;
 
   return (
-    <main id="main-content" className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 pb-24 lg:pb-0">
+    <main id="main-content" className="page-shell pb-24 lg:pb-0">
 
       <StickyResultBar label="Maturity Value" value={results.maturityValue} />
 
@@ -62,19 +57,19 @@ export default function PPFCalculator() {
           ]} />
           <div className="flex items-center gap-3 mb-1.5">
             <span className="text-3xl">🏛️</span>
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">PPF Calculator</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">PPF Calculator</h1>
           </div>
-          <p className="text-slate-500 dark:text-slate-400">Project your PPF corpus with tax-free returns over 15+ years</p>
+          <p className="text-muted-foreground">Project your PPF corpus with tax-free returns over 15+ years</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6">
           {/* ────── INPUT PANEL ────── */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 h-fit lg:sticky lg:top-6 shadow-sm space-y-4">
+          <div className="surface-card h-fit space-y-4 p-6 lg:sticky lg:top-6">
 
             {/* PPF Rules Banner */}
-            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-1">
-              <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-2">📋 PPF Rules</p>
-              <div className="space-y-1 text-xs text-amber-600 dark:text-amber-500">
+            <div className="mb-1 rounded-xl border border-warning/25 bg-warning/10 p-4">
+              <p className="mb-2 text-xs font-semibold text-warning">PPF Rules</p>
+              <div className="space-y-1 text-xs text-warning/85">
                 <p>• Lock-in period: 15 years minimum</p>
                 <p>• Maximum yearly investment: ₹1,50,000</p>
                 <p>• Partial withdrawal: allowed after Year 7</p>
@@ -120,48 +115,48 @@ export default function PPFCalculator() {
             </div>
 
             {/* Chart */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+            <div className="surface-card p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-slate-900 dark:text-white">Deposit vs Interest — Year by Year</h3>
-                <span className="text-xs text-slate-400">With balance line</span>
+                <h3 className="font-semibold text-card-foreground">Deposit vs Interest - Year by Year</h3>
+                <span className="text-xs text-muted-foreground">With balance line</span>
               </div>
               <div className="h-[300px]"><PPFChart data={results.yearlyData} /></div>
             </div>
 
             {/* Year-by-Year Table with Withdrawal/Loan columns */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700">
-                <h3 className="font-semibold text-slate-900 dark:text-white">Year-by-Year Breakdown</h3>
+            <div className="table-surface">
+              <div className="px-6 py-4 border-b border-border">
+                <h3 className="font-semibold text-card-foreground">Year-by-Year Breakdown</h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-slate-50 dark:bg-slate-800/80">
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Year</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Deposit</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Interest</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Balance</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide">Withdrawal</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide">Loan</th>
+                    <tr className="table-head">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Year</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide">Deposit</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide">Interest</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide">Balance</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wide">Withdrawal</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wide">Loan</th>
                     </tr>
                   </thead>
                   <tbody>
                     {results.yearlyData.map((r) => (
-                      <tr key={r.year} className="border-t border-slate-100 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                        <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{r.year}</td>
+                      <tr key={r.year} className="table-row text-foreground/80">
+                        <td className="px-4 py-3 text-muted-foreground">{r.year}</td>
                         <td className="px-4 py-3 text-right">{formatINR(r.deposit)}</td>
-                        <td className="px-4 py-3 text-right text-green-600 dark:text-green-400">{formatINR(r.interest)}</td>
+                        <td className="px-4 py-3 text-right text-success">{formatINR(r.interest)}</td>
                         <td className="px-4 py-3 text-right font-semibold">{formatINR(r.balance)}</td>
                         <td className="px-4 py-3 text-center">
                           {r.withdrawalAllowed
-                            ? <span className="text-green-600 font-bold">✓</span>
-                            : <span className="text-slate-300 dark:text-slate-600">—</span>
+                            ? <span className="font-bold text-success">Yes</span>
+                            : <span className="text-muted-foreground/50">-</span>
                           }
                         </td>
                         <td className="px-4 py-3 text-center">
                           {r.loanAllowed
-                            ? <span className="text-blue-600 font-bold">✓</span>
-                            : <span className="text-slate-300 dark:text-slate-600">—</span>
+                            ? <span className="font-bold text-primary">Yes</span>
+                            : <span className="text-muted-foreground/50">-</span>
                           }
                         </td>
                       </tr>
@@ -171,14 +166,18 @@ export default function PPFCalculator() {
               </div>
             </div>
 
-            <p className="text-xs text-slate-400 dark:text-slate-500 italic mt-4 leading-relaxed border-t border-slate-100 dark:border-slate-700 pt-4">
+            <p className="mt-4 border-t border-border pt-4 text-xs italic leading-relaxed text-muted-foreground">
               * PPF interest calculated on annual compounding basis. Actual PPF credits interest on minimum balance between 5th-last of each month.
             </p>
 
             {/* Actions */}
             <div className="flex gap-3">
               <ShareButton shareId={shareId} />
-              <SaveCalculationButton calcType="PPF" data={{ ...debouncedInputs, maturity: results.maturityValue }} />
+              <SaveCalculationButton
+                calcType="PPF"
+                data={{ inputs: debouncedInputs, results: results as unknown as Record<string, unknown> }}
+                onSaved={setShareId}
+              />
             </div>
 
             <RelatedCalculators current="ppf" />

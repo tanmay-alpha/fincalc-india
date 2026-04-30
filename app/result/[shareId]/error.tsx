@@ -15,18 +15,18 @@ export default function Error({
   }, [error]);
 
   return (
-    <main className="min-h-[80vh] flex items-center justify-center bg-[#F8FAFC] dark:bg-slate-950 p-4">
-      <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-[var(--shadow-card)] border border-red-100 dark:border-red-900/30 p-8 text-center">
-        <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
-          <AlertTriangle className="w-8 h-8 text-red-500" />
+    <main className="flex min-h-[80vh] items-center justify-center bg-background p-4">
+      <div className="surface-card w-full max-w-md p-8 text-center">
+        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+          <AlertTriangle className="h-8 w-8 text-destructive" />
         </div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Something went wrong!</h2>
-        <p className="text-slate-500 dark:text-slate-400 mb-8 leading-relaxed">
+        <h2 className="mb-2 text-2xl font-bold text-foreground">Something went wrong!</h2>
+        <p className="mb-8 leading-relaxed text-muted-foreground">
           We encountered an unexpected error. Please try again or verify your connection.
         </p>
         <button
           onClick={() => reset()}
-          className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-all active:scale-95 shadow-sm"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-destructive px-6 py-3 font-semibold text-destructive-foreground shadow-sm transition-all hover:bg-destructive/90 active:scale-95"
         >
           <RefreshCcw className="w-4 h-4" />
           Try Again

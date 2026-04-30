@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
+import type { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { validateEnv } from "@/lib/env";
@@ -17,6 +19,10 @@ const MAX_REQUESTS_PER_WINDOW = 30;
 const ipRequestMap = new Map<string, { count: number; timestamp: number }>();
 
 export const dynamic = "force-dynamic";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 export async function POST(
   req: Request,
@@ -43,10 +49,24 @@ export async function POST(
     }
 
     const session = await auth();
-    const body = await req.json();
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const body: unknown = await req.json();
+    if (!isRecord(body)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid request body" },
+        { status: 400 }
+      );
+    }
+
     const { inputs, results } = body;
 
-    if (!inputs || !results) {
+    if (!isRecord(inputs) || !isRecord(results) || Object.keys(results).length === 0) {
       return NextResponse.json(
         { success: false, error: "Missing inputs or results" },
         { status: 400 }
@@ -56,7 +76,7 @@ export async function POST(
     const type = params.type.toUpperCase();
 
     // Validation
-    let schema: any;
+    let schema: z.ZodType<unknown>;
     switch (type) {
       case "SIP": schema = sipSchema; break;
       case "EMI": schema = emiSchema; break;
@@ -84,9 +104,9 @@ export async function POST(
       const calculation = await prisma.calculation.create({
         data: {
           type,
-          inputs: inputs,
-          outputs: results,
-          userId: session?.user?.id ? session.user.id : null,
+          inputs: validation.data as Prisma.InputJsonValue,
+          outputs: results as Prisma.InputJsonValue,
+          userId: session.user.id,
         },
       });
       shareId = calculation.shareId;

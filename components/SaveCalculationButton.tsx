@@ -6,9 +6,14 @@ import { toast } from "sonner";
 import { useSession, signIn } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
+interface SaveCalculationPayload {
+  inputs: Record<string, unknown>;
+  results: Record<string, unknown>;
+}
+
 interface SaveCalculationButtonProps {
   calcType: string;
-  data: Record<string, unknown>;
+  data: SaveCalculationPayload;
   // eslint-disable-next-line no-unused-vars
   onSaved?: (_id: string) => void;
   className?: string;
@@ -33,15 +38,10 @@ export default function SaveCalculationButton({ calcType, data, onSaved, classNa
 
     setLoading(true);
     try {
-      const payload = {
-        inputs: data.inputs || data, // Handle both structures just in case
-        results: data.results || {},
-      };
-
       const res = await fetch(`/api/calculate/${calcType.toLowerCase()}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(data),
       });
 
       if (!res.ok) {
@@ -51,6 +51,9 @@ export default function SaveCalculationButton({ calcType, data, onSaved, classNa
 
       const { data: responseData, shareId: directShareId } = await res.json();
       const finalShareId = responseData?.shareId || directShareId;
+      if (!finalShareId) {
+        throw new Error("Save failed");
+      }
       
       setSaved(true);
       onSaved?.(finalShareId);
@@ -76,8 +79,8 @@ export default function SaveCalculationButton({ calcType, data, onSaved, classNa
       className={cn(
         "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 border",
         saved
-          ? "bg-green-50 text-green-700 border-green-200 cursor-default dark:bg-green-900/20 dark:text-green-400 dark:border-green-800"
-          : "bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:bg-blue-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700",
+          ? "cursor-default border-success/25 bg-success/10 text-success"
+          : "border-border bg-card text-card-foreground hover:border-primary/35 hover:bg-primary/10 hover:text-primary",
         className
       )}
     >

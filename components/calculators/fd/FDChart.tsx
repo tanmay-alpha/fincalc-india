@@ -14,11 +14,13 @@ import type { FdGrowthPoint } from "@/lib/math";
 import { formatCompact, formatINR } from "@/lib/format";
 
 const COLORS = {
-  invested: "#2563EB",
-  returns: "#16A34A",
-  interest: "#DC2626",
-  balance: "#7C3AED",
-  corpus: "#2563EB",
+  invested: "rgb(var(--chart-1))",
+  returns: "rgb(var(--chart-2))",
+  interest: "rgb(var(--destructive))",
+  balance: "rgb(var(--chart-5))",
+  corpus: "rgb(var(--primary))",
+  grid: "rgb(var(--border))",
+  tick: "rgb(var(--muted-foreground))",
 };
 
 interface Props {
@@ -40,12 +42,12 @@ interface CustomTooltipProps {
 const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-3 text-sm">
-      <p className="text-slate-500 dark:text-slate-400 text-xs mb-1.5">
+    <div className="rounded-xl border border-border bg-popover p-3 text-sm text-popover-foreground shadow-card">
+      <p className="mb-1.5 text-xs text-muted-foreground">
         {label}
       </p>
       {payload.map((p, i) => (
-        <div key={i} className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
+        <div key={i} className="flex items-center gap-2 text-popover-foreground">
           <div
             className="w-2 h-2 rounded-full"
             style={{ backgroundColor: p.color }}
@@ -72,16 +74,16 @@ export default function FDChart({ data }: Props) {
             <stop offset="95%" stopColor={COLORS.corpus} stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} vertical={false} />
         <XAxis
           dataKey="period"
-          tick={{ fontSize: 11, fill: "#64748B" }}
+          tick={{ fontSize: 11, fill: COLORS.tick }}
           tickLine={false}
           axisLine={false}
           minTickGap={14}
         />
         <YAxis
-          tick={{ fontSize: 11, fill: "#64748B" }}
+          tick={{ fontSize: 11, fill: COLORS.tick }}
           tickLine={false}
           axisLine={false}
           tickFormatter={(v) => formatCompact(Number(v))}
@@ -90,9 +92,9 @@ export default function FDChart({ data }: Props) {
         {principal > 0 && (
           <ReferenceLine
             y={principal}
-            stroke="#64748B"
+            stroke={COLORS.tick}
             strokeDasharray="4 4"
-            label={{ value: "Principal", fill: "#64748B", fontSize: 11, position: "insideTopRight" }}
+            label={{ value: "Principal", fill: COLORS.tick, fontSize: 11, position: "insideTopRight" }}
           />
         )}
         <Tooltip content={<CustomTooltip />} />

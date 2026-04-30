@@ -15,10 +15,10 @@ interface ResultHeroProps {
 }
 
 const colorMap = {
-  blue: "bg-blue-500",
-  green: "bg-green-500",
-  red: "bg-red-500",
-  purple: "bg-violet-500",
+  blue: "bg-chart-1",
+  green: "bg-chart-2",
+  red: "bg-destructive",
+  purple: "bg-chart-5",
 };
 
 export default function ResultHero({ label, value, breakdown }: ResultHeroProps) {
@@ -26,16 +26,16 @@ export default function ResultHero({ label, value, breakdown }: ResultHeroProps)
   const total = breakdown.reduce((sum, item) => sum + Math.max(0, item.value), 0);
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-[var(--shadow-card)]">
-      <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+    <div className="surface-card p-6">
+      <p className="text-sm font-medium text-muted-foreground">
         {label}
       </p>
 
-      <p className="text-4xl font-bold text-slate-900 dark:text-slate-100 mt-1 tracking-tight">
+      <p className="mt-1 text-4xl font-bold tracking-tight text-card-foreground">
         {formatCompact(animatedValue)}
       </p>
 
-      <div className="mt-4 h-2 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden flex">
+      <div className="mt-4 flex h-2 overflow-hidden rounded-full bg-muted">
         {breakdown.map((item, i) => (
           <div
             key={i}
@@ -59,10 +59,10 @@ export default function ResultHero({ label, value, breakdown }: ResultHeroProps)
                 colorMap[item.color]
               )}
             />
-            <span className="text-xs text-slate-500 dark:text-slate-400">
+            <span className="text-xs text-muted-foreground">
               {item.label}
             </span>
-            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+            <span className="text-xs font-semibold text-card-foreground">
               {formatCompact(item.value)}
             </span>
           </div>

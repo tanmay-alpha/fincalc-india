@@ -10,12 +10,12 @@ export const metadata: Metadata = {
 };
 
 const typeConfig: Record<string, { icon: typeof TrendingUp; label: string; color: string; href: string }> = {
-  SIP: { icon: TrendingUp, label: "SIP", color: "text-blue-600", href: "/sip" },
-  EMI: { icon: Building2, label: "EMI", color: "text-emerald-600", href: "/emi" },
-  FD: { icon: Lock, label: "FD", color: "text-amber-600", href: "/fd" },
-  PPF: { icon: Landmark, label: "PPF", color: "text-purple-600", href: "/ppf" },
-  LUMPSUM: { icon: Coins, label: "Lumpsum", color: "text-pink-600", href: "/lumpsum" },
-  TAX: { icon: FileText, label: "Tax", color: "text-cyan-600", href: "/tax" },
+  SIP: { icon: TrendingUp, label: "SIP", color: "text-primary", href: "/sip" },
+  EMI: { icon: Building2, label: "EMI", color: "text-success", href: "/emi" },
+  FD: { icon: Lock, label: "FD", color: "text-warning", href: "/fd" },
+  PPF: { icon: Landmark, label: "PPF", color: "text-chart-5", href: "/ppf" },
+  LUMPSUM: { icon: Coins, label: "Lumpsum", color: "text-chart-4", href: "/lumpsum" },
+  TAX: { icon: FileText, label: "Tax", color: "text-chart-3", href: "/tax" },
 };
 
 function getResultSummary(type: string, outputs: Record<string, unknown>): string {
@@ -38,13 +38,13 @@ export default async function HistoryPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="calc-card text-center py-16">
           <div className="text-6xl mb-4">🔒</div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-3">Sign in to see your history</h2>
-          <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-md mx-auto">
+          <h2 className="mb-3 text-xl font-bold text-foreground">Sign in to see your history</h2>
+          <p className="mx-auto mb-6 max-w-md text-muted-foreground">
             Sign in with Google to save calculations and view your history.
           </p>
           <Link
             href="/api/auth/signin"
-            className="inline-flex px-6 py-3 bg-primary text-white font-medium rounded-xl hover:bg-primary-700 transition-colors"
+            className="inline-flex rounded-xl bg-primary px-6 py-3 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             Sign In
           </Link>
@@ -64,9 +64,9 @@ export default async function HistoryPage() {
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <Clock className="w-7 h-7 text-primary" />
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">Calculation History</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Calculation History</h1>
         </div>
-        <p className="text-slate-500 dark:text-slate-400">
+        <p className="text-muted-foreground">
           {calculations.length} saved calculation{calculations.length !== 1 ? "s" : ""}
         </p>
       </div>
@@ -74,13 +74,13 @@ export default async function HistoryPage() {
       {calculations.length === 0 ? (
         <div className="calc-card text-center py-16">
           <div className="text-6xl mb-4">📊</div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-3">No calculations yet</h2>
-          <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-md mx-auto">
-            Start using the calculators — your results will be saved automatically.
+          <h2 className="mb-3 text-xl font-bold text-foreground">No calculations yet</h2>
+          <p className="mx-auto mb-6 max-w-md text-muted-foreground">
+            Save a calculation manually to keep it in your history.
           </p>
           <Link
             href="/"
-            className="inline-flex px-6 py-3 bg-primary text-white font-medium rounded-xl hover:bg-primary-700 transition-colors"
+            className="inline-flex rounded-xl bg-primary px-6 py-3 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             Start Calculating
           </Link>
@@ -93,18 +93,18 @@ export default async function HistoryPage() {
             const summary = getResultSummary(calc.type, calc.outputs as Record<string, unknown>);
             return (
               <div key={calc.id} className="calc-card flex items-center gap-4 py-4 hover:shadow-card-hover transition-all">
-                <div className={`w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0 ${config.color}`}>
+                <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 ${config.color}`}>
                   <Icon className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-sm font-semibold text-slate-900 dark:text-white">{config.label} Calculator</span>
+                    <span className="text-sm font-semibold text-foreground">{config.label} Calculator</span>
                     {calc.label && (
-                      <span className="text-xs bg-slate-100 dark:bg-slate-700 text-slate-500 px-2 py-0.5 rounded">{calc.label}</span>
+                      <span className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">{calc.label}</span>
                     )}
                   </div>
                   <p className="text-sm text-primary font-medium">{summary}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  <p className="mt-0.5 text-xs text-muted-foreground">
                     {new Date(calc.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                   </p>
                 </div>

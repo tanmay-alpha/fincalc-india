@@ -8,7 +8,8 @@ import { clampSafe, formatINR } from "@/lib/format";
 interface HybridInputProps {
   label: string;
   value: number;
-  onChange: (value: number) => void;
+  // eslint-disable-next-line no-unused-vars
+  onChange: (...args: [number]) => void;
   min: number;
   max: number;
   step?: number;
@@ -114,13 +115,13 @@ export default function HybridInput({
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+        <label className="text-sm font-medium text-foreground">
           {label}
         </label>
         <span
           className={clsx(
             "text-sm font-semibold",
-            isFocused ? "text-blue-600 dark:text-blue-400" : "text-slate-900 dark:text-slate-100"
+            isFocused ? "text-primary" : "text-foreground"
           )}
         >
           {prefix}
@@ -150,20 +151,19 @@ export default function HybridInput({
             {
               "--slider-value": `${sliderValue}%`,
               background:
-                "linear-gradient(to right, #2563EB 0%, #2563EB var(--slider-value), var(--slider-track) var(--slider-value), var(--slider-track) 100%)",
+                "linear-gradient(to right, rgb(var(--primary)) 0%, rgb(var(--primary)) var(--slider-value), rgb(var(--input)) var(--slider-value), rgb(var(--input)) 100%)",
             } as SliderStyle
           }
           className={clsx(
             "w-full h-1.5 rounded-full appearance-none cursor-pointer",
-            "[--slider-track:#E2E8F0] dark:[--slider-track:#475569]",
             "disabled:opacity-50 disabled:cursor-not-allowed",
             "[&::-webkit-slider-thumb]:appearance-none",
             "[&::-webkit-slider-thumb]:w-5",
             "[&::-webkit-slider-thumb]:h-5",
             "[&::-webkit-slider-thumb]:rounded-full",
-            "[&::-webkit-slider-thumb]:bg-white",
+            "[&::-webkit-slider-thumb]:bg-background",
             "[&::-webkit-slider-thumb]:ring-2",
-            "[&::-webkit-slider-thumb]:ring-blue-600",
+            "[&::-webkit-slider-thumb]:ring-primary",
             "[&::-webkit-slider-thumb]:shadow-md",
             "[&::-webkit-slider-thumb]:cursor-grab",
             "[&::-webkit-slider-thumb]:active:cursor-grabbing",
@@ -172,9 +172,9 @@ export default function HybridInput({
             "[&::-moz-range-thumb]:w-5",
             "[&::-moz-range-thumb]:h-5",
             "[&::-moz-range-thumb]:rounded-full",
-            "[&::-moz-range-thumb]:bg-white",
+            "[&::-moz-range-thumb]:bg-background",
             "[&::-moz-range-thumb]:border-2",
-            "[&::-moz-range-thumb]:border-blue-600",
+            "[&::-moz-range-thumb]:border-primary",
             "[&::-moz-range-thumb]:shadow-md"
           )}
         />
@@ -183,18 +183,18 @@ export default function HybridInput({
       <div
         className={clsx(
           "flex items-center rounded-lg border",
-          "bg-white dark:bg-slate-950 transition-all duration-150",
+          "bg-background/80 transition-all duration-150",
           "h-11 px-3 gap-2",
           disabled && "opacity-50",
           error
-            ? "border-red-400 ring-2 ring-red-100 dark:ring-red-950/40"
+            ? "border-destructive ring-2 ring-destructive/15"
             : isFocused
-              ? "border-blue-500 ring-2 ring-blue-100 dark:ring-blue-950/40"
-              : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+              ? "border-ring ring-2 ring-ring/15"
+              : "border-input hover:border-ring/50"
         )}
       >
         {prefix && (
-          <span className="text-slate-400 dark:text-slate-500 text-sm font-medium select-none">
+          <span className="select-none text-sm font-medium text-muted-foreground">
             {prefix}
           </span>
         )}
@@ -228,10 +228,10 @@ export default function HybridInput({
               e.currentTarget.blur();
             }
           }}
-          className="flex-1 text-right text-sm font-medium text-slate-900 dark:text-slate-100 outline-none bg-transparent disabled:cursor-not-allowed"
+          className="flex-1 bg-transparent text-right text-sm font-medium text-foreground outline-none disabled:cursor-not-allowed"
         />
         {suffix && (
-          <span className="text-slate-400 dark:text-slate-500 text-sm select-none">
+          <span className="select-none text-sm text-muted-foreground">
             {suffix}
           </span>
         )}
@@ -253,8 +253,8 @@ export default function HybridInput({
                 "border transition-all duration-150",
                 "font-medium disabled:opacity-50 disabled:cursor-not-allowed",
                 value === chip.value
-                  ? "bg-blue-600 border-blue-600 text-white"
-                  : "border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30"
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border text-muted-foreground hover:border-primary/50 hover:bg-primary/10 hover:text-primary"
               )}
             >
               {chip.label}
@@ -267,7 +267,7 @@ export default function HybridInput({
         <p
           className={clsx(
             "text-xs",
-            error ? "text-red-500 dark:text-red-400" : "text-slate-400 dark:text-slate-500"
+            error ? "text-destructive" : "text-muted-foreground"
           )}
         >
           {error || hint}

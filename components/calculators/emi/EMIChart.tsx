@@ -19,11 +19,13 @@ import type { EmiAmortizationRow } from "@/lib/math";
 import { formatCompact, formatINR } from "@/lib/format";
 
 const COLORS = {
-  invested: "#2563EB",
-  returns: "#16A34A",
-  interest: "#DC2626",
-  balance: "#7C3AED",
-  corpus: "#2563EB",
+  invested: "rgb(var(--chart-1))",
+  returns: "rgb(var(--chart-2))",
+  interest: "rgb(var(--destructive))",
+  balance: "rgb(var(--chart-5))",
+  corpus: "rgb(var(--primary))",
+  grid: "rgb(var(--border))",
+  tick: "rgb(var(--muted-foreground))",
 };
 
 interface PieProps {
@@ -60,12 +62,12 @@ interface PieLabelProps {
 const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-3 text-sm">
-      <p className="text-slate-500 dark:text-slate-400 text-xs mb-1.5">
+    <div className="rounded-xl border border-border bg-popover p-3 text-sm text-popover-foreground shadow-card">
+      <p className="mb-1.5 text-xs text-muted-foreground">
         {label}
       </p>
       {payload.map((p, i) => (
-        <div key={i} className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
+        <div key={i} className="flex items-center gap-2 text-popover-foreground">
           <div
             className="w-2 h-2 rounded-full"
             style={{ backgroundColor: p.color }}
@@ -154,7 +156,7 @@ export function EMIPieChart({ principal, totalInterest }: PieProps) {
           y="48%"
           textAnchor="middle"
           dominantBaseline="central"
-          className="fill-slate-900 dark:fill-slate-100 text-sm font-semibold"
+          className="fill-foreground text-sm font-semibold"
         >
           Loan
         </text>
@@ -163,7 +165,7 @@ export function EMIPieChart({ principal, totalInterest }: PieProps) {
           y="56%"
           textAnchor="middle"
           dominantBaseline="central"
-          className="fill-slate-500 dark:fill-slate-400 text-xs"
+          className="fill-muted-foreground text-xs"
         >
           Breakup
         </text>
@@ -189,16 +191,16 @@ export function EMIBalanceChart({ schedule }: AreaProps) {
             <stop offset="95%" stopColor={COLORS.balance} stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} vertical={false} />
         <XAxis
           dataKey="year"
-          tick={{ fontSize: 11, fill: "#64748B" }}
+          tick={{ fontSize: 11, fill: COLORS.tick }}
           tickLine={false}
           axisLine={false}
           tickFormatter={(v) => `Yr ${v}`}
         />
         <YAxis
-          tick={{ fontSize: 11, fill: "#64748B" }}
+          tick={{ fontSize: 11, fill: COLORS.tick }}
           tickLine={false}
           axisLine={false}
           tickFormatter={(v) => formatCompact(Number(v))}
@@ -207,9 +209,9 @@ export function EMIBalanceChart({ schedule }: AreaProps) {
         {halfway > 0 && (
           <ReferenceLine
             y={halfway}
-            stroke="#94A3B8"
+            stroke={COLORS.tick}
             strokeDasharray="4 4"
-            label={{ value: "50% mark", fill: "#64748B", fontSize: 11, position: "insideTopRight" }}
+            label={{ value: "50% mark", fill: COLORS.tick, fontSize: 11, position: "insideTopRight" }}
           />
         )}
         <Tooltip content={<CustomTooltip />} />

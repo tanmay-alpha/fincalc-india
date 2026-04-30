@@ -16,7 +16,6 @@ import { calcLumpsum, calcSIP } from "@/lib/math";
 import { formatINR, formatCompact } from "@/lib/format";
 import { generateLumpsumInsights } from "@/lib/insights";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useAutoSave } from "@/hooks/useAutoSave";
 
 const LumpsumChart = dynamic(
   () => import("@/components/calculators/lumpsum/LumpsumChart"),
@@ -35,6 +34,7 @@ export default function LumpsumCalculator() {
     years: 10,
   });
   const [showAdjusted, setShowAdjusted] = useState(false);
+  const [shareId, setShareId] = useState<string | null>(null);
 
   const debouncedInputs = useDebounce(inputs, 250);
   const results = useMemo(() => calcLumpsum(debouncedInputs), [debouncedInputs]);
@@ -56,12 +56,7 @@ export default function LumpsumCalculator() {
     });
   }, [inputs]);
 
-  const { shareId } = useAutoSave({
-    calcType: "Lumpsum",
-    debouncedInputs,
-    results: results as unknown as Record<string, unknown>,
-    enabled: true,
-  });
+  useEffect(() => setShareId(null), [debouncedInputs]);
 
   const onPrincipal = useCallback((v: number) => setInputs(p => ({ ...p, principal: v })), []);
   const onRate = useCallback((v: number) => setInputs(p => ({ ...p, annualRate: v })), []);
@@ -70,7 +65,7 @@ export default function LumpsumCalculator() {
   if (!mounted) return <CalcPageSkeleton />;
 
   return (
-    <main id="main-content" className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 pb-24 lg:pb-0">
+    <main id="main-content" className="page-shell pb-24 lg:pb-0">
 
       <StickyResultBar label="Total Corpus" value={results.totalCorpus} />
 
@@ -82,14 +77,14 @@ export default function LumpsumCalculator() {
           ]} />
           <div className="flex items-center gap-3 mb-1.5">
             <span className="text-3xl">💰</span>
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Lumpsum Calculator</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">Lumpsum Calculator</h1>
           </div>
-          <p className="text-slate-500 dark:text-slate-400">See one-time investment growth with CAGR and wealth multiplier</p>
+          <p className="text-muted-foreground">See one-time investment growth with CAGR and wealth multiplier</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6">
           {/* ────── INPUT PANEL ────── */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 h-fit lg:sticky lg:top-6 shadow-sm space-y-4">
+          <div className="surface-card h-fit space-y-4 p-6 lg:sticky lg:top-6">
             <HybridInput label="Investment Amount" value={inputs.principal} onChange={onPrincipal}
               min={1000} max={1000000000} step={10000} prefix="₹"
               quickChips={[
@@ -117,12 +112,12 @@ export default function LumpsumCalculator() {
 
             {/* Inflation toggle */}
             <div className="flex items-center justify-between pt-2">
-              <span className="text-sm text-slate-600 dark:text-slate-400">Show inflation-adjusted</span>
+              <span className="text-sm text-muted-foreground">Show inflation-adjusted</span>
               <button
                 onClick={() => setShowAdjusted(!showAdjusted)}
-                className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${showAdjusted ? "bg-blue-600" : "bg-slate-300 dark:bg-slate-600"}`}
+                className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${showAdjusted ? "bg-primary" : "bg-muted"}`}
               >
-                <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${showAdjusted ? "translate-x-5" : ""}`} />
+                <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-background shadow transition-transform duration-200 ${showAdjusted ? "translate-x-5" : ""}`} />
               </button>
             </div>
           </div>
@@ -150,31 +145,31 @@ export default function LumpsumCalculator() {
             </div>
 
             {/* Chart */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+            <div className="surface-card p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-slate-900 dark:text-white">Wealth Growth Curve</h3>
-                <span className="text-xs text-slate-400">CAGR: {results.CAGR}% · {results.wealthRatio}x</span>
+                <h3 className="font-semibold text-card-foreground">Wealth Growth Curve</h3>
+                <span className="text-xs text-muted-foreground">CAGR: {results.CAGR}% - {results.wealthRatio}x</span>
               </div>
               <div className="h-[300px]"><LumpsumChart data={results.growthData} principal={inputs.principal} /></div>
             </div>
 
             {/* SIP vs Lumpsum Comparison */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
-              <h3 className="font-semibold text-slate-900 dark:text-white mb-3">Lumpsum vs SIP Comparison</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+            <div className="surface-card p-6">
+              <h3 className="font-semibold text-card-foreground mb-3">Lumpsum vs SIP Comparison</h3>
+              <p className="text-xs text-muted-foreground mb-4">
                 Same {formatCompact(inputs.principal)} split as monthly SIP of {formatCompact(inputs.principal / (inputs.years * 12))}/mo
               </p>
               <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-                  <p className="text-xs text-blue-600 dark:text-blue-400 mb-1">Lumpsum</p>
-                  <p className="text-xl font-bold text-blue-900 dark:text-blue-200">{formatCompact(results.totalCorpus)}</p>
+                <div className="rounded-xl border border-primary/20 bg-primary/10 p-4 text-center">
+                  <p className="mb-1 text-xs text-primary">Lumpsum</p>
+                  <p className="text-xl font-bold text-primary">{formatCompact(results.totalCorpus)}</p>
                 </div>
-                <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl">
-                  <p className="text-xs text-green-600 dark:text-green-400 mb-1">Monthly SIP</p>
-                  <p className="text-xl font-bold text-green-900 dark:text-green-200">{formatCompact(sipEquivalent.totalCorpus)}</p>
+                <div className="rounded-xl border border-success/20 bg-success/10 p-4 text-center">
+                  <p className="mb-1 text-xs text-success">Monthly SIP</p>
+                  <p className="text-xl font-bold text-success">{formatCompact(sipEquivalent.totalCorpus)}</p>
                 </div>
               </div>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mt-3 text-center">
+              <p className="mt-3 text-center text-xs text-muted-foreground">
                 {results.totalCorpus > sipEquivalent.totalCorpus
                   ? "💡 Lumpsum performs better in this scenario"
                   : "💡 SIP performs better in this scenario"}
@@ -182,25 +177,25 @@ export default function LumpsumCalculator() {
             </div>
 
             {/* Year-by-Year Table */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700">
-                <h3 className="font-semibold text-slate-900 dark:text-white">Year-by-Year Growth</h3>
+            <div className="table-surface">
+              <div className="px-6 py-4 border-b border-border">
+                <h3 className="font-semibold text-card-foreground">Year-by-Year Growth</h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-slate-50 dark:bg-slate-800/80">
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Year</th>
-                      <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Value</th>
-                      <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Returns</th>
+                    <tr className="table-head">
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Year</th>
+                      <th className="px-6 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide">Value</th>
+                      <th className="px-6 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide">Returns</th>
                     </tr>
                   </thead>
                   <tbody>
                     {results.growthData.map((r) => (
-                      <tr key={r.year} className="border-t border-slate-100 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                        <td className="px-6 py-3 text-slate-600 dark:text-slate-300">{r.year}</td>
+                      <tr key={r.year} className="table-row text-foreground/80">
+                        <td className="px-6 py-3 text-muted-foreground">{r.year}</td>
                         <td className="px-6 py-3 text-right font-medium">{formatINR(r.value)}</td>
-                        <td className="px-6 py-3 text-right text-green-600 dark:text-green-400">{formatINR(r.value - inputs.principal)}</td>
+                        <td className="px-6 py-3 text-right text-success">{formatINR(r.value - inputs.principal)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -211,7 +206,11 @@ export default function LumpsumCalculator() {
             {/* Actions */}
             <div className="flex gap-3">
               <ShareButton shareId={shareId} />
-              <SaveCalculationButton calcType="Lumpsum" data={{ ...debouncedInputs, totalCorpus: results.totalCorpus }} />
+              <SaveCalculationButton
+                calcType="Lumpsum"
+                data={{ inputs: debouncedInputs, results: results as unknown as Record<string, unknown> }}
+                onSaved={setShareId}
+              />
             </div>
 
             <RelatedCalculators current="lumpsum" />

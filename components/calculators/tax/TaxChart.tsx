@@ -15,11 +15,14 @@ import type { TaxSlabRow } from "@/lib/math";
 import { formatCompact, formatINR } from "@/lib/format";
 
 const COLORS = {
-  invested: "#2563EB",
-  returns: "#16A34A",
-  interest: "#DC2626",
-  balance: "#7C3AED",
-  corpus: "#2563EB",
+  invested: "rgb(var(--chart-1))",
+  returns: "rgb(var(--chart-2))",
+  interest: "rgb(var(--destructive))",
+  balance: "rgb(var(--chart-5))",
+  corpus: "rgb(var(--primary))",
+  grid: "rgb(var(--border))",
+  tick: "rgb(var(--muted-foreground))",
+  warning: "rgb(var(--warning))",
 };
 
 interface Props {
@@ -49,10 +52,10 @@ interface CustomTooltipProps {
 
 const slabColor = (rate: number) => {
   if (rate <= 0) return COLORS.returns;
-  if (rate <= 5) return "#22C55E";
-  if (rate <= 10) return "#84CC16";
-  if (rate <= 15) return "#F59E0B";
-  if (rate <= 20) return "#F97316";
+  if (rate <= 5) return "rgb(var(--success))";
+  if (rate <= 10) return "rgb(var(--chart-3))";
+  if (rate <= 15) return COLORS.warning;
+  if (rate <= 20) return "rgb(var(--chart-4))";
   return COLORS.interest;
 };
 
@@ -62,21 +65,21 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (!row) return null;
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-3 text-sm">
-      <p className="text-slate-500 dark:text-slate-400 text-xs mb-1.5">
+    <div className="rounded-xl border border-border bg-popover p-3 text-sm text-popover-foreground shadow-card">
+      <p className="mb-1.5 text-xs text-muted-foreground">
         {label}
       </p>
-      <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
+      <div className="flex items-center gap-2 text-popover-foreground">
         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: row.color }} />
         <span className="text-xs">Amount in slab:</span>
         <span className="font-semibold text-xs">{formatINR(row.amount)}</span>
       </div>
-      <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
+      <div className="flex items-center gap-2 text-popover-foreground">
         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: row.color }} />
         <span className="text-xs">Tax paid:</span>
         <span className="font-semibold text-xs">{formatINR(row.tax)}</span>
       </div>
-      <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
+      <div className="flex items-center gap-2 text-popover-foreground">
         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: row.color }} />
         <span className="text-xs">Rate:</span>
         <span className="font-semibold text-xs">{row.rate}%</span>
@@ -101,10 +104,10 @@ export default function TaxChart({ slabs }: Props) {
         layout="vertical"
         margin={{ top: 8, right: 56, left: 0, bottom: 0 }}
       >
-        <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" horizontal={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} horizontal={false} />
         <XAxis
           type="number"
-          tick={{ fontSize: 11, fill: "#64748B" }}
+          tick={{ fontSize: 11, fill: COLORS.tick }}
           tickLine={false}
           axisLine={false}
           tickFormatter={(v) => formatCompact(Number(v))}
@@ -112,7 +115,7 @@ export default function TaxChart({ slabs }: Props) {
         <YAxis
           dataKey="slab"
           type="category"
-          tick={{ fontSize: 11, fill: "#64748B" }}
+          tick={{ fontSize: 11, fill: COLORS.tick }}
           tickLine={false}
           axisLine={false}
           width={82}
@@ -132,7 +135,7 @@ export default function TaxChart({ slabs }: Props) {
             dataKey="tax"
             position="right"
             formatter={(value) => formatCompact(Number(value ?? 0))}
-            className="fill-slate-600 text-xs"
+            className="fill-muted-foreground text-xs"
           />
         </Bar>
       </BarChart>

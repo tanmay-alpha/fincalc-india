@@ -15,11 +15,14 @@ import type { LumpsumGrowthPoint } from "@/lib/math";
 import { formatCompact, formatINR } from "@/lib/format";
 
 const COLORS = {
-  invested: "#2563EB",
-  returns: "#16A34A",
-  interest: "#DC2626",
-  balance: "#7C3AED",
-  corpus: "#2563EB",
+  invested: "rgb(var(--chart-1))",
+  returns: "rgb(var(--chart-2))",
+  interest: "rgb(var(--destructive))",
+  balance: "rgb(var(--chart-5))",
+  corpus: "rgb(var(--primary))",
+  grid: "rgb(var(--border))",
+  tick: "rgb(var(--muted-foreground))",
+  comparison: "rgb(var(--muted-foreground))",
 };
 
 const FD_RATE = 0.04;
@@ -44,12 +47,12 @@ interface CustomTooltipProps {
 const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-3 text-sm">
-      <p className="text-slate-500 dark:text-slate-400 text-xs mb-1.5">
+    <div className="rounded-xl border border-border bg-popover p-3 text-sm text-popover-foreground shadow-card">
+      <p className="mb-1.5 text-xs text-muted-foreground">
         Year {label}
       </p>
       {payload.map((p, i) => (
-        <div key={i} className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
+        <div key={i} className="flex items-center gap-2 text-popover-foreground">
           <div
             className="w-2 h-2 rounded-full"
             style={{ backgroundColor: p.color }}
@@ -83,20 +86,20 @@ export default function LumpsumChart({ data, principal }: Props) {
             <stop offset="95%" stopColor={COLORS.corpus} stopOpacity={0} />
           </linearGradient>
           <linearGradient id="lumpsumFdGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#94A3B8" stopOpacity={0.14} />
-            <stop offset="95%" stopColor="#94A3B8" stopOpacity={0} />
+            <stop offset="0%" stopColor={COLORS.comparison} stopOpacity={0.14} />
+            <stop offset="95%" stopColor={COLORS.comparison} stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} vertical={false} />
         <XAxis
           dataKey="year"
-          tick={{ fontSize: 11, fill: "#64748B" }}
+          tick={{ fontSize: 11, fill: COLORS.tick }}
           tickLine={false}
           axisLine={false}
           tickFormatter={(v) => `Yr ${v}`}
         />
         <YAxis
-          tick={{ fontSize: 11, fill: "#64748B" }}
+          tick={{ fontSize: 11, fill: COLORS.tick }}
           tickLine={false}
           axisLine={false}
           tickFormatter={(v) => formatCompact(Number(v))}
@@ -108,12 +111,12 @@ export default function LumpsumChart({ data, principal }: Props) {
           type="monotone"
           dataKey="fdComparison"
           name="4% FD Comparison"
-          stroke="#94A3B8"
+          stroke={COLORS.comparison}
           strokeWidth={1.8}
           strokeDasharray="4 4"
           fill="url(#lumpsumFdGradient)"
           dot={false}
-          activeDot={{ r: 3, fill: "#94A3B8" }}
+          activeDot={{ r: 3, fill: COLORS.comparison }}
           isAnimationActive={false}
         />
         <Area

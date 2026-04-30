@@ -17,7 +17,6 @@ import type { CompoundingFrequency } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { generateFDInsights } from "@/lib/insights";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useAutoSave } from "@/hooks/useAutoSave";
 import { clsx } from "clsx";
 
 const FDChart = dynamic(
@@ -46,13 +45,9 @@ export default function FDCalculator() {
   const debouncedInputs = useDebounce(inputs, 250);
   const results = useMemo(() => calcFD(debouncedInputs), [debouncedInputs]);
   const insights = useMemo(() => generateFDInsights(results), [results]);
+  const [shareId, setShareId] = useState<string | null>(null);
 
-  const { shareId } = useAutoSave({
-    calcType: "FD",
-    debouncedInputs,
-    results: results as unknown as Record<string, unknown>,
-    enabled: true,
-  });
+  useEffect(() => setShareId(null), [debouncedInputs]);
 
   const onPrincipal = useCallback((v: number) => setInputs(p => ({ ...p, principal: v })), []);
   const onRate = useCallback((v: number) => setInputs(p => ({ ...p, annualRate: v })), []);
@@ -66,7 +61,7 @@ export default function FDCalculator() {
   if (!mounted) return <CalcPageSkeleton />;
 
   return (
-    <main id="main-content" className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 pb-24 lg:pb-0">
+    <main id="main-content" className="page-shell pb-24 lg:pb-0">
 
       <StickyResultBar label="Maturity Amount" value={results.maturityAmount} />
 
@@ -78,14 +73,14 @@ export default function FDCalculator() {
           ]} />
           <div className="flex items-center gap-3 mb-1.5">
             <span className="text-3xl">🔒</span>
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">FD Calculator</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">FD Calculator</h1>
           </div>
-          <p className="text-slate-500 dark:text-slate-400">Estimate fixed deposit maturity with multiple compounding options</p>
+          <p className="text-muted-foreground">Estimate fixed deposit maturity with multiple compounding options</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6">
           {/* ────── INPUT PANEL ────── */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 h-fit lg:sticky lg:top-6 shadow-sm space-y-4">
+          <div className="surface-card h-fit space-y-4 p-6 lg:sticky lg:top-6">
             <HybridInput label="Principal Amount" value={inputs.principal} onChange={onPrincipal}
               min={1000} max={1000000000} step={5000} prefix="₹"
               quickChips={[
@@ -114,7 +109,7 @@ export default function FDCalculator() {
 
             {/* Compounding Frequency — button group */}
             <div className="space-y-2.5">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Compounding Frequency</label>
+              <label className="text-sm font-medium text-foreground">Compounding Frequency</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {compoundingOptions.map((o) => (
                   <button
@@ -124,8 +119,8 @@ export default function FDCalculator() {
                     className={clsx(
                       "py-2.5 rounded-lg text-xs font-semibold transition-all duration-200 border",
                       inputs.compoundingFrequency === o.value
-                        ? "bg-blue-600 border-blue-600 text-white shadow-sm"
-                        : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-blue-400 hover:text-blue-600"
+                        ? "bg-primary border-primary text-primary-foreground shadow-sm"
+                        : "border-border text-muted-foreground hover:border-primary/50 hover:text-primary"
                     )}
                   >
                     {o.label}
@@ -146,21 +141,21 @@ export default function FDCalculator() {
 
             {/* Extra info cards */}
             <div className="grid grid-cols-2 gap-3 mt-4">
-              <div className="bg-green-50 rounded-xl p-4">
-                <p className="text-xs text-green-600 font-medium">Interest Earned</p>
-                <p className="text-xl font-bold text-green-700">
+              <div className="rounded-xl border border-success/20 bg-success/10 p-4">
+                <p className="text-xs text-success font-medium">Interest Earned</p>
+                <p className="text-xl font-bold text-success">
                   {formatINR(results.totalInterest)}
                 </p>
-                <p className="text-xs text-green-600 mt-1">
+                <p className="text-xs text-success/80 mt-1">
                   {results.totalReturnPct.toFixed(2)}% total return
                 </p>
               </div>
-              <div className="bg-blue-50 rounded-xl p-4">
-                <p className="text-xs text-blue-600 font-medium">Effective Annual Yield</p>
-                <p className="text-xl font-bold text-blue-700">
+              <div className="rounded-xl border border-primary/20 bg-primary/10 p-4">
+                <p className="text-xs text-primary font-medium">Effective Annual Yield</p>
+                <p className="text-xl font-bold text-primary">
                   {results.effectiveAnnualYield.toFixed(2)}%
                 </p>
-                <p className="text-xs text-blue-600 mt-1">
+                <p className="text-xs text-primary/80 mt-1">
                   Per year after compounding
                 </p>
               </div>
@@ -172,10 +167,10 @@ export default function FDCalculator() {
             </div>
 
             {/* Chart */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+            <div className="surface-card p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-slate-900 dark:text-white">FD Growth Over Time</h3>
-                <span className="text-xs text-slate-400">Growth curve</span>
+                <h3 className="font-semibold text-card-foreground">FD Growth Over Time</h3>
+                <span className="text-xs text-muted-foreground">Growth curve</span>
               </div>
               <div className="h-[300px]"><FDChart data={results.growthData} /></div>
             </div>
@@ -183,7 +178,11 @@ export default function FDCalculator() {
             {/* Actions */}
             <div className="flex gap-3">
               <ShareButton shareId={shareId} />
-              <SaveCalculationButton calcType="FD" data={{ ...debouncedInputs, maturity: results.maturityAmount }} />
+              <SaveCalculationButton
+                calcType="FD"
+                data={{ inputs: debouncedInputs, results: results as unknown as Record<string, unknown> }}
+                onSaved={setShareId}
+              />
             </div>
 
             <RelatedCalculators current="fd" />

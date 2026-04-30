@@ -1,51 +1,37 @@
-
-
 export default function Footer() {
   return (
-    <footer className="bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800">
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          
-          {/* Brand */}
+    <footer className="border-t border-border bg-background text-foreground">
+      <div className="mx-auto max-w-6xl px-4 py-8">
+        <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-900 dark:text-slate-100">
-              FinCalc
-            </span>
-            <span className="font-bold text-blue-600 dark:text-blue-400">
-              India
-            </span>
-            <span className="text-xs bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900 rounded-full px-2.5 py-0.5 font-medium">
+            <span className="font-bold text-foreground">FinCalc</span>
+            <span className="font-bold text-primary">India</span>
+            <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
               Free Tools
             </span>
           </div>
-          
-          {/* Links */}
-          <div className="flex items-center gap-5 text-sm text-slate-500 dark:text-slate-400">
-            <a href="https://github.com" 
+
+          <div className="flex items-center gap-5 text-sm text-muted-foreground">
+            <a
+              href="https://github.com/tanmay-alpha/fincalc-india"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+              className="transition-colors hover:text-foreground"
+            >
               GitHub
             </a>
-            <span>·</span>
-            <span className="text-slate-500 dark:text-slate-400 text-xs">
-              Not financial advice
-            </span>
+            <span aria-hidden="true">-</span>
+            <span className="text-xs">Not financial advice</span>
           </div>
         </div>
-        
-        <div className="border-t border-slate-100 dark:border-slate-800 mt-5 pt-5 flex flex-col sm:flex-row items-center justify-between gap-2">
-          
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            {'Made with ❤️ for Indian investors 🇮🇳'}
+
+        <div className="mt-5 flex flex-col items-center justify-between gap-2 border-t border-border pt-5 sm:flex-row">
+          <p className="text-sm text-muted-foreground">
+            Made for Indian investors
           </p>
-          
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Your data stays on your device 🛡️ 
-            · No ads
+          <p className="text-xs text-muted-foreground">
+            Calculate freely. Sign in only when you want saved history.
           </p>
-          
         </div>
       </div>
     </footer>

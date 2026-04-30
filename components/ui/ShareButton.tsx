@@ -40,8 +40,8 @@ export default function ShareButton({ shareId, className }: ShareButtonProps) {
       className={cn(
         "flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-xl border transition-all duration-200",
         shareId
-          ? "border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-blue-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:border-blue-800"
-          : "border-slate-100 text-slate-300 cursor-not-allowed dark:border-slate-800 dark:text-slate-600",
+          ? "border-border bg-card text-card-foreground hover:border-primary/35 hover:bg-primary/10 hover:text-primary"
+          : "cursor-not-allowed border-border/60 text-muted-foreground/50",
         className
       )}
     >

@@ -1,61 +1,102 @@
-/* ─── FinCalc India Design Tokens ─── */
-/* Single source of truth for all colors, shadows, radii, transitions */
+/* FinCalc India design tokens */
 
 :root {
-  /* Backgrounds */
-  --bg-page: #F8FAFC;
-  --bg-card: #FFFFFF;
+  --background: 247 250 248;
+  --foreground: 15 23 42;
 
-  /* Borders */
-  --border-default: #E2E8F0;
-  --border-focus: #2563EB;
+  --card: 255 255 255;
+  --card-foreground: 15 23 42;
 
-  /* Typography */
-  --text-primary: #0F172A;
-  --text-secondary: #64748B;
-  --text-muted: #94A3B8;
+  --popover: 255 255 255;
+  --popover-foreground: 15 23 42;
 
-  /* Accent (Blue) */
-  --accent: #2563EB;
-  --accent-hover: #1D4ED8;
-  --accent-light: #EFF6FF;
+  --primary: 5 150 105;
+  --primary-foreground: 240 253 244;
 
-  /* Semantic: Success */
-  --green: #16A34A;
-  --green-light: #DCFCE7;
+  --secondary: 241 245 249;
+  --secondary-foreground: 30 41 59;
 
-  /* Semantic: Danger */
-  --red: #DC2626;
-  --red-light: #FEE2E2;
+  --muted: 241 245 249;
+  --muted-foreground: 71 85 105;
 
-  /* Elevation */
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06);
-  --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.10);
+  --accent: 236 253 245;
+  --accent-foreground: 4 120 87;
 
-  /* Radii */
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --border: 226 232 240;
+  --input: 203 213 225;
+  --ring: 16 185 129;
 
-  /* Motion */
-  --transition-base: 200ms ease;
+  --success: 22 163 74;
+  --success-foreground: 240 253 244;
+  --warning: 217 119 6;
+  --warning-foreground: 255 251 235;
+  --destructive: 220 38 38;
+  --destructive-foreground: 254 242 242;
+
+  --chart-1: 5 150 105;
+  --chart-2: 37 99 235;
+  --chart-3: 245 158 11;
+  --chart-4: 124 58 237;
+  --chart-5: 239 68 68;
+
+  --surface-raised: 255 255 255;
+  --surface-subtle: 248 250 252;
+  --focus-ring: 16 185 129;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 12px 32px rgb(15 23 42 / 0.06);
+  --shadow-card-hover: 0 16px 48px rgb(15 23 42 / 0.10);
+  --shadow-soft: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px rgb(15 23 42 / 0.06);
 }
 
-/* Dark mode overrides */
 .dark {
-  --bg-page: #0F172A;
-  --bg-card: #1E293B;
-  --border-default: #334155;
-  --border-focus: #3B82F6;
-  --text-primary: #F1F5F9;
-  --text-secondary: #94A3B8;
-  --text-muted: #64748B;
-  --accent: #3B82F6;
-  --accent-hover: #60A5FA;
-  --accent-light: rgba(37, 99, 235, 0.15);
-  --green: #22C55E;
-  --green-light: rgba(22, 163, 74, 0.15);
-  --red: #EF4444;
-  --red-light: rgba(220, 38, 38, 0.15);
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.20);
-  --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.30);
+  --background: 8 13 24;
+  --foreground: 226 232 240;
+
+  --card: 15 23 42;
+  --card-foreground: 226 232 240;
+
+  --popover: 17 24 39;
+  --popover-foreground: 226 232 240;
+
+  --primary: 52 211 153;
+  --primary-foreground: 6 78 59;
+
+  --secondary: 30 41 59;
+  --secondary-foreground: 226 232 240;
+
+  --muted: 30 41 59;
+  --muted-foreground: 148 163 184;
+
+  --accent: 6 78 59;
+  --accent-foreground: 167 243 208;
+
+  --border: 51 65 85;
+  --input: 71 85 105;
+  --ring: 52 211 153;
+
+  --success: 34 197 94;
+  --success-foreground: 5 46 22;
+  --warning: 251 191 36;
+  --warning-foreground: 69 26 3;
+  --destructive: 248 113 113;
+  --destructive-foreground: 69 10 10;
+
+  --chart-1: 52 211 153;
+  --chart-2: 96 165 250;
+  --chart-3: 251 191 36;
+  --chart-4: 167 139 250;
+  --chart-5: 248 113 113;
+
+  --surface-raised: 17 24 39;
+  --surface-subtle: 15 23 42;
+  --focus-ring: 52 211 153;
+
+  --shadow-card: 0 1px 0 rgb(255 255 255 / 0.03), 0 18px 44px rgb(0 0 0 / 0.28);
+  --shadow-card-hover: 0 22px 56px rgb(0 0 0 / 0.38);
+  --shadow-soft: 0 1px 0 rgb(255 255 255 / 0.03), 0 14px 34px rgb(0 0 0 / 0.24);
 }

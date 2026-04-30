@@ -8,10 +8,10 @@ interface AutoSaveProps<T> {
 }
 
 /**
- * Automatically triggers the /api/calculate/[type] endpoint
- * to store the calculation in history and generate a dynamic shareId.
+ * Disabled by default so calculator defaults are not written to history.
+ * Prefer explicit saves via SaveCalculationButton.
  */
-export function useAutoSave<T>({ calcType, debouncedInputs, results, enabled = true }: AutoSaveProps<T>) {
+export function useAutoSave<T>({ calcType, debouncedInputs, results, enabled = false }: AutoSaveProps<T>) {
   const [shareId, setShareId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   

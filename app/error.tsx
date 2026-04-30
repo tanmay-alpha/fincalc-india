@@ -14,15 +14,17 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-20 text-center">
-      <div className="text-6xl mb-6">⚠️</div>
-      <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Something went wrong</h2>
-      <p className="text-slate-500 dark:text-slate-400 mb-8">
+    <div className="mx-auto max-w-lg px-4 py-20 text-center">
+      <div className="mb-6 text-6xl text-warning">!</div>
+      <h2 className="mb-4 text-2xl font-bold text-foreground">
+        Something went wrong
+      </h2>
+      <p className="mb-8 text-muted-foreground">
         An unexpected error occurred. Please try again.
       </p>
       <button
         onClick={reset}
-        className="px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors"
+        className="rounded-xl bg-primary px-6 py-3 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
       >
         Try Again
       </button>

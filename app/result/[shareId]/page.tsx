@@ -90,7 +90,7 @@ export default async function SharedResultPage({ params }: Props) {
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-primary mb-6 transition-colors">
+      <Link href="/" className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-primary">
         <ArrowLeft className="w-4 h-4" />
         Back to calculators
       </Link>
@@ -99,7 +99,7 @@ export default async function SharedResultPage({ params }: Props) {
         {/* Header */}
         <div className={`bg-gradient-to-r ${config.color} p-6 -mx-6 -mt-6 mb-6`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
               <Icon className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -115,31 +115,31 @@ export default async function SharedResultPage({ params }: Props) {
         {headline && (
           <div className="result-highlight text-center mb-6">
             <p className="text-xs text-primary font-medium uppercase tracking-wider mb-1">{headline.label}</p>
-            <p className="text-3xl font-bold text-slate-900 dark:text-white">{headline.value}</p>
+            <p className="text-3xl font-bold text-foreground">{headline.value}</p>
           </div>
         )}
 
         {/* All outputs */}
         <div className="space-y-0">
           {outputs.slice(0, -1).map((row, i) => (
-            <div key={i} className="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-700 last:border-0">
-              <span className="text-sm text-slate-600 dark:text-slate-400">{row.label}</span>
-              <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{row.value}</span>
+            <div key={i} className="flex items-center justify-between border-b border-border py-3 last:border-0">
+              <span className="text-sm text-muted-foreground">{row.label}</span>
+              <span className="text-sm font-semibold text-foreground">{row.value}</span>
             </div>
           ))}
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-3 mt-6 pt-4 border-t border-slate-100 dark:border-slate-700">
+        <div className="mt-6 flex items-center gap-3 border-t border-border pt-4">
           <button
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+            className="flex items-center gap-2 rounded-xl bg-muted px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground"
           >
             <Share2 className="w-4 h-4" />
             Copy Link
           </button>
           <Link
             href={`/${calc.type.toLowerCase()}`}
-            className="flex-1 text-center px-4 py-2.5 rounded-xl text-sm font-medium bg-primary text-white hover:bg-primary-700 transition-colors"
+            className="flex-1 rounded-xl bg-primary px-4 py-2.5 text-center text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             Try this calculator →
           </Link>

@@ -18,27 +18,27 @@ export default function StickyResultBar({ label, value }: Props) {
       className={clsx(
         "fixed bottom-0 left-0 right-0 z-40",
         "lg:hidden",
-        "bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800",
+        "border-t border-border bg-card/95 text-card-foreground backdrop-blur-xl",
         "px-4 py-3",
         "flex items-center justify-between",
         "shadow-[0_-4px_20px_rgba(0,0,0,0.08)]"
       )}
     >
       <div>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
+        <p className="text-xs text-muted-foreground">
           {label}
         </p>
-        <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
+        <p className="text-xl font-bold text-card-foreground">
           {formatCompact(animatedValue)}
         </p>
       </div>
       <div className="text-right">
-        <p className="text-xs text-slate-400 dark:text-slate-500">
+        <p className="text-xs text-muted-foreground">
           Updates in real-time
         </p>
         <div className="flex items-center gap-1 justify-end mt-0.5">
-          <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-xs text-green-600 font-medium">Live</span>
+          <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
+          <span className="text-xs font-medium text-success">Live</span>
         </div>
       </div>
     </div>
