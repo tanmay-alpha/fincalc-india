@@ -1,0 +1,61 @@
+/* ─── FinCalc India Design Tokens ─── */
+/* Single source of truth for all colors, shadows, radii, transitions */
+
+:root {
+  /* Backgrounds */
+  --bg-page: #F8FAFC;
+  --bg-card: #FFFFFF;
+
+  /* Borders */
+  --border-default: #E2E8F0;
+  --border-focus: #2563EB;
+
+  /* Typography */
+  --text-primary: #0F172A;
+  --text-secondary: #64748B;
+  --text-muted: #94A3B8;
+
+  /* Accent (Blue) */
+  --accent: #2563EB;
+  --accent-hover: #1D4ED8;
+  --accent-light: #EFF6FF;
+
+  /* Semantic: Success */
+  --green: #16A34A;
+  --green-light: #DCFCE7;
+
+  /* Semantic: Danger */
+  --red: #DC2626;
+  --red-light: #FEE2E2;
+
+  /* Elevation */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.10);
+
+  /* Radii */
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  /* Motion */
+  --transition-base: 200ms ease;
+}
+
+/* Dark mode overrides */
+.dark {
+  --bg-page: #0F172A;
+  --bg-card: #1E293B;
+  --border-default: #334155;
+  --border-focus: #3B82F6;
+  --text-primary: #F1F5F9;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --accent: #3B82F6;
+  --accent-hover: #60A5FA;
+  --accent-light: rgba(37, 99, 235, 0.15);
+  --green: #22C55E;
+  --green-light: rgba(22, 163, 74, 0.15);
+  --red: #EF4444;
+  --red-light: rgba(220, 38, 38, 0.15);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.20);
+  --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.30);
+}
