@@ -1,31 +1,12 @@
-import { ChartSkeleton, ResultCardSkeleton, TableSkeleton } from "@/components/ui/Skeleton";
-
 export default function Loading() {
   return (
-    <main className="page-shell">
-      <div className="max-w-7xl mx-auto px-4 py-8 pointer-events-none">
-        <div className="mb-2 animate-pulse">
-          <div className="h-8 bg-muted rounded-lg w-1/3 mb-4" />
-          <div className="h-4 bg-muted rounded-lg w-1/2" />
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6 mt-6">
-          <div className="surface-card h-[500px] animate-pulse p-6">
-            <div className="space-y-6">
-              {[1,2,3].map(i => (
-                <div key={i} className="space-y-2">
-                  <div className="h-4 bg-muted-foreground/15 rounded w-1/4" />
-                  <div className="h-10 bg-muted-foreground/15 rounded-lg w-full" />
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="space-y-5">
-            <ResultCardSkeleton />
-            <ChartSkeleton />
-            <TableSkeleton />
-          </div>
-        </div>
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+          Loading...
+        </p>
       </div>
-    </main>
-  );
+    </div>
+  )
 }
