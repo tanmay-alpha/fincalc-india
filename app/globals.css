@@ -165,3 +165,21 @@
 .recharts-tooltip-wrapper {
   outline: none !important;
 }
+
+:root {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+.dark {
+  background-color: #020617;
+  color: #f1f5f9;
+}
+
+html, body {
+  min-height: 100%;
+}
+
+.dark html, .dark body {
+  background-color: #020617;
+}

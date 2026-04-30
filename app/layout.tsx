@@ -6,7 +6,6 @@ import Footer from "@/components/Footer";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/components/AuthProvider";
 import { Toaster } from "sonner";
-import { cn } from "@/lib/utils";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -49,10 +48,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className="h-full">
       <body
-        className={cn(
-          inter.className,
-          "flex min-h-full flex-col bg-background text-foreground antialiased transition-colors duration-200"
-        )}
+        className={`${inter.className} h-full min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased`}
       >
         <a 
           href="#main-content"

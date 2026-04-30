@@ -159,9 +159,15 @@ export default function HomePage() {
     <main className="page-shell">
       <section className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-14 pt-14 lg:grid-cols-[1.05fr_0.95fr] lg:pb-20 lg:pt-20">
         <div>
-          <Badge variant="success" className="mb-5">
-            FinCalc India
-          </Badge>
+          <div className="inline-flex items-center gap-2 bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-full px-4 py-1.5 mb-8">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute h-full w-full rounded-full bg-green-400 opacity-75" />
+              <span className="relative h-2 w-2 rounded-full bg-green-500" />
+            </span>
+            <span className="text-xs font-medium text-green-700 dark:text-green-400">
+              Free forever · No ads · Sign in to save &amp; share
+            </span>
+          </div>
 
           <h1 className="max-w-3xl text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl lg:text-6xl">
             Financial calculators built for clearer money decisions.
