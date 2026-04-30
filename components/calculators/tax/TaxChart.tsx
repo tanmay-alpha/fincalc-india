@@ -65,21 +65,21 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (!row) return null;
 
   return (
-    <div className="rounded-xl border border-border bg-popover p-3 text-sm text-popover-foreground shadow-card">
-      <p className="mb-1.5 text-xs text-muted-foreground">
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-sm text-slate-700 dark:text-slate-300 shadow-[var(--shadow-card)]">
+      <p className="mb-1.5 text-xs text-slate-500 dark:text-slate-400">
         {label}
       </p>
-      <div className="flex items-center gap-2 text-popover-foreground">
+      <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: row.color }} />
         <span className="text-xs">Amount in slab:</span>
         <span className="font-semibold text-xs">{formatINR(row.amount)}</span>
       </div>
-      <div className="flex items-center gap-2 text-popover-foreground">
+      <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: row.color }} />
         <span className="text-xs">Tax paid:</span>
         <span className="font-semibold text-xs">{formatINR(row.tax)}</span>
       </div>
-      <div className="flex items-center gap-2 text-popover-foreground">
+      <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: row.color }} />
         <span className="text-xs">Rate:</span>
         <span className="font-semibold text-xs">{row.rate}%</span>

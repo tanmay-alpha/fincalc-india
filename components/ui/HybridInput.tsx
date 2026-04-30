@@ -183,18 +183,18 @@ export default function HybridInput({
       <div
         className={clsx(
           "flex items-center rounded-lg border",
-          "bg-background/80 transition-all duration-150",
+          "bg-white dark:bg-slate-800/50 transition-all duration-150",
           "h-11 px-3 gap-2",
           disabled && "opacity-50",
           error
             ? "border-destructive ring-2 ring-destructive/15"
             : isFocused
-              ? "border-ring ring-2 ring-ring/15"
-              : "border-input hover:border-ring/50"
+              ? "border-blue-500 ring-2 ring-blue-500/20"
+              : "border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500"
         )}
       >
         {prefix && (
-          <span className="select-none text-sm font-medium text-muted-foreground">
+          <span className="select-none text-sm font-medium text-slate-500 dark:text-slate-400">
             {prefix}
           </span>
         )}
@@ -228,10 +228,10 @@ export default function HybridInput({
               e.currentTarget.blur();
             }
           }}
-          className="flex-1 bg-transparent text-right text-sm font-medium text-foreground outline-none disabled:cursor-not-allowed"
+          className="flex-1 bg-transparent text-right text-sm font-medium text-slate-900 dark:text-white outline-none disabled:cursor-not-allowed"
         />
         {suffix && (
-          <span className="select-none text-sm text-muted-foreground">
+          <span className="select-none text-sm text-slate-500 dark:text-slate-400">
             {suffix}
           </span>
         )}
@@ -253,8 +253,8 @@ export default function HybridInput({
                 "border transition-all duration-150",
                 "font-medium disabled:opacity-50 disabled:cursor-not-allowed",
                 value === chip.value
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border text-muted-foreground hover:border-primary/50 hover:bg-primary/10 hover:text-primary"
+                  ? "border-blue-600 bg-blue-600 text-white"
+                  : "border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400"
               )}
             >
               {chip.label}
