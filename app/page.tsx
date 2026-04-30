@@ -61,27 +61,27 @@ const FEATURES = [
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-[#F8FAFC]">
+    <main className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950">
 
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-4 pt-16 pb-12 text-center">
 
-        <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-full px-4 py-1.5 mb-8">
+        <div className="inline-flex items-center gap-2 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded-full px-4 py-1.5 mb-8">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
           </span>
-          <span className="text-xs text-green-700 font-medium">
+          <span className="text-xs text-green-700 dark:text-green-400 font-medium">
             Free · No ads · No login required
           </span>
         </div>
 
-        <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 leading-tight">
+        <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 dark:text-slate-100 leading-tight">
           Smart Financial<br />
           <span className="text-blue-600">Calculators</span>
         </h1>
 
-        <p className="text-lg text-slate-500 mt-4 max-w-lg mx-auto leading-relaxed">
+        <p className="text-lg text-slate-500 dark:text-slate-400 mt-4 max-w-lg mx-auto leading-relaxed">
           Free, accurate and instant — built for every Indian investor
         </p>
 
@@ -93,8 +93,8 @@ export default function HomePage() {
             { value: 'FY 25', label: 'Tax data updated' },
           ].map(stat => (
             <div key={stat.label} className="text-center">
-              <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
-              <p className="text-xs text-slate-400 mt-0.5">{stat.label}</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stat.value}</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{stat.label}</p>
             </div>
           ))}
         </div>
@@ -104,17 +104,17 @@ export default function HomePage() {
       {/* Calculator grid */}
       <section className="max-w-6xl mx-auto px-4 pb-16">
 
-        <h2 className="text-xl font-semibold text-slate-900 mb-6">Choose a Calculator</h2>
+        <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-6">Choose a Calculator</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {CALCULATORS.map(calc => (
             <Link
               key={calc.id}
               href={calc.href}
-              className="group bg-white rounded-2xl border border-slate-200 p-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.10)] hover:-translate-y-1 transition-all duration-200"
+              className="group bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.10)] hover:-translate-y-1 transition-all duration-200"
             >
               <div className="flex items-start justify-between">
-                <div className="w-11 h-11 bg-blue-50 rounded-xl flex items-center justify-center text-2xl">
+                <div className="w-11 h-11 bg-blue-50 dark:bg-blue-950/40 rounded-xl flex items-center justify-center text-2xl">
                   {calc.icon}
                 </div>
                 {calc.badge && (
@@ -124,10 +124,10 @@ export default function HomePage() {
                 )}
               </div>
 
-              <h3 className="font-semibold text-lg text-slate-900 mt-4 group-hover:text-blue-600 transition-colors">
+              <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100 mt-4 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                 {calc.name}
               </h3>
-              <p className="text-sm text-slate-500 mt-1 leading-relaxed">
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                 {calc.description}
               </p>
 
@@ -142,15 +142,15 @@ export default function HomePage() {
       </section>
 
       {/* Why use section */}
-      <section className="border-t border-slate-200 bg-white">
+      <section className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
         <div className="max-w-6xl mx-auto px-4 py-12">
-          <h2 className="text-xl font-semibold text-slate-900 text-center mb-8">Why FinCalc India?</h2>
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 text-center mb-8">Why FinCalc India?</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
             {FEATURES.map(f => (
               <div key={f.title} className="space-y-2">
                 <div className="text-3xl">{f.icon}</div>
-                <p className="font-semibold text-slate-900 text-sm">{f.title}</p>
-                <p className="text-xs text-slate-500 leading-relaxed">{f.desc}</p>
+                <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{f.title}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{f.desc}</p>
               </div>
             ))}
           </div>

@@ -8,9 +8,9 @@ export interface InsightCardProps {
 }
 
 const styles = {
-  info: "bg-blue-50 border-blue-100 text-blue-800",
-  good: "bg-green-50 border-green-100 text-green-800",
-  warning: "bg-amber-50 border-amber-100 text-amber-800",
+  info: "bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-900/60 text-blue-800 dark:text-blue-200",
+  good: "bg-green-50 dark:bg-green-950/30 border-green-100 dark:border-green-900/60 text-green-800 dark:text-green-200",
+  warning: "bg-amber-50 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900/60 text-amber-800 dark:text-amber-200",
 };
 
 export default function InsightCard({

@@ -44,7 +44,7 @@ export default function Navbar() {
   }, [pathname]);
 
   return (
-    <header className="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 h-16">
+    <header className="bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50 h-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
         <div className="flex items-center justify-between h-full">
           {/* Logo */}
@@ -99,14 +99,14 @@ export default function Navbar() {
             {!session ? (
               <button
                 onClick={() => signIn('google')}
-                className="flex items-center gap-2 border border-slate-200 rounded-xl px-4 py-2 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm transition-all duration-150 whitespace-nowrap"
+                className="flex items-center gap-2 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-100 bg-white dark:bg-slate-950 hover:bg-slate-50 dark:hover:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm transition-all duration-150 whitespace-nowrap"
               >
                 <GoogleIcon />
                 Sign in
               </button>
             ) : (
               <div className="relative group">
-                <button className="flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1.5 bg-white hover:bg-slate-50 transition-colors">
+                <button className="flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-800 px-3 py-1.5 bg-white dark:bg-slate-950 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
                   {session.user?.image && (
                     <Image
                       src={session.user.image}
@@ -117,18 +117,18 @@ export default function Navbar() {
                       unoptimized
                     />
                   )}
-                  <span className="text-sm font-medium text-slate-700 hidden sm:block max-w-[80px] truncate">
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-100 hidden sm:block max-w-[80px] truncate">
                     {session.user?.name?.split(' ')[0]}
                   </span>
                 </button>
-                <div className="absolute right-0 top-full mt-2 w-44 bg-white rounded-xl border border-slate-200 shadow-lg py-1.5 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150">
-                  <Link href="/history" className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50">
+                <div className="absolute right-0 top-full mt-2 w-44 bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 shadow-lg py-1.5 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150">
+                  <Link href="/history" className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900">
                     📋 My History
                   </Link>
-                  <div className="border-t border-slate-100 my-1" />
+                  <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
                   <button
                     onClick={() => signOut({ callbackUrl: '/' })}
-                    className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 text-left"
+                    className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 text-left"
                   >
                     🚪 Sign Out
                   </button>
@@ -150,7 +150,7 @@ export default function Navbar() {
 
       {/* Mobile drawer — conditionally mounted to avoid DOM duplication */}
       {menuOpen && (
-        <div className="md:hidden absolute top-16 left-0 right-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-xl z-40">
+        <div className="md:hidden absolute top-16 left-0 right-0 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 shadow-xl z-40">
           <nav className="p-4 space-y-1">
             {navLinks.map((link) => {
               const isActive =

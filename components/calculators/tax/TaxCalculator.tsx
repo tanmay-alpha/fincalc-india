@@ -61,7 +61,7 @@ export default function TaxCalculator() {
   if (!mounted) return <CalcPageSkeleton />;
 
   return (
-    <main id="main-content" className="min-h-screen bg-[#F8FAFC] dark:bg-slate-900 pb-24 lg:pb-0">
+    <main id="main-content" className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 pb-24 lg:pb-0">
 
       <StickyResultBar label="Total Tax" value={results.totalTax} />
 
@@ -114,7 +114,7 @@ export default function TaxCalculator() {
             </div>
 
             {inputs.regime === 'old' && (
-              <div className="space-y-4 mt-4 pt-4 border-t border-slate-100">
+              <div className="space-y-4 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                   Old Regime Deductions
                 </p>

@@ -18,22 +18,22 @@ export default function StickyResultBar({ label, value }: Props) {
       className={clsx(
         "fixed bottom-0 left-0 right-0 z-40",
         "lg:hidden",
-        "bg-white border-t border-slate-200",
+        "bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800",
         "px-4 py-3",
         "flex items-center justify-between",
         "shadow-[0_-4px_20px_rgba(0,0,0,0.08)]"
       )}
     >
       <div>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           {label}
         </p>
-        <p className="text-xl font-bold text-slate-900">
+        <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
           {formatCompact(animatedValue)}
         </p>
       </div>
       <div className="text-right">
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-400 dark:text-slate-500">
           Updates in real-time
         </p>
         <div className="flex items-center gap-1 justify-end mt-0.5">

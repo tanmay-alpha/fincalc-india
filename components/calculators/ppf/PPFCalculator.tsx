@@ -50,7 +50,7 @@ export default function PPFCalculator() {
   if (!mounted) return <CalcPageSkeleton />;
 
   return (
-    <main id="main-content" className="min-h-screen bg-[#F8FAFC] dark:bg-slate-900 pb-24 lg:pb-0">
+    <main id="main-content" className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 pb-24 lg:pb-0">
 
       <StickyResultBar label="Maturity Value" value={results.maturityValue} />
 
@@ -171,7 +171,7 @@ export default function PPFCalculator() {
               </div>
             </div>
 
-            <p className="text-xs text-slate-400 italic mt-4 leading-relaxed border-t border-slate-100 pt-4">
+            <p className="text-xs text-slate-400 dark:text-slate-500 italic mt-4 leading-relaxed border-t border-slate-100 dark:border-slate-700 pt-4">
               * PPF interest calculated on annual compounding basis. Actual PPF credits interest on minimum balance between 5th-last of each month.
             </p>
 

@@ -114,13 +114,13 @@ export default function HybridInput({
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-slate-700">
+        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
           {label}
         </label>
         <span
           className={clsx(
             "text-sm font-semibold",
-            isFocused ? "text-blue-600" : "text-slate-900"
+            isFocused ? "text-blue-600 dark:text-blue-400" : "text-slate-900 dark:text-slate-100"
           )}
         >
           {prefix}
@@ -150,11 +150,12 @@ export default function HybridInput({
             {
               "--slider-value": `${sliderValue}%`,
               background:
-                "linear-gradient(to right, #2563EB 0%, #2563EB var(--slider-value), #E2E8F0 var(--slider-value), #E2E8F0 100%)",
+                "linear-gradient(to right, #2563EB 0%, #2563EB var(--slider-value), var(--slider-track) var(--slider-value), var(--slider-track) 100%)",
             } as SliderStyle
           }
           className={clsx(
             "w-full h-1.5 rounded-full appearance-none cursor-pointer",
+            "[--slider-track:#E2E8F0] dark:[--slider-track:#475569]",
             "disabled:opacity-50 disabled:cursor-not-allowed",
             "[&::-webkit-slider-thumb]:appearance-none",
             "[&::-webkit-slider-thumb]:w-5",
@@ -182,18 +183,18 @@ export default function HybridInput({
       <div
         className={clsx(
           "flex items-center rounded-lg border",
-          "bg-white transition-all duration-150",
+          "bg-white dark:bg-slate-950 transition-all duration-150",
           "h-11 px-3 gap-2",
           disabled && "opacity-50",
           error
-            ? "border-red-400 ring-2 ring-red-100"
+            ? "border-red-400 ring-2 ring-red-100 dark:ring-red-950/40"
             : isFocused
-              ? "border-blue-500 ring-2 ring-blue-100"
-              : "border-slate-200 hover:border-slate-300"
+              ? "border-blue-500 ring-2 ring-blue-100 dark:ring-blue-950/40"
+              : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
         )}
       >
         {prefix && (
-          <span className="text-slate-400 text-sm font-medium select-none">
+          <span className="text-slate-400 dark:text-slate-500 text-sm font-medium select-none">
             {prefix}
           </span>
         )}
@@ -227,10 +228,10 @@ export default function HybridInput({
               e.currentTarget.blur();
             }
           }}
-          className="flex-1 text-right text-sm font-medium text-slate-900 outline-none bg-transparent disabled:cursor-not-allowed"
+          className="flex-1 text-right text-sm font-medium text-slate-900 dark:text-slate-100 outline-none bg-transparent disabled:cursor-not-allowed"
         />
         {suffix && (
-          <span className="text-slate-400 text-sm select-none">
+          <span className="text-slate-400 dark:text-slate-500 text-sm select-none">
             {suffix}
           </span>
         )}
@@ -253,7 +254,7 @@ export default function HybridInput({
                 "font-medium disabled:opacity-50 disabled:cursor-not-allowed",
                 value === chip.value
                   ? "bg-blue-600 border-blue-600 text-white"
-                  : "border-slate-200 text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50"
+                  : "border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30"
               )}
             >
               {chip.label}
@@ -266,7 +267,7 @@ export default function HybridInput({
         <p
           className={clsx(
             "text-xs",
-            error ? "text-red-500" : "text-slate-400"
+            error ? "text-red-500 dark:text-red-400" : "text-slate-400 dark:text-slate-500"
           )}
         >
           {error || hint}

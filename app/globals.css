@@ -10,6 +10,7 @@
     --card-border: 226 232 240;
     --muted: 100 116 139;
     --accent: 37 99 235;
+    background-color: white;
   }
 
   .dark {
@@ -19,6 +20,7 @@
     --card-border: 51 65 85;
     --muted: 148 163 184;
     --accent: 96 165 250;
+    background-color: rgb(2, 8, 23);
   }
 
   html {

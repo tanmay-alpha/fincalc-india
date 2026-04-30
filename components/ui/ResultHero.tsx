@@ -26,16 +26,16 @@ export default function ResultHero({ label, value, breakdown }: ResultHeroProps)
   const total = breakdown.reduce((sum, item) => sum + Math.max(0, item.value), 0);
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-[var(--shadow-card)]">
-      <p className="text-sm text-slate-500 font-medium">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-[var(--shadow-card)]">
+      <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
         {label}
       </p>
 
-      <p className="text-4xl font-bold text-slate-900 mt-1 tracking-tight">
+      <p className="text-4xl font-bold text-slate-900 dark:text-slate-100 mt-1 tracking-tight">
         {formatCompact(animatedValue)}
       </p>
 
-      <div className="mt-4 h-2 rounded-full bg-slate-100 overflow-hidden flex">
+      <div className="mt-4 h-2 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden flex">
         {breakdown.map((item, i) => (
           <div
             key={i}
@@ -59,10 +59,10 @@ export default function ResultHero({ label, value, breakdown }: ResultHeroProps)
                 colorMap[item.color]
               )}
             />
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-slate-500 dark:text-slate-400">
               {item.label}
             </span>
-            <span className="text-xs font-semibold text-slate-800">
+            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
               {formatCompact(item.value)}
             </span>
           </div>

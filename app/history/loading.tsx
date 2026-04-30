@@ -2,7 +2,7 @@ import { ChartSkeleton, ResultCardSkeleton, TableSkeleton } from "@/components/u
 
 export default function Loading() {
   return (
-    <main className="min-h-screen bg-[#F8FAFC] dark:bg-slate-900">
+    <main className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950">
       <div className="max-w-7xl mx-auto px-4 py-8 pointer-events-none">
         <div className="mb-2 animate-pulse">
           <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/3 mb-4" />

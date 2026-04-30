@@ -62,21 +62,21 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (!row) return null;
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-lg p-3 text-sm">
-      <p className="text-slate-500 text-xs mb-1.5">
+    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-3 text-sm">
+      <p className="text-slate-500 dark:text-slate-400 text-xs mb-1.5">
         {label}
       </p>
-      <div className="flex items-center gap-2 text-slate-700">
+      <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: row.color }} />
         <span className="text-xs">Amount in slab:</span>
         <span className="font-semibold text-xs">{formatINR(row.amount)}</span>
       </div>
-      <div className="flex items-center gap-2 text-slate-700">
+      <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: row.color }} />
         <span className="text-xs">Tax paid:</span>
         <span className="font-semibold text-xs">{formatINR(row.tax)}</span>
       </div>
-      <div className="flex items-center gap-2 text-slate-700">
+      <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: row.color }} />
         <span className="text-xs">Rate:</span>
         <span className="font-semibold text-xs">{row.rate}%</span>
@@ -117,7 +117,7 @@ export default function TaxChart({ slabs }: Props) {
           axisLine={false}
           width={82}
         />
-        <Tooltip content={<CustomTooltip />} cursor={{ fill: "#F8FAFC" }} />
+        <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(148, 163, 184, 0.12)" }} />
         <Bar
           dataKey="tax"
           name="Tax Paid"
