@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { validateEnv } from "@/lib/env";
 import { 
   validateInput, 
   sipSchema, 
@@ -15,11 +16,15 @@ const RATE_LIMIT_WINDOW_MS = 60000;
 const MAX_REQUESTS_PER_WINDOW = 30;
 const ipRequestMap = new Map<string, { count: number; timestamp: number }>();
 
+export const dynamic = "force-dynamic";
+
 export async function POST(
   req: Request,
   { params }: { params: { type: string } }
 ) {
   try {
+    validateEnv();
+
     // Basic Rate Limiting
     const ip = req.headers.get("x-forwarded-for") || "unknown";
     const now = Date.now();

@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = 'https://fincalc-india.onrender.com'
+  const base = 'https://fincalc-india.vercel.app'
   const pages = [
     '', '/sip', '/emi', '/fd', 
     '/ppf', '/lumpsum', '/tax'

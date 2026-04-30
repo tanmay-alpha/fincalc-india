@@ -7,12 +7,6 @@ import Footer from "@/components/Footer";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/components/AuthProvider";
 import { Toaster } from "sonner";
-import { validateEnv } from "@/lib/env";
-
-// Enforce environment validation on server boot
-if (typeof window === "undefined") {
-  validateEnv();
-}
 
 const inter = Inter({
   subsets: ["latin"],
@@ -21,7 +15,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://fincalc-india.onrender.com'),
+  metadataBase: new URL('https://fincalc-india.vercel.app'),
   title: {
     template: '%s | FinCalc India',
     default: 'FinCalc India — Free Financial Calculators',
@@ -31,7 +25,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'FinCalc India — Free Financial Calculators',
     description: 'Free SIP, EMI, FD, PPF, Lumpsum & Tax calculators. Built for Indian investors.',
-    url: 'https://fincalc-india.onrender.com',
+    url: 'https://fincalc-india.vercel.app',
     siteName: 'FinCalc India',
     locale: 'en_IN',
     type: 'website',
