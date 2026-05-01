@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     template: '%s | FinCalc India',
     default: 'FinCalc India — Free Financial Calculators for Indian Investors',
   },
-  description: 'Free SIP, EMI, FD, PPF, Lumpsum, and Income Tax calculators for Indian investors. Accurate, instant results with no login required.',
+  description: 'Free SIP, EMI, FD, PPF, Lumpsum, and Income Tax calculators for Indian investors. Accurate, instant results.',
   keywords: [
     'SIP calculator India',
     'EMI calculator',
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title: 'FinCalc India — Free Financial Calculators',
-    description: 'Free SIP, EMI, FD, PPF & Tax calculators built for Indian investors. Instant results, no login required.',
+    description: 'Free SIP, EMI, FD, PPF & Tax calculators built for Indian investors. Instant results.',
     url: 'https://fincalc-india.vercel.app',
     siteName: 'FinCalc India',
     locale: 'en_IN',
