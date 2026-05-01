@@ -119,7 +119,7 @@ const whyItems = [
   {
     icon: ShieldCheck,
     title: "Save & Share",
-    desc: "Sign in to save calculations",
+    desc: "Sign in to save and share results",
   },
   {
     icon: WalletCards,

@@ -4,10 +4,10 @@ import TaxInfo from "@/components/seo/TaxInfo";
 
 export const metadata = {
   title: 'Income Tax Calculator FY 2024-25',
-  description: 'Compare Old vs New tax regime for FY 2024-25. Calculate income tax with slab breakdown, 80C deductions, HRA, and take-home salary.',
+  description: 'Compare Old vs New tax regime for FY 2024-25. Calculate income tax with slab-by-slab breakdown, 80C deductions, HRA exemption, and monthly take-home salary estimate.',
   openGraph: {
     title: 'Income Tax Calculator FY 2024-25 — FinCalc India',
-    description: 'Free income tax calculator with Old vs New regime comparison for FY 2024-25.',
+    description: 'Free income tax calculator with Old vs New regime comparison, all deductions, and take-home estimate.',
   }
 }
 
@@ -16,14 +16,22 @@ export default function TaxPage() {
     <main id="main-content" className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 pb-24 lg:pb-0">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-6">
-          <nav className="text-sm text-slate-400 mb-3 flex items-center gap-1.5">
-            <a href="/" className="hover:text-blue-600 transition-colors">Home</a>
+          <nav className="text-sm text-slate-400 mb-3
+            flex items-center gap-1.5">
+            <a href="/" className="hover:text-blue-600">Home</a>
             <span>›</span>
-            <span className="text-slate-600 dark:text-slate-300">Income Tax Calculator</span>
+            <span className="text-slate-600 dark:text-slate-300">
+              Income Tax Calculator
+            </span>
           </nav>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Income Tax Calculator</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 max-w-2xl">
-            Compare old and new regime tax estimates with slab-by-slab breakdown. See which regime saves you more.
+          <h1 className="text-2xl font-bold
+            text-slate-900 dark:text-white">
+            Income Tax Calculator FY 2024-25
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400
+            text-sm mt-1 max-w-2xl">
+            Compare Old vs New tax regime. Calculate total
+            tax, effective rate, and monthly take-home salary.
           </p>
         </div>
         <TaxCalculator />
