@@ -1,10 +1,6 @@
 import type { Metadata } from 'next'
-import dynamic from 'next/dynamic'
-
-const EMICalculator = dynamic(
-  () => import('@/components/calculators/emi/EMICalculator'),
-  { ssr: false }
-)
+import Link from 'next/link'
+import EMICalculator from '@/components/calculators/emi/EMICalculatorIsland'
 
 export const metadata: Metadata = {
   title: 'EMI Calculator',
@@ -22,7 +18,7 @@ export default function EMIPage() {
       <div className="max-w-7xl mx-auto px-4 py-8">
 
         <nav aria-label="Breadcrumb" className="text-sm text-slate-400 dark:text-slate-500 mb-3 flex items-center gap-1.5">
-          <a href="/" className="hover:text-blue-600 transition-colors">Home</a>
+          <Link href="/" className="hover:text-blue-600 transition-colors">Home</Link>
           <span aria-hidden="true">›</span>
           <span className="text-slate-600 dark:text-slate-300 font-medium">EMI Calculator</span>
         </nav>
@@ -99,27 +95,27 @@ export default function EMIPage() {
           <section>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-3">Related Calculators</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <a href="/sip" className="flex items-center gap-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:shadow-md hover:-translate-y-0.5 transition-all group">
+              <Link href="/sip" className="flex items-center gap-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:shadow-md hover:-translate-y-0.5 transition-all group">
                 <span className="text-xl">📈</span>
                 <div>
                   <p className="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">SIP Calculator</p>
                   <p className="text-xs text-slate-400 dark:text-slate-500">Monthly investment returns</p>
                 </div>
-              </a>
-              <a href="/fd" className="flex items-center gap-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:shadow-md hover:-translate-y-0.5 transition-all group">
+              </Link>
+              <Link href="/fd" className="flex items-center gap-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:shadow-md hover:-translate-y-0.5 transition-all group">
                 <span className="text-xl">🔒</span>
                 <div>
                   <p className="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">FD Calculator</p>
                   <p className="text-xs text-slate-400 dark:text-slate-500">Fixed deposit maturity</p>
                 </div>
-              </a>
-              <a href="/tax" className="flex items-center gap-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:shadow-md hover:-translate-y-0.5 transition-all group">
+              </Link>
+              <Link href="/tax" className="flex items-center gap-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:shadow-md hover:-translate-y-0.5 transition-all group">
                 <span className="text-xl">🧾</span>
                 <div>
                   <p className="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">Tax Calculator</p>
                   <p className="text-xs text-slate-400 dark:text-slate-500">Income tax planning</p>
                 </div>
-              </a>
+              </Link>
             </div>
           </section>
 

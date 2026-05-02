@@ -26,10 +26,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export async function POST(
   req: Request,
-  { params }: { params: { type: string } }
+  { params }: { params: Promise<{ type: string }> }
 ) {
   try {
     validateEnv();
+    const { type: calculatorType } = await params;
 
     // Basic Rate Limiting
     const ip = req.headers.get("x-forwarded-for") || "unknown";
@@ -73,7 +74,7 @@ export async function POST(
       );
     }
 
-    const type = params.type.toUpperCase();
+    const type = calculatorType.toUpperCase();
 
     // Validation
     let schema: z.ZodType<unknown>;
