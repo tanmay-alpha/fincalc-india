@@ -23,7 +23,7 @@ export default function TaxInfo() {
       <section>
         <h2 className="text-lg font-bold
           text-slate-900 dark:text-white mb-3">
-          Tax Slabs FY 2024-25
+          Tax Slabs FY 2025-26 / AY 2026-27
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2
           gap-4">
@@ -37,33 +37,37 @@ export default function TaxInfo() {
             <div className="space-y-1.5 text-xs
               text-slate-600 dark:text-slate-400">
               <div className="flex justify-between">
-                <span>Up to ₹3,00,000</span>
+                <span>Up to ₹4,00,000</span>
                 <span className="font-medium">Nil</span>
               </div>
               <div className="flex justify-between">
-                <span>₹3L – ₹7L</span>
+                <span>₹4L – ₹8L</span>
                 <span className="font-medium">5%</span>
               </div>
               <div className="flex justify-between">
-                <span>₹7L – ₹10L</span>
+                <span>₹8L – ₹12L</span>
                 <span className="font-medium">10%</span>
               </div>
               <div className="flex justify-between">
-                <span>₹10L – ₹12L</span>
+                <span>₹12L – ₹16L</span>
                 <span className="font-medium">15%</span>
               </div>
               <div className="flex justify-between">
-                <span>₹12L – ₹15L</span>
+                <span>₹16L – ₹20L</span>
                 <span className="font-medium">20%</span>
               </div>
               <div className="flex justify-between">
-                <span>Above ₹15L</span>
+                <span>₹20L – ₹24L</span>
+                <span className="font-medium">25%</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Above ₹24L</span>
                 <span className="font-medium">30%</span>
               </div>
               <div className="mt-2 pt-2 border-t
                 border-blue-200 dark:border-blue-800
                 text-blue-700 dark:text-blue-400">
-                Standard deduction: ₹75,000
+                Standard deduction: ₹75,000 · 87A full rebate ≤ ₹12L taxable
               </div>
             </div>
           </div>
@@ -139,9 +143,11 @@ export default function TaxInfo() {
               </p>
             </div>
           </div>
-          <p className="text-xs text-slate-500 mt-3">
-            * New Regime saves ₹40,300 in this example.
-            Result may differ with higher deductions.
+          <p className="text-xs text-slate-500
+            dark:text-slate-400 mt-3">
+            * FY 2025-26: New Regime makes income up to ₹12L
+            effectively tax-free (full 87A rebate). Old Regime
+            saves more only with high deductions (₹3L+).
           </p>
         </div>
       </section>
@@ -236,7 +242,7 @@ export default function TaxInfo() {
         dark:text-slate-500 italic border-t
         border-slate-100 dark:border-slate-800 pt-4">
         ⚠️ Disclaimer: Tax calculations are estimates
-        based on FY 2024-25 slabs. This tool does not
+        based on FY 2025-26 / AY 2026-27 slabs (Union Budget 2025). This tool does not
         account for all deductions, rebates, or
         surcharges that may apply. Consult a chartered
         accountant or tax professional for advice

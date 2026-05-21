@@ -412,17 +412,25 @@ interface InternalSlab {
   label: string;
 }
 
-/** FY 2024-25 New Regime Slabs */
+/**
+ * FY 2025-26 / AY 2026-27 New Regime Slabs
+ * (Union Budget 2025 — default regime for individuals)
+ * Nil tax up to ₹4L; 87A rebate makes income ≤ ₹12L effectively tax-free.
+ */
 const NEW_REGIME_SLABS: InternalSlab[] = [
-  { limit: 300000,   rate: 0,    label: "0 – 3L" },
-  { limit: 700000,   rate: 0.05, label: "3L – 7L" },
-  { limit: 1000000,  rate: 0.10, label: "7L – 10L" },
-  { limit: 1200000,  rate: 0.15, label: "10L – 12L" },
-  { limit: 1500000,  rate: 0.20, label: "12L – 15L" },
-  { limit: Infinity,  rate: 0.30, label: "15L+" },
+  { limit: 400000,   rate: 0,    label: "0 – 4L" },
+  { limit: 800000,   rate: 0.05, label: "4L – 8L" },
+  { limit: 1200000,  rate: 0.10, label: "8L – 12L" },
+  { limit: 1600000,  rate: 0.15, label: "12L – 16L" },
+  { limit: 2000000,  rate: 0.20, label: "16L – 20L" },
+  { limit: 2400000,  rate: 0.25, label: "20L – 24L" },
+  { limit: Infinity,  rate: 0.30, label: "24L+" },
 ];
 
-/** FY 2024-25 Old Regime Slabs */
+/**
+ * FY 2025-26 Old Regime Slabs (unchanged)
+ * Individuals can optionally choose this if deductions are significant.
+ */
 const OLD_REGIME_SLABS: InternalSlab[] = [
   { limit: 250000,   rate: 0,    label: "0 – 2.5L" },
   { limit: 500000,   rate: 0.05, label: "2.5L – 5L" },
@@ -491,9 +499,11 @@ function computeRegimeTax(
   const { rawTax, breakdown } = internalSlabCalc(taxableIncome, slabs);
 
   // Rebate u/s 87A
+  // FY 2025-26: New regime rebate raised — income ≤ ₹12L gets full rebate (zero tax)
+  // Old regime: unchanged (taxable income ≤ ₹5L, max rebate ₹12,500)
   let rebate = 0;
-  if (regime === "new" && taxableIncome <= 700000) {
-    rebate = Math.min(rawTax, 25000);
+  if (regime === "new" && taxableIncome <= 1200000) {
+    rebate = rawTax; // full rebate — effectively zero tax up to ₹12L taxable
   } else if (regime === "old" && taxableIncome <= 500000) {
     rebate = Math.min(rawTax, 12500);
   }
@@ -511,10 +521,15 @@ function computeRegimeTax(
 }
 
 /**
- * Income Tax Calculator — FY 2024-25
+ * Income Tax Calculator — FY 2025-26 / AY 2026-27
  *
- * Handles both Old & New regimes, surcharge, cess, rebate 87A,
- * and provides a comparison with recommendation.
+ * Supports both Old & New regimes with FY 2025-26 slabs.
+ * New Regime: 0–4L nil, 4–8L 5%, 8–12L 10%, 12–16L 15%,
+ *             16–20L 20%, 20–24L 25%, 24L+ 30%.
+ *             Standard deduction ₹75,000. Rebate u/s 87A for
+ *             taxable income ≤ ₹12L (effectively zero tax).
+ * Old Regime: unchanged slabs. Max rebate ₹12,500 for taxable ≤ ₹5L.
+ * Includes surcharge (>₹50L) and 4% health + education cess.
  */
 export function calcTax(input: TaxInput): TaxOutput {
   const { grossIncome, regime } = input;

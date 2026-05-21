@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import TaxCalculator from '@/components/calculators/tax/TaxCalculator'
 
 export const metadata: Metadata = {
-  title: 'Income Tax Calculator FY 2024-25',
-  description: 'Compare Old vs New tax regime for FY 2024-25. Calculate income tax with slab breakdown, 80C deductions, HRA, and monthly take-home estimate.',
+  title: 'Income Tax Calculator FY 2025-26',
+  description: 'Compare Old vs New tax regime for FY 2025-26 / AY 2026-27. Calculate income tax with new slab breakdown, 80C deductions, HRA, and monthly take-home estimate.',
 }
 
 export default function TaxPage() {
@@ -19,10 +19,10 @@ export default function TaxPage() {
         </nav>
 
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-          Income Tax Calculator FY 2024-25
+          Income Tax Calculator FY 2025-26 / AY 2026-27
         </h1>
         <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 max-w-2xl leading-relaxed">
-          Compare Old vs New regime. Calculate total tax liability, effective rate, and monthly take-home salary for FY 2024-25.
+          Compare Old vs New regime. Calculate total tax, effective rate, and monthly take-home for FY 2025-26.
         </p>
 
         {/* Interactive calculator */}
@@ -34,22 +34,23 @@ export default function TaxPage() {
         <div className="mt-12 space-y-8 border-t border-slate-200 dark:border-slate-800 pt-8">
           
           <section>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-3">Old vs New Regime — FY 2024-25</h2>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-3">Old vs New Regime — FY 2025-26 / AY 2026-27</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl p-4 border border-blue-100 dark:border-blue-900">
-                <p className="font-semibold text-sm text-blue-800 dark:text-blue-300 mb-3">⚡ New Regime</p>
+                <p className="font-semibold text-sm text-blue-800 dark:text-blue-300 mb-3">⚡ New Regime (Default)</p>
                 <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
-                  <div className="flex justify-between"><span>Up to ₹3,00,000</span><span className="font-medium">0%</span></div>
-                  <div className="flex justify-between"><span>₹3L – ₹7L</span><span className="font-medium">5%</span></div>
-                  <div className="flex justify-between"><span>₹7L – ₹10L</span><span className="font-medium">10%</span></div>
-                  <div className="flex justify-between"><span>₹10L – ₹12L</span><span className="font-medium">15%</span></div>
-                  <div className="flex justify-between"><span>₹12L – ₹15L</span><span className="font-medium">20%</span></div>
-                  <div className="flex justify-between"><span>Above ₹15L</span><span className="font-medium">30%</span></div>
-                  <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400">Standard deduction: ₹75,000</div>
+                  <div className="flex justify-between"><span>Up to ₹4,00,000</span><span className="font-medium">0%</span></div>
+                  <div className="flex justify-between"><span>₹4L – ₹8L</span><span className="font-medium">5%</span></div>
+                  <div className="flex justify-between"><span>₹8L – ₹12L</span><span className="font-medium">10%</span></div>
+                  <div className="flex justify-between"><span>₹12L – ₹16L</span><span className="font-medium">15%</span></div>
+                  <div className="flex justify-between"><span>₹16L – ₹20L</span><span className="font-medium">20%</span></div>
+                  <div className="flex justify-between"><span>₹20L – ₹24L</span><span className="font-medium">25%</span></div>
+                  <div className="flex justify-between"><span>Above ₹24L</span><span className="font-medium">30%</span></div>
+                  <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400">Standard deduction: ₹75,000 · 87A rebate ≤ ₹12L</div>
                 </div>
               </div>
               <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-                <p className="font-semibold text-sm text-slate-800 dark:text-slate-200 mb-3">📋 Old Regime</p>
+                <p className="font-semibold text-sm text-slate-800 dark:text-slate-200 mb-3">📋 Old Regime (Optional)</p>
                 <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
                   <div className="flex justify-between"><span>Up to ₹2,50,000</span><span className="font-medium">0%</span></div>
                   <div className="flex justify-between"><span>₹2.5L – ₹5L</span><span className="font-medium">5%</span></div>
@@ -62,19 +63,20 @@ export default function TaxPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-3">Example: ₹12L Annual Income</h2>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-3">Example: ₹12L Annual Income (FY 2025-26)</h2>
             <div className="bg-green-50 dark:bg-green-950/30 rounded-xl p-4 border border-green-100 dark:border-green-900 text-sm text-slate-700 dark:text-slate-300">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="font-semibold text-green-700 dark:text-green-400 mb-2">New Regime</p>
-                  <p className="mt-1 font-bold text-green-700 dark:text-green-400">Tax: ₹71,500</p>
+                  <p className="mt-1 font-bold text-green-700 dark:text-green-400">Tax: ₹0 🎉</p>
+                  <p className="text-xs text-slate-500 mt-1">(87A full rebate ≤ ₹12L taxable)</p>
                 </div>
                 <div>
                   <p className="font-semibold text-blue-700 dark:text-blue-400 mb-2">Old Regime (with ₹1.5L 80C)</p>
                   <p className="mt-1 font-bold text-blue-700 dark:text-blue-400">Tax: ₹1,11,800</p>
                 </div>
               </div>
-              <p className="text-xs text-slate-500 mt-3">* New saves ₹40,300 in this case.</p>
+              <p className="text-xs text-slate-500 mt-3">* New Regime saves ₹1,11,800 for ₹12L income in FY 2025-26.</p>
             </div>
           </section>
 
@@ -132,7 +134,7 @@ export default function TaxPage() {
           </section>
 
           <p className="text-xs text-slate-400 dark:text-slate-500 italic border-t border-slate-100 dark:border-slate-800 pt-4">
-            ⚠️ Disclaimer: Tax calculations are estimates based on FY 2024-25 slabs. Does not account for all personal deductions or surcharges. Consult a CA for filing.
+            ⚠️ Disclaimer: Tax calculations are estimates based on FY 2025-26 / AY 2026-27 slabs (Union Budget 2025). Does not account for all personal deductions, surcharges, or special circumstances. Consult a CA for actual tax filing.
           </p>
 
         </div>

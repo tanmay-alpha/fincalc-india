@@ -69,7 +69,7 @@ export default function TaxCalculator() {
           <div className="flex items-center gap-3 mb-1.5">
             <span className="text-3xl">🧾</span>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">Income Tax Calculator</h1>
-            <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-bold text-primary-foreground">FY 2024-25</span>
+            <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-bold text-primary-foreground">FY 2025-26</span>
           </div>
           <p className="text-muted-foreground">Compare Old vs New regime with slab-by-slab breakdown</p>
         </div>
