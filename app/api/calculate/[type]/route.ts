@@ -56,10 +56,11 @@ function computeResult(type: string, validatedInputs: unknown): unknown {
 
 export async function POST(
   req: Request,
-  { params }: { params: { type: string } }
+  { params }: { params: Promise<{ type: string }> }
 ) {
   try {
     validateEnv();
+    const { type: calculatorType } = await params;
 
     // Basic rate limiting
     const ip = req.headers.get("x-forwarded-for") || "unknown";
@@ -105,7 +106,7 @@ export async function POST(
       );
     }
 
-    const type = params.type.toUpperCase();
+    const type = calculatorType.toUpperCase();
 
     // Select the right validation schema
     const schemaMap: Record<string, Parameters<typeof validateInput>[0]> = {

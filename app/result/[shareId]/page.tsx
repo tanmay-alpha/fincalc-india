@@ -3,9 +3,10 @@ import { prisma } from "@/lib/prisma";
 
 export default async function ResultPage({
   params
-}: { params: { shareId: string } }) {
+}: { params: Promise<{ shareId: string }> }) {
+  const { shareId } = await params;
   const calc = await prisma.calculation.findUnique({
-    where: { shareId: params.shareId },
+    where: { shareId },
     select: { 
       type: true, inputs: true, outputs: true,
       createdAt: true
@@ -138,9 +139,10 @@ export default async function ResultPage({
 /* generateMetadata for social sharing */
 export async function generateMetadata({
   params
-}: { params: { shareId: string } }) {
+}: { params: Promise<{ shareId: string }> }) {
+  const { shareId } = await params;
   const calc = await prisma.calculation.findUnique({
-    where: { shareId: params.shareId },
+    where: { shareId },
     select: { type: true, outputs: true, inputs: true }
   })
   if (!calc) {

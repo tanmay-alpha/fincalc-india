@@ -1,4 +1,5 @@
 
+import Link from "next/link";
 import PPFCalculator from "@/components/calculators/ppf/PPFCalculator";
 import PPFInfo from "@/components/seo/PPFInfo";
 
@@ -17,7 +18,7 @@ export default function PPFPage() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-6">
           <nav className="text-sm text-slate-400 mb-3 flex items-center gap-1.5">
-            <a href="/" className="hover:text-blue-600 transition-colors">Home</a>
+            <Link href="/" className="hover:text-blue-600 transition-colors">Home</Link>
             <span>›</span>
             <span className="text-slate-600 dark:text-slate-300">PPF Calculator</span>
           </nav>

@@ -3,11 +3,12 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
   req: Request,
-  { params }: { params: { shareId: string } }
+  { params }: { params: Promise<{ shareId: string }> }
 ) {
   try {
+    const { shareId } = await params;
     const calculation = await prisma.calculation.findUnique({
-      where: { shareId: params.shareId },
+      where: { shareId },
     });
 
     if (!calculation) {
