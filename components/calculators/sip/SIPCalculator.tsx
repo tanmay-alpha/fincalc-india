@@ -10,8 +10,6 @@ import SaveCalculationButton from "@/components/SaveCalculationButton";
 import StickyResultBar from "@/components/ui/StickyResultBar";
 import CompareTabs from "@/components/ui/CompareTabs";
 import CompareResultCard from "@/components/ui/CompareResultCard";
-import RelatedCalculators from "@/components/shared/RelatedCalculators";
-import Breadcrumb from "@/components/ui/Breadcrumb";
 import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcSIP } from "@/lib/math";
@@ -94,164 +92,135 @@ export default function SIPCalculator() {
   };
 
   return (
-    <main id="main-content" className="page-shell pb-24 lg:pb-0">
-
+    <>
       <StickyResultBar label="Total Corpus" value={activeResults.totalCorpus} />
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <Breadcrumb items={[
-              {label: 'Home', href: '/'},
-              {label: 'SIP Calculator'},
-            ]} />
-            <div className="flex items-center gap-3 mb-1.5">
-              <span className="text-3xl">📈</span>
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">SIP Calculator</h1>
-            </div>
-            <p className="text-muted-foreground">Calculate returns on your monthly Systematic Investment Plan</p>
-          </div>
+      <div className={clsx(
+        "grid grid-cols-1 gap-6 mt-6 transition-all duration-300",
+        isCompare ? "xl:grid-cols-[600px_1fr]" : "lg:grid-cols-[420px_1fr]"
+      )}>
 
-          <button
-            disabled
-            className="flex cursor-not-allowed items-center gap-1.5 rounded-full border border-dashed border-border px-3 py-1.5 text-xs text-muted-foreground"
-          >
-            Compare Mode
-            <span className="rounded-full bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-              Soon
-            </span>
-          </button>
+        {/* ────── INPUT PANEL ────── */}
+        <div className="h-fit lg:sticky lg:top-6 space-y-4">
+
+          {isCompare && (
+            <div className="lg:hidden">
+              <CompareTabs activeTab={activeTab} onTabChange={setActiveTab} />
+            </div>
+          )}
+
+          {isCompare ? (
+            <div className="surface-card p-6">
+              <div className="hidden lg:grid grid-cols-2 gap-8 divide-x divide-border">
+                <div className="pr-2">
+                  <h3 className="text-sm font-bold text-card-foreground mb-4 tracking-wide uppercase">Scenario A</h3>
+                  {renderInputs("A")}
+                </div>
+                <div className="pl-6">
+                  <h3 className="text-sm font-bold text-primary mb-4 tracking-wide uppercase">Scenario B</h3>
+                  {renderInputs("B")}
+                </div>
+              </div>
+              <div className="lg:hidden">
+                {renderInputs(activeTab)}
+              </div>
+            </div>
+          ) : (
+            <div className="surface-card p-6">
+              <div className="flex items-center gap-2 mb-5">
+                <span className="text-lg">💼</span>
+                <h2 className="text-base font-semibold text-card-foreground">Enter SIP Details</h2>
+              </div>
+              {renderInputs("A")}
+              <p className="text-xs text-muted-foreground text-center mt-5">
+                * Returns are estimated. Actual market returns may vary.
+              </p>
+            </div>
+          )}
         </div>
 
-        <div className={clsx(
-          "grid grid-cols-1 gap-6 mt-6 transition-all duration-300",
-          isCompare ? "xl:grid-cols-[600px_1fr]" : "lg:grid-cols-[420px_1fr]"
-        )}>
+        {/* ────── RESULTS PANEL ────── */}
+        <div className="space-y-5 min-w-0">
 
-          {/* ────── INPUT PANEL ────── */}
-          <div className="h-fit lg:sticky lg:top-6 space-y-4">
+          {isCompare && resultsB ? (
+            <CompareResultCard
+              label="Total Corpus"
+              valueA={resultsA.totalCorpus}
+              valueB={resultsB.totalCorpus}
+            />
+          ) : (
+            <ResultHero label="Total Corpus" value={resultsA.totalCorpus} breakdown={[
+              { label: "Invested", value: resultsA.totalInvested, color: "blue" },
+              { label: "Returns", value: resultsA.estimatedReturns, color: "green" },
+            ]} />
+          )}
 
-            {isCompare && (
-              <div className="lg:hidden">
-                <CompareTabs activeTab={activeTab} onTabChange={setActiveTab} />
-              </div>
-            )}
+          {/* Insights */}
+          {!isCompare && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {insights.map((ins, i) => <InsightCard key={i} {...ins} />)}
+            </div>
+          )}
 
-            {isCompare ? (
-              <div className="surface-card p-6">
-                <div className="hidden lg:grid grid-cols-2 gap-8 divide-x divide-border">
-                  <div className="pr-2">
-                    <h3 className="text-sm font-bold text-card-foreground mb-4 tracking-wide uppercase">Scenario A</h3>
-                    {renderInputs("A")}
-                  </div>
-                  <div className="pl-6">
-                    <h3 className="text-sm font-bold text-primary mb-4 tracking-wide uppercase">Scenario B</h3>
-                    {renderInputs("B")}
-                  </div>
-                </div>
-                <div className="lg:hidden">
-                  {renderInputs(activeTab)}
-                </div>
-              </div>
-            ) : (
-              <div className="surface-card p-6">
-                <div className="flex items-center gap-2 mb-5">
-                  <span className="text-lg">💼</span>
-                  <h2 className="text-base font-semibold text-card-foreground">Enter SIP Details</h2>
-                </div>
-                {renderInputs("A")}
-                <p className="text-xs text-muted-foreground text-center mt-5">
-                  * Returns are estimated. Actual market returns may vary.
-                </p>
-              </div>
-            )}
+          {/* Chart */}
+          <div className="surface-card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-card-foreground">Growth Projection</h3>
+              <span className="text-xs text-muted-foreground">Year by year</span>
+            </div>
+            <div className="h-[300px]">
+              <SIPChart
+                data={isCompare && activeTab === "B" ? resultsB!.yearlyBreakdown : resultsA.yearlyBreakdown}
+                compareData={isCompare ? resultsB!.yearlyBreakdown : undefined}
+                isCompareMode={isCompare ? (typeof window !== "undefined" && window.innerWidth >= 1024) : false}
+              />
+            </div>
           </div>
 
-          {/* ────── RESULTS PANEL ────── */}
-          <div className="space-y-5 min-w-0">
-
-            {isCompare && resultsB ? (
-              <CompareResultCard
-                label="Total Corpus"
-                valueA={resultsA.totalCorpus}
-                valueB={resultsB.totalCorpus}
-              />
-            ) : (
-              <ResultHero label="Total Corpus" value={resultsA.totalCorpus} breakdown={[
-                { label: "Invested", value: resultsA.totalInvested, color: "blue" },
-                { label: "Returns", value: resultsA.estimatedReturns, color: "green" },
-              ]} />
-            )}
-
-            {/* Insights */}
-            {!isCompare && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {insights.map((ins, i) => <InsightCard key={i} {...ins} />)}
-              </div>
-            )}
-
-            {/* Chart */}
-            <div className="surface-card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-card-foreground">Growth Projection</h3>
-                <span className="text-xs text-muted-foreground">Year by year</span>
-              </div>
-              <div className="h-[300px]">
-                <SIPChart
-                  data={isCompare && activeTab === "B" ? resultsB!.yearlyBreakdown : resultsA.yearlyBreakdown}
-                  compareData={isCompare ? resultsB!.yearlyBreakdown : undefined}
-                  isCompareMode={isCompare ? (typeof window !== "undefined" && window.innerWidth >= 1024) : false}
-                />
-              </div>
+          {/* Year-by-Year Table */}
+          <div className="table-surface">
+            <div className="px-6 py-4 border-b border-border">
+              <h3 className="font-semibold text-card-foreground">Year-by-Year Breakdown</h3>
             </div>
-
-            {/* Year-by-Year Table */}
-            <div className="table-surface">
-              <div className="px-6 py-4 border-b border-border">
-                <h3 className="font-semibold text-card-foreground">Year-by-Year Breakdown</h3>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="table-head">
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Year</th>
-                      <th className="px-6 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide">Invested</th>
-                      <th className="px-6 py-3 text-right text-xs font-semibold text-primary uppercase tracking-wide">Returns</th>
-                      <th className="px-6 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide">Corpus</th>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="table-head">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Year</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide">Invested</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold text-primary uppercase tracking-wide">Returns</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide">Corpus</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeResults.yearlyBreakdown.map((row, i) => (
+                    <tr key={row.year}
+                      className={clsx(
+                        "table-row",
+                        i === activeResults.yearlyBreakdown.length - 1 && "bg-primary/10 font-semibold"
+                      )}>
+                      <td className="px-6 py-3.5 text-muted-foreground">{row.year}</td>
+                      <td className="px-6 py-3.5 text-right text-foreground/80">{formatINR(row.invested)}</td>
+                      <td className="px-6 py-3.5 text-right text-success font-medium">{formatINR(row.returns)}</td>
+                      <td className="px-6 py-3.5 text-right text-foreground font-semibold">{formatINR(row.corpus)}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {activeResults.yearlyBreakdown.map((row, i) => (
-                      <tr key={row.year}
-                        className={clsx(
-                          "table-row",
-                          i === activeResults.yearlyBreakdown.length - 1 && "bg-primary/10 font-semibold"
-                        )}>
-                        <td className="px-6 py-3.5 text-muted-foreground">{row.year}</td>
-                        <td className="px-6 py-3.5 text-right text-foreground/80">{formatINR(row.invested)}</td>
-                        <td className="px-6 py-3.5 text-right text-success font-medium">{formatINR(row.returns)}</td>
-                        <td className="px-6 py-3.5 text-right text-foreground font-semibold">{formatINR(row.corpus)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
+          </div>
 
-            {/* Actions */}
-            <div className="flex gap-3 mt-2">
-              <SaveCalculationButton
-                calcType="SIP"
-                data={{ inputs: activeInputs, results: activeResults as unknown as Record<string, unknown> }}
-                onSaved={setShareId}
-              />
-              <ShareButton shareId={shareId} />
-            </div>
-
-            <RelatedCalculators current="sip" />
+          {/* Actions */}
+          <div className="flex gap-3 mt-2">
+            <SaveCalculationButton
+              calcType="SIP"
+              data={{ inputs: activeInputs, results: activeResults as unknown as Record<string, unknown> }}
+              onSaved={setShareId}
+            />
+            <ShareButton shareId={shareId} />
           </div>
         </div>
       </div>
-    </main>
+    </>
   );
 }

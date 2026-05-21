@@ -71,7 +71,7 @@ export default function Navbar() {
                   className={cn(
                     "relative flex h-full items-center gap-1.5 text-sm transition-colors",
                     isActive
-                      ? "text-blue-600 font-semibold border-b-2 border-blue-600 pb-0.5"
+                      ? "text-blue-600 dark:text-blue-400 font-semibold border-b-2 border-blue-600 dark:border-blue-400 pb-0.5"
                       : "text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium"
                   )}
                 >

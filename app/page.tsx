@@ -102,7 +102,7 @@ const stats = [
   { value: "6", label: "Calculators" },
   { value: "100%", label: "Free forever" },
   { value: "0", label: "Ads" },
-  { value: "FY 25", label: "Tax updated" },
+  { value: "FY 2025-26", label: "Tax updated" },
 ];
 
 const whyItems = [
@@ -206,35 +206,37 @@ export default function HomePage() {
             <Link
               key={calc.id}
               href={calc.href}
-              className="surface-card surface-card-hover group rounded-2xl p-5"
+              className="surface-card surface-card-hover group rounded-2xl p-5 flex flex-col h-full"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <calc.icon className="h-6 w-6" />
+              <div className="flex-1">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <calc.icon className="h-6 w-6" />
+                  </div>
+                  {calc.badge && <Badge>{calc.badge}</Badge>}
                 </div>
-                {calc.badge && <Badge>{calc.badge}</Badge>}
-              </div>
 
-              <div className="mt-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                  {calc.shortName}
-                </p>
-                <h3 className="mt-1 text-xl font-semibold text-card-foreground transition-colors group-hover:text-primary">
-                  {calc.name}
-                </h3>
-                <p className="mt-2 min-h-[66px] text-sm leading-relaxed text-muted-foreground">
-                  {calc.description}
-                </p>
-              </div>
-
-              <div className="mt-5 space-y-2 rounded-xl border border-border bg-muted/45 p-3">
-                <div>
-                  <p className="text-xs font-semibold text-foreground">Best for</p>
-                  <p className="text-xs text-muted-foreground">{calc.bestFor}</p>
+                <div className="mt-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    {calc.shortName}
+                  </p>
+                  <h3 className="mt-1 text-xl font-semibold text-card-foreground transition-colors group-hover:text-primary">
+                    {calc.name}
+                  </h3>
+                  <p className="mt-2 min-h-[66px] text-sm leading-relaxed text-muted-foreground">
+                    {calc.description}
+                  </p>
                 </div>
-                <div>
-                  <p className="text-xs font-semibold text-foreground">Includes</p>
-                  <p className="text-xs text-muted-foreground">{calc.includes}</p>
+
+                <div className="mt-5 space-y-2 rounded-xl border border-border bg-muted/45 p-3">
+                  <div>
+                    <p className="text-xs font-semibold text-foreground">Best for</p>
+                    <p className="text-xs text-muted-foreground">{calc.bestFor}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-foreground">Includes</p>
+                    <p className="text-xs text-muted-foreground">{calc.includes}</p>
+                  </div>
                 </div>
               </div>
 

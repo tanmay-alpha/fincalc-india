@@ -20,7 +20,7 @@ export default function HomeHeroActions() {
   const isLoading = status === "loading";
 
   return (
-    <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-start">
+    <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
       {isAuthenticated ? (
         <Link
           href="/history"

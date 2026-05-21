@@ -1,7 +1,8 @@
 
-import Link from "next/link";
 import SIPCalculator from "@/components/calculators/sip/SIPCalculator";
 import SIPInfo from "@/components/seo/SIPInfo";
+import Breadcrumb from "@/components/ui/Breadcrumb";
+import RelatedCalculators from "@/components/shared/RelatedCalculators";
 
 export const metadata = {
   title: 'SIP Calculator',
@@ -14,21 +15,24 @@ export const metadata = {
 
 export default function SIPPage() {
   return (
-    <main id="main-content" className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 pb-24 lg:pb-0">
+    <main id="main-content" className="min-h-screen bg-background pb-24 lg:pb-12">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-6">
-          <nav className="text-sm text-slate-400 mb-3 flex items-center gap-1.5">
-            <Link href="/" className="hover:text-blue-600 transition-colors">Home</Link>
-            <span>›</span>
-            <span className="text-slate-600 dark:text-slate-300">SIP Calculator</span>
-          </nav>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">SIP Calculator</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 max-w-2xl">
+          <Breadcrumb items={[
+            { label: "Home", href: "/" },
+            { label: "SIP Calculator" }
+          ]} />
+          <div className="flex items-center gap-3 mb-1.5">
+            <span className="text-3xl">📈</span>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">SIP Calculator</h1>
+          </div>
+          <p className="text-muted-foreground text-sm mt-1 max-w-2xl">
             Calculate returns on your monthly Systematic Investment Plan. See year-by-year corpus growth with compound interest.
           </p>
         </div>
         <SIPCalculator />
         <SIPInfo />
+        <RelatedCalculators current="sip" />
       </div>
     </main>
   );

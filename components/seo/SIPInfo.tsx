@@ -67,26 +67,6 @@ export default function SIPInfo() {
         </div>
       </section>
 
-      <section>
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-3">Related Calculators</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {[
-            { href: '/lumpsum', icon: '💰', name: 'Lumpsum Calculator', desc: 'One-time investment returns' },
-            { href: '/ppf', icon: '🏛️', name: 'PPF Calculator', desc: 'Tax-free PPF corpus' },
-            { href: '/emi', icon: '🏦', name: 'EMI Calculator', desc: 'Loan EMI calculation' },
-          ].map(c => (
-            <a key={c.href} href={c.href}
-              className="flex items-center gap-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:shadow-md hover:-translate-y-0.5 transition-all group">
-              <span className="text-xl">{c.icon}</span>
-              <div>
-                <p className="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">{c.name}</p>
-                <p className="text-xs text-slate-400">{c.desc}</p>
-              </div>
-            </a>
-          ))}
-        </div>
-      </section>
-
       <p className="text-xs text-slate-400 dark:text-slate-500 italic border-t border-slate-100 dark:border-slate-800 pt-4">
         {'\u26A0\uFE0F'} Disclaimer: This calculator is for informational purposes only. Results are estimates based on the assumed rate of return. Actual mutual fund returns vary and are not guaranteed. Consult a SEBI-registered financial advisor before investing.
       </p>

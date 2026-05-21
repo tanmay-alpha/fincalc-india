@@ -6,11 +6,6 @@ export default function LumpsumInfo() {
     { q: 'What is a wealth multiplier?', a: 'It shows how many times your money grows. A 3x multiplier means ₹1L becomes ₹3L. Higher CAGR and longer tenure produce higher multipliers.' },
     { q: 'Are lumpsum investments taxed?', a: 'Equity MF: LTCG above ₹1L taxed at 10% (holding >1yr). STCG at 15%. Debt funds: gains taxed at slab rate (post April 2023).' },
   ];
-  const related = [
-    { href: '/sip', icon: '\u{1F4C8}', name: 'SIP Calculator', desc: 'Monthly SIP investment' },
-    { href: '/fd', icon: '\u{1F512}', name: 'FD Calculator', desc: 'Fixed deposit returns' },
-    { href: '/ppf', icon: '\u{1F3DB}\uFE0F', name: 'PPF Calculator', desc: 'Tax-free PPF maturity' },
-  ];
   return (
     <div className="mt-12 space-y-8 border-t border-slate-200 dark:border-slate-800 pt-8">
       <section>
@@ -38,20 +33,6 @@ export default function LumpsumInfo() {
               <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-200 mb-1">{faq.q}</h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{faq.a}</p>
             </div>
-          ))}
-        </div>
-      </section>
-      <section>
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-3">Related Calculators</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {related.map(c => (
-            <a key={c.href} href={c.href} className="flex items-center gap-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:shadow-md hover:-translate-y-0.5 transition-all group">
-              <span className="text-xl">{c.icon}</span>
-              <div>
-                <p className="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">{c.name}</p>
-                <p className="text-xs text-slate-400">{c.desc}</p>
-              </div>
-            </a>
           ))}
         </div>
       </section>

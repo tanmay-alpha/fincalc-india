@@ -8,8 +8,6 @@ import InsightCard from "@/components/ui/InsightCard";
 import ShareButton from "@/components/ui/ShareButton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import RelatedCalculators from "@/components/shared/RelatedCalculators";
-import Breadcrumb from "@/components/ui/Breadcrumb";
 import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcEMI } from "@/lib/math";
@@ -58,24 +56,10 @@ export default function EMICalculator() {
   if (!mounted) return <CalcPageSkeleton />;
 
   return (
-    <main id="main-content" className="page-shell pb-24 lg:pb-0">
-
+    <>
       <StickyResultBar label="Monthly EMI" value={results.emi} />
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Breadcrumb items={[
-            {label: 'Home', href: '/'},
-            {label: 'EMI Calculator'},
-          ]} />
-          <div className="flex items-center gap-3 mb-1.5">
-            <span className="text-3xl">🏦</span>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">EMI Calculator</h1>
-          </div>
-          <p className="text-muted-foreground">Calculate monthly EMI for home, car, or personal loans</p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6 mt-6">
           {/* ────── INPUT PANEL ────── */}
           <div className="surface-card h-fit space-y-4 p-6 lg:sticky lg:top-6">
             <HybridInput label="Loan Amount" value={inputs.principal} onChange={onPrincipal}
@@ -241,11 +225,8 @@ export default function EMICalculator() {
               />
               <ShareButton shareId={shareId} />
             </div>
-
-            <RelatedCalculators current="emi" />
           </div>
         </div>
-      </div>
-    </main>
+      </>
   );
 }
