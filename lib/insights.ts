@@ -15,20 +15,35 @@ export interface InsightItem {
   type: "info" | "good" | "warning";
 }
 
+function safeDiv(n: number, d: number, fallback = 0): number {
+  return d > 0 ? n / d : fallback;
+}
+
 export function getSIPInsights(r: SipOutput): InsightItem[] {
-  const ratio = r.totalInvested > 0 ? (r.totalCorpus / r.totalInvested).toFixed(2) : "0.00";
+  const ratio =
+    r.totalInvested > 0
+      ? (r.totalCorpus / r.totalInvested).toFixed(2)
+      : "0.00";
   const growthLabel =
-    r.absoluteReturn > 200 ? "Wealth multiplication 🚀"
-    : r.absoluteReturn > 100 ? "Excellent growth 📈"
-    : r.absoluteReturn > 50 ? "Good growth 👍"
-    : "Modest growth";
+    r.absoluteReturn > 200
+      ? "Wealth multiplication 🚀"
+      : r.absoluteReturn > 100
+        ? "Excellent growth 📈"
+        : r.absoluteReturn > 50
+          ? "Good growth 👍"
+          : "Modest growth";
+
+  const annualized =
+    r.totalInvested > 0
+      ? (r.estimatedReturns / r.totalInvested) * 100
+      : 0;
 
   return [
     {
       icon: "🎯",
       title: `You will have ${formatCompact(r.totalCorpus)} at maturity`,
       subtitle: `Based on ${formatPercent(
-        Number(((r.estimatedReturns / Math.max(r.totalInvested, 1)) * 100).toFixed(1))
+        Number(annualized.toFixed(1))
       )} annualized gain`,
       type: "info",
     },
@@ -49,11 +64,12 @@ export function getSIPInsights(r: SipOutput): InsightItem[] {
 
 export function getEMIInsights(r: EmiOutput): InsightItem[] {
   const interestPct = Math.round(r.interestPercentage);
+  const tenureMonths = r.amortizationSchedule.length;
   return [
     {
       icon: "🏠",
       title: `Your EMI is ${formatINR(r.emi)} per month`,
-      subtitle: `For ${r.amortizationSchedule.length} months`,
+      subtitle: `For ${tenureMonths} months`,
       type: "info",
     },
     {
@@ -62,16 +78,20 @@ export function getEMIInsights(r: EmiOutput): InsightItem[] {
       subtitle: `${interestPct}% of total payment is interest`,
       type: interestPct > 50 ? "warning" : "info",
     },
-    ...(interestPct > 50 ? [{
-      icon: "⚠️",
-      title: "Interest exceeds principal",
-      subtitle: "Consider a shorter loan tenure to save significantly",
-      type: "warning" as const,
-    }] : []),
+    ...(interestPct > 50
+      ? [
+          {
+            icon: "⚠️",
+            title: "Interest exceeds principal",
+            subtitle: "Consider a shorter loan tenure to save significantly",
+            type: "warning" as const,
+          },
+        ]
+      : []),
     {
       icon: "📊",
       title: `Total payment: ${formatCompact(r.totalPayment)}`,
-      subtitle: `Over ${r.amortizationSchedule.length} months`,
+      subtitle: `Over ${tenureMonths} months`,
       type: "info",
     },
   ];
@@ -94,18 +114,27 @@ export function getFDInsights(r: FdOutput): InsightItem[] {
     },
     {
       icon: r.totalInterest > 40000 ? "⚠️" : "📌",
-      title: r.totalInterest > 40000 ? "TDS may apply on FD interest" : "Compounding improves your yield",
-      subtitle: r.totalInterest > 40000
-        ? "Interest above annual limits can attract TDS"
-        : `Effective annual yield is ${formatPercent(r.effectiveAnnualYield)}`,
+      title:
+        r.totalInterest > 40000
+          ? "TDS may apply on FD interest"
+          : "Compounding improves your yield",
+      subtitle:
+        r.totalInterest > 40000
+          ? "Interest above annual limits can attract TDS"
+          : `Effective annual yield is ${formatPercent(r.effectiveAnnualYield)}`,
       type: r.totalInterest > 40000 ? "warning" : "info",
     },
   ];
 }
 
 export function getPPFInsights(r: PpfOutput): InsightItem[] {
-  const ratio = r.totalInvested > 0 ? (r.maturityValue / r.totalInvested).toFixed(2) : "0.00";
-  const withdrawalYear = r.yearlyData.find((row) => row.withdrawalAllowed)?.year;
+  const ratio =
+    r.totalInvested > 0
+      ? (r.maturityValue / r.totalInvested).toFixed(2)
+      : "0.00";
+  const withdrawalYear = r.yearlyData.find(
+    (row) => row.withdrawalAllowed
+  )?.year;
 
   return [
     {
@@ -187,3 +216,6 @@ export const generateFDInsights = getFDInsights;
 export const generatePPFInsights = getPPFInsights;
 export const generateLumpsumInsights = getLumpsumInsights;
 export const generateTaxInsights = getTaxInsights;
+
+// Touch safeDiv so it doesn't get tree-shaken if other modules import it indirectly.
+void safeDiv;

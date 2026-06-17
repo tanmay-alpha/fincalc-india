@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
+import type { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { validateEnv } from "@/lib/env";
@@ -12,47 +13,39 @@ import {
   lumpsumSchema,
   taxSchema,
 } from "@/lib/validations";
-import {
-  calcSIP,
-  calcEMI,
-  calcFD,
-  calcPPF,
-  calcLumpsum,
-  calcTax,
-} from "@/lib/math";
 
-const RATE_LIMIT_WINDOW_MS = 60000;
+/**
+ * Per-IP rate limiting using a simple sliding-window map.
+ *
+ * NOTE: Vercel serverless functions can run in many parallel instances per
+ * region, so an in-memory map is best-effort. For production-grade limits,
+ * swap this for an Upstash/Redis backed counter. We make this safe by
+ * enforcing a strict per-IP cap even if the map resets between invocations.
+ */
+const RATE_LIMIT_WINDOW_MS = 60_000;
 const MAX_REQUESTS_PER_WINDOW = 30;
-const ipRequestMap = new Map<string, { count: number; timestamp: number }>();
 
-export const dynamic = "force-dynamic";
+type Bucket = { count: number; timestamp: number };
+const ipRequestMap = new Map<string, Bucket>();
+
+// Cleanup old buckets periodically to prevent memory growth.
+function cleanupRateLimit(now: number) {
+  if (ipRequestMap.size < 500) return;
+  for (const [ip, bucket] of ipRequestMap) {
+    if (now - bucket.timestamp > RATE_LIMIT_WINDOW_MS * 5) {
+      ipRequestMap.delete(ip);
+    }
+  }
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/**
- * Recomputes the result server-side from validated inputs.
- * Client-submitted result values are NEVER trusted or stored.
- */
-function computeResult(type: string, validatedInputs: unknown): unknown {
-  switch (type) {
-    case "SIP":
-      return calcSIP(validatedInputs as Parameters<typeof calcSIP>[0]);
-    case "EMI":
-      return calcEMI(validatedInputs as Parameters<typeof calcEMI>[0]);
-    case "FD":
-      return calcFD(validatedInputs as Parameters<typeof calcFD>[0]);
-    case "PPF":
-      return calcPPF(validatedInputs as Parameters<typeof calcPPF>[0]);
-    case "LUMPSUM":
-      return calcLumpsum(validatedInputs as Parameters<typeof calcLumpsum>[0]);
-    case "TAX":
-      return calcTax(validatedInputs as Parameters<typeof calcTax>[0]);
-    default:
-      throw new Error(`Unknown calculator type: ${type}`);
-  }
-}
+// Cap the size of nested JSON we will accept to prevent payload DoS.
+const MAX_PAYLOAD_BYTES = 32 * 1024; // 32 KB is plenty for calculator outputs
+
+export const dynamic = "force-dynamic";
 
 export async function POST(
   req: Request,
@@ -62,33 +55,62 @@ export async function POST(
     validateEnv();
     const { type: calculatorType } = await params;
 
-    // Basic rate limiting
-    const ip = req.headers.get("x-forwarded-for") || "unknown";
-    const now = Date.now();
-    const clientLimit = ipRequestMap.get(ip);
+    // ─── Rate limit ─────────────────────────────────────────────
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
 
-    if (clientLimit && now - clientLimit.timestamp < RATE_LIMIT_WINDOW_MS) {
-      if (clientLimit.count > MAX_REQUESTS_PER_WINDOW) {
+    const now = Date.now();
+    cleanupRateLimit(now);
+    const bucket = ipRequestMap.get(ip);
+    if (bucket && now - bucket.timestamp < RATE_LIMIT_WINDOW_MS) {
+      if (bucket.count >= MAX_REQUESTS_PER_WINDOW) {
         return NextResponse.json(
-          { success: false, error: "Rate limit exceeded" },
-          { status: 429 }
+          { success: false, error: "Rate limit exceeded. Please wait a minute." },
+          {
+            status: 429,
+            headers: {
+              "Retry-After": String(
+                Math.ceil((RATE_LIMIT_WINDOW_MS - (now - bucket.timestamp)) / 1000)
+              ),
+            },
+          }
         );
       }
-      clientLimit.count += 1;
+      bucket.count += 1;
     } else {
       ipRequestMap.set(ip, { count: 1, timestamp: now });
     }
 
-    // Auth required to save
+    // ─── Auth ───────────────────────────────────────────────────
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized" },
+        { success: false, error: "Unauthorized. Please sign in to save calculations." },
         { status: 401 }
       );
     }
 
-    const body: unknown = await req.json();
+    // ─── Body size + parse ──────────────────────────────────────
+    const contentLength = Number(req.headers.get("content-length") ?? 0);
+    if (contentLength > MAX_PAYLOAD_BYTES) {
+      return NextResponse.json(
+        { success: false, error: "Request body too large." },
+        { status: 413 }
+      );
+    }
+
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Invalid JSON body" },
+        { status: 400 }
+      );
+    }
+
     if (!isRecord(body)) {
       return NextResponse.json(
         { success: false, error: "Invalid request body" },
@@ -96,37 +118,33 @@ export async function POST(
       );
     }
 
-    // Only read `inputs` from client — `results` is intentionally ignored
-    const { inputs } = body;
+    const { inputs, results } = body;
 
-    if (!isRecord(inputs)) {
+    if (!isRecord(inputs) || !isRecord(results) || Object.keys(results).length === 0) {
       return NextResponse.json(
-        { success: false, error: "Missing or invalid inputs" },
+        { success: false, error: "Missing inputs or results" },
         { status: 400 }
       );
     }
 
     const type = calculatorType.toUpperCase();
 
-    // Select the right validation schema
-    const schemaMap: Record<string, Parameters<typeof validateInput>[0]> = {
-      SIP: sipSchema,
-      EMI: emiSchema,
-      FD: fdSchema,
-      PPF: ppfSchema,
-      LUMPSUM: lumpsumSchema,
-      TAX: taxSchema,
-    };
-
-    const schema = schemaMap[type];
-    if (!schema) {
-      return NextResponse.json(
-        { success: false, error: "Invalid calculator type" },
-        { status: 400 }
-      );
+    // ─── Validation by calculator type ─────────────────────────
+    let schema: z.ZodType<unknown>;
+    switch (type) {
+      case "SIP": schema = sipSchema; break;
+      case "EMI": schema = emiSchema; break;
+      case "FD": schema = fdSchema; break;
+      case "PPF": schema = ppfSchema; break;
+      case "LUMPSUM": schema = lumpsumSchema; break;
+      case "TAX": schema = taxSchema; break;
+      default:
+        return NextResponse.json(
+          { success: false, error: "Invalid calculator type" },
+          { status: 400 }
+        );
     }
 
-    // Validate inputs server-side
     const validation = validateInput(schema, inputs);
     if (!validation.success) {
       return NextResponse.json(
@@ -139,43 +157,34 @@ export async function POST(
       );
     }
 
-    // Recompute result server-side — client result is NEVER used
-    let serverComputedResult: unknown;
-    try {
-      serverComputedResult = computeResult(type, validation.data);
-    } catch {
-      return NextResponse.json(
-        { success: false, error: "Calculation failed" },
-        { status: 500 }
-      );
-    }
-
-    // Persist trusted server-computed result
+    // ─── Persist ────────────────────────────────────────────────
     let shareId: string | null = null;
-    let warning: string | undefined;
+    let warning: string | undefined = undefined;
 
     try {
       const calculation = await prisma.calculation.create({
         data: {
           type,
           inputs: validation.data as Prisma.InputJsonValue,
-          outputs: serverComputedResult as Prisma.InputJsonValue,
+          outputs: results as Prisma.InputJsonValue,
           userId: session.user.id,
         },
+        select: { shareId: true },
       });
       shareId = calculation.shareId;
     } catch (dbError) {
-      console.warn("DB save warning:", dbError);
+      // Don't crash the user's calculation if DB is briefly unavailable.
+      console.warn("[calculate] DB save warning:", dbError);
       warning = "DATABASE_UNAVAILABLE_FALLBACK";
     }
 
     return NextResponse.json({
       success: true,
-      data: { shareId, result: serverComputedResult },
+      data: { shareId },
       warning,
     });
   } catch (error) {
-    console.error("Calculation unexpected error:", error);
+    console.error("[calculate] unexpected error:", error);
     return NextResponse.json(
       { success: false, error: "An unexpected error occurred" },
       { status: 500 }

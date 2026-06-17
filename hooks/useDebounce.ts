@@ -1,26 +1,37 @@
-import { useState, useEffect } from "react";
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 
 /**
- * Hook to gently delay state updates to prevent thrashing
- * complex math recalculations or excessive network requests.
- * 
+ * Hook to delay state updates to prevent thrashing expensive recalculations.
+ *
  * @param value The value to observe
  * @param delay The millisecond delay (default 250ms)
  * @returns The debounced value
+ *
+ * Behaviour:
+ *   - The first value seen is returned immediately (no flash-of-default on mount).
+ *   - Subsequent values are only emitted after `delay` ms of inactivity.
+ *   - The delay can be safely changed between renders.
  */
 export function useDebounce<T>(value: T, delay: number = 250): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    // Set a timer to visually update the delayed state
-    const timer = setTimeout(() => {
+    // If a timer is already pending, cancel it so we don't emit twice.
+    if (timerRef.current) clearTimeout(timerRef.current);
+
+    timerRef.current = setTimeout(() => {
       setDebouncedValue(value);
+      timerRef.current = null;
     }, delay);
 
-    // If 'value' changes BEFORE 'delay' finishes, clear the active timer.
-    // This resets the countdown, ensuring we only update once the user STOPS typing/sliding.
     return () => {
-      clearTimeout(timer);
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
     };
   }, [value, delay]);
 

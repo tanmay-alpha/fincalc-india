@@ -25,6 +25,11 @@ type SliderStyle = CSSProperties & {
   "--slider-value": string;
 };
 
+/**
+ * Parse a free-form string into a number.
+ * Supports: 5L, 1.5Cr, 10k, plain digits, with optional ₹/commas/spaces.
+ * Returns NaN for unparseable input.
+ */
 function parseInput(raw: string): number {
   const cleaned = raw
     .trim()
@@ -44,11 +49,13 @@ function parseInput(raw: string): number {
   if (cleaned.endsWith("K")) {
     return parseFloat(cleaned) * 1000;
   }
-  return parseFloat(cleaned);
+  const n = parseFloat(cleaned);
+  return Number.isFinite(n) ? n : NaN;
 }
 
 function formatDisplayValue(value: number, prefix?: string): string {
   if (prefix === "₹") {
+    // Show without the rupee symbol — the prefix is rendered separately.
     return formatINR(value).replace("₹", "");
   }
   return Number.isInteger(value) ? value.toString() : value.toString();
@@ -71,6 +78,7 @@ export default function HybridInput({
   const [rawText, setRawText] = useState(value.toString());
   const [isFocused, setIsFocused] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
   const latestValidRef = useRef(value);
 
   useEffect(() => {
@@ -84,7 +92,7 @@ export default function HybridInput({
     max > min ? Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100)) : 0;
 
   const commitValue = useCallback(
-    (nextValue: number) => {
+    (nextValue: number): number => {
       const clamped = clampSafe(nextValue, min, max);
       latestValidRef.current = clamped;
       onChange(clamped);
@@ -97,11 +105,18 @@ export default function HybridInput({
     setIsFocused(false);
     const parsed = parseInput(rawText);
 
-    if (isNaN(parsed) || !isFinite(parsed)) {
+    if (Number.isNaN(parsed) || !Number.isFinite(parsed)) {
       const previous = latestValidRef.current;
       onChange(previous);
       setRawText(previous.toString());
+      setLocalError(null);
       return;
+    }
+
+    if (parsed < min || parsed > max) {
+      setLocalError(`Must be between ${min} and ${max}`);
+    } else {
+      setLocalError(null);
     }
 
     const clamped = clampSafe(parsed, min, max);
@@ -111,16 +126,17 @@ export default function HybridInput({
   }, [max, min, onChange, rawText]);
 
   const chips = quickChips ?? [];
+  const displayError = error ?? localError ?? undefined;
 
   return (
     <div className="space-y-2.5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <label className="text-sm font-medium text-foreground">
           {label}
         </label>
         <span
           className={clsx(
-            "text-sm font-semibold",
+            "text-sm font-semibold truncate",
             isFocused ? "text-primary" : "text-foreground"
           )}
         >
@@ -138,6 +154,7 @@ export default function HybridInput({
           step={step || 1}
           value={value}
           disabled={disabled}
+          aria-label={label}
           onPointerDown={() => setIsDragging(true)}
           onPointerUp={() => setIsDragging(false)}
           onPointerCancel={() => setIsDragging(false)}
@@ -186,7 +203,7 @@ export default function HybridInput({
           "bg-white dark:bg-slate-800/50 transition-all duration-150",
           "h-11 px-3 gap-2",
           disabled && "opacity-50",
-          error
+          displayError
             ? "border-destructive ring-2 ring-destructive/15"
             : isFocused
               ? "border-blue-500 ring-2 ring-blue-500/20"
@@ -200,7 +217,10 @@ export default function HybridInput({
         )}
         <input
           type="text"
-          inputMode="numeric"
+          inputMode="decimal"
+          autoComplete="off"
+          spellCheck={false}
+          aria-label={label || "value"}
           value={isFocused ? rawText : formatDisplayValue(value, prefix)}
           disabled={disabled}
           onFocus={() => {
@@ -212,7 +232,7 @@ export default function HybridInput({
             const nextText = e.target.value;
             setRawText(nextText);
             const parsed = parseInput(nextText);
-            if (!isNaN(parsed) && isFinite(parsed)) {
+            if (!Number.isNaN(parsed) && Number.isFinite(parsed)) {
               commitValue(parsed);
             }
           }}
@@ -228,7 +248,7 @@ export default function HybridInput({
               e.currentTarget.blur();
             }
           }}
-          className="flex-1 bg-transparent text-right text-sm font-medium text-slate-900 dark:text-white outline-none disabled:cursor-not-allowed"
+          className="flex-1 min-w-0 bg-transparent text-right text-sm font-medium text-slate-900 dark:text-white outline-none disabled:cursor-not-allowed"
         />
         {suffix && (
           <span className="select-none text-sm text-slate-500 dark:text-slate-400">
@@ -263,14 +283,14 @@ export default function HybridInput({
         </div>
       )}
 
-      {(hint || error) && (
+      {(hint || displayError) && (
         <p
           className={clsx(
             "text-xs",
-            error ? "text-destructive" : "text-muted-foreground"
+            displayError ? "text-destructive" : "text-muted-foreground"
           )}
         >
-          {error || hint}
+          {displayError || hint}
         </p>
       )}
     </div>

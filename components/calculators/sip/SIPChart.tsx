@@ -25,8 +25,6 @@ const COLORS = {
 
 interface Props {
   data: SipYearRow[];
-  compareData?: SipYearRow[];
-  isCompareMode?: boolean;
 }
 
 interface TooltipPayload {

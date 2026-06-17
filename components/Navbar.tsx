@@ -155,7 +155,13 @@ export default function Navbar() {
       </div>
 
       {menuOpen && (
-        <div className="absolute left-0 right-0 top-16 z-40 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-lg md:hidden">
+        <div
+          id="mobile-nav"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Mobile navigation"
+          className="absolute left-0 right-0 top-16 z-40 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-lg md:hidden"
+        >
           <nav className="space-y-1 p-4">
             {navLinks.map((link) => {
               const isActive = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
@@ -165,6 +171,7 @@ export default function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setMenuOpen(false)}
+                  aria-current={isActive ? "page" : undefined}
                   className={cn(
                     "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors",
                     isActive
@@ -172,7 +179,7 @@ export default function Navbar() {
                       : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
                   )}
                 >
-                  <link.icon className={cn("h-5 w-5", isActive ? "text-blue-600 dark:text-blue-400" : "text-slate-400 dark:text-slate-500")} />
+                  <link.icon className={cn("h-5 w-5", isActive ? "text-blue-600 dark:text-blue-400" : "text-slate-400 dark:text-slate-500")} aria-hidden="true" />
                   {link.label}
                 </Link>
               );
@@ -180,13 +187,14 @@ export default function Navbar() {
 
             {!session?.user && (
               <button
+                type="button"
                 onClick={() => {
                   setMenuOpen(false);
                   signIn("google");
                 }}
                 className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 px-4 py-3 text-sm font-semibold text-white"
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" className="shrink-0">
+                <svg width="15" height="15" viewBox="0 0 24 24" className="shrink-0" aria-hidden="true">
                   <path fill="white" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                   <path fill="white" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                   <path fill="white" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>

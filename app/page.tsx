@@ -118,8 +118,8 @@ const whyItems = [
   },
   {
     icon: ShieldCheck,
-    title: "Save & Share",
-    desc: "Sign in to save and share results",
+    title: "Save & share",
+    desc: "Sign in with Google to save calculations to your account and share them with anyone.",
   },
   {
     icon: WalletCards,
