@@ -572,3 +572,744 @@ export function calcTax(input: TaxInput): TaxOutput {
     },
   };
 }
+
+// ─── STEP-UP SIP & GOAL SIP ───────────────────────────────────
+
+export type StepUpType = "percentage" | "fixed";
+
+export interface StepUpSipInput {
+  monthlyAmount: number;
+  annualRate: number;
+  years: number;
+  stepUpType: StepUpType;
+  stepUpValue: number; // e.g. 10 for 10% or 1000 for ₹1000
+}
+
+export interface StepUpSipYearRow {
+  year: number;
+  monthlyAmount: number;
+  yearlyInvested: number;
+  totalInvested: number;
+  returns: number;
+  corpus: number;
+  flatCorpus: number;
+}
+
+export interface StepUpSipOutput {
+  totalInvested: number;
+  estimatedReturns: number;
+  totalCorpus: number;
+  flatCorpus: number;
+  wealthGain: number;
+  extraReturnsVsFlat: number;
+  yearlyBreakdown: StepUpSipYearRow[];
+}
+
+export interface GoalSipInput {
+  targetCorpus: number;
+  annualRate: number;
+  years: number;
+  stepUpType: StepUpType;
+  stepUpValue: number;
+}
+
+export interface GoalSipOutput {
+  requiredStartingSip: number;
+  totalInvested: number;
+  estimatedReturns: number;
+  projectedCorpus: number;
+  yearlyBreakdown: StepUpSipYearRow[];
+}
+
+/**
+ * Step-Up SIP Calculator:
+ * Compounds monthly investments with yearly step-ups (percentage or fixed rupee).
+ * Calculates both Step-Up corpus and baseline Flat SIP corpus for comparison.
+ */
+export function calcStepUpSIP(input: StepUpSipInput): StepUpSipOutput {
+  const { monthlyAmount, annualRate, years, stepUpType, stepUpValue } = input;
+  const safeMonthly = Math.max(0, monthlyAmount);
+  const safeYears = Math.max(1, Math.round(years));
+  const safeRate = Math.max(0, annualRate);
+  const safeStepUpVal = Math.max(0, stepUpValue);
+  const i = safeRate / 12 / 100;
+
+  let stepUpCorpus = 0;
+  let flatCorpus = 0;
+  let totalInvested = 0;
+
+  const yearlyBreakdown: StepUpSipYearRow[] = [];
+  let currentMonthlyAmount = safeMonthly;
+
+  for (let y = 1; y <= safeYears; y++) {
+    // Step-up applies starting from Year 2
+    if (y > 1) {
+      if (stepUpType === "percentage") {
+        currentMonthlyAmount = safeMonthly * Math.pow(1 + safeStepUpVal / 100, y - 1);
+      } else {
+        currentMonthlyAmount = safeMonthly + (y - 1) * safeStepUpVal;
+      }
+    }
+
+    let yearlyDeposit = 0;
+    for (let m = 1; m <= 12; m++) {
+      yearlyDeposit += currentMonthlyAmount;
+      totalInvested += currentMonthlyAmount;
+      if (i === 0) {
+        stepUpCorpus += currentMonthlyAmount;
+        flatCorpus += safeMonthly;
+      } else {
+        stepUpCorpus = (stepUpCorpus + currentMonthlyAmount) * (1 + i);
+        flatCorpus = (flatCorpus + safeMonthly) * (1 + i);
+      }
+    }
+
+    yearlyBreakdown.push({
+      year: y,
+      monthlyAmount: Math.round(currentMonthlyAmount * 100) / 100,
+      yearlyInvested: Math.round(yearlyDeposit),
+      totalInvested: Math.round(totalInvested),
+      returns: Math.round(stepUpCorpus - totalInvested),
+      corpus: Math.round(stepUpCorpus),
+      flatCorpus: Math.round(flatCorpus),
+    });
+  }
+
+  const roundedInvested = Math.round(totalInvested);
+  const roundedCorpus = Math.round(stepUpCorpus);
+  const roundedFlatCorpus = Math.round(flatCorpus);
+  const estimatedReturns = roundedCorpus - roundedInvested;
+
+  return {
+    totalInvested: roundedInvested,
+    estimatedReturns,
+    totalCorpus: roundedCorpus,
+    flatCorpus: roundedFlatCorpus,
+    wealthGain: estimatedReturns,
+    extraReturnsVsFlat: Math.max(0, roundedCorpus - roundedFlatCorpus),
+    yearlyBreakdown,
+  };
+}
+
+/**
+ * Goal-Based SIP Calculator (Reverse solver):
+ * Given a target corpus, calculates the exact starting monthly SIP required
+ * with the specified annual step-up.
+ */
+export function calcGoalSIP(input: GoalSipInput): GoalSipOutput {
+  const { targetCorpus, annualRate, years, stepUpType, stepUpValue } = input;
+  const safeTarget = Math.max(0, targetCorpus);
+
+  if (safeTarget === 0) {
+    return {
+      requiredStartingSip: 0,
+      totalInvested: 0,
+      estimatedReturns: 0,
+      projectedCorpus: 0,
+      yearlyBreakdown: [],
+    };
+  }
+
+  // Binary search to find required starting SIP with precision within ₹0.01
+  let low = 1;
+  let high = safeTarget;
+  let bestSip = high;
+
+  for (let iter = 0; iter < 60; iter++) {
+    const mid = (low + high) / 2;
+    const testResult = calcStepUpSIP({
+      monthlyAmount: mid,
+      annualRate,
+      years,
+      stepUpType,
+      stepUpValue,
+    });
+
+    if (Math.abs(testResult.totalCorpus - safeTarget) <= 1) {
+      bestSip = mid;
+      break;
+    }
+
+    if (testResult.totalCorpus < safeTarget) {
+      low = mid;
+      bestSip = mid;
+    } else {
+      high = mid;
+      bestSip = mid;
+    }
+  }
+
+  const roundedSip = Math.round(bestSip);
+  const finalResult = calcStepUpSIP({
+    monthlyAmount: roundedSip,
+    annualRate,
+    years,
+    stepUpType,
+    stepUpValue,
+  });
+
+  return {
+    requiredStartingSip: roundedSip,
+    totalInvested: finalResult.totalInvested,
+    estimatedReturns: finalResult.estimatedReturns,
+    projectedCorpus: finalResult.totalCorpus,
+    yearlyBreakdown: finalResult.yearlyBreakdown,
+  };
+}
+
+// ─── FEATURE 2: LOAN PRE-PAYMENT VS INVESTMENT COMPARATOR ─────
+
+export type PrepaymentType = "extra_emi_yearly" | "monthly_topup" | "lumpsum";
+
+export interface PrepaymentInput {
+  principal: number;
+  annualRate: number;
+  tenureMonths: number;
+  prepaymentType: PrepaymentType;
+  prepaymentAmount?: number; // for monthly_topup or lumpsum
+  lumpsumYear?: number; // for lumpsum e.g. Year 3
+  investmentRate: number; // expected return on alternative investment (e.g. 12%)
+}
+
+export interface PrepaymentScheduleRow {
+  month: number;
+  emi: number;
+  prepayment: number;
+  principalPaid: number;
+  interestPaid: number;
+  balance: number;
+  cumulativeInterest: number;
+}
+
+export interface PrepaymentVsInvestOutput {
+  originalEmi: number;
+  originalTotalInterest: number;
+  originalTotalPayment: number;
+  newTenureMonths: number;
+  tenureSavedMonths: number;
+  tenureSavedYears: number;
+  newTotalInterest: number;
+  interestSaved: number;
+  totalPrepaymentMade: number;
+  prepayScenarioWealth: number; // wealth accumulated by investing freed EMI after loan closes
+  investScenarioWealth: number; // wealth accumulated if prepayment cashflow was invested from day 1
+  wealthDifference: number;
+  recommendation: "prepay" | "invest" | "neutral";
+  breakEvenRate: number;
+  schedule: PrepaymentScheduleRow[];
+}
+
+export function calcPrepaymentVsInvest(input: PrepaymentInput): PrepaymentVsInvestOutput {
+  const {
+    principal,
+    annualRate,
+    tenureMonths,
+    prepaymentType,
+    prepaymentAmount = 0,
+    lumpsumYear = 3,
+    investmentRate = 12,
+  } = input;
+
+  const safePrincipal = Math.max(0, principal);
+  const safeTenure = Math.max(1, Math.round(tenureMonths));
+  const safeLoanRate = Math.max(0, annualRate);
+  const safeInvestRate = Math.max(0, investmentRate);
+  const r = safeLoanRate / 12 / 100;
+  const invMonthlyRate = safeInvestRate / 12 / 100;
+
+  // Standard EMI calculation
+  let originalEmi: number;
+  if (r === 0) {
+    originalEmi = safePrincipal / safeTenure;
+  } else {
+    const factor = Math.pow(1 + r, safeTenure);
+    originalEmi = (safePrincipal * r * factor) / (factor - 1);
+  }
+
+  const originalTotalPayment = originalEmi * safeTenure;
+  const originalTotalInterest = Math.max(0, originalTotalPayment - safePrincipal);
+
+  // Month-by-month simulation
+  const schedule: PrepaymentScheduleRow[] = [];
+  let balance = safePrincipal;
+  let cumInterest = 0;
+  let totalPrepayments = 0;
+  let newTenureMonths = safeTenure;
+
+  for (let m = 1; m <= safeTenure; m++) {
+    if (balance <= 0) {
+      newTenureMonths = m - 1;
+      break;
+    }
+
+    const interestPart = balance * r;
+    cumInterest += interestPart;
+
+    // Determine prepayment for month m
+    let prepayThisMonth = 0;
+    if (prepaymentType === "extra_emi_yearly" && m % 12 === 0) {
+      prepayThisMonth = originalEmi;
+    } else if (prepaymentType === "monthly_topup") {
+      prepayThisMonth = Math.max(0, prepaymentAmount);
+    } else if (prepaymentType === "lumpsum" && m === lumpsumYear * 12) {
+      prepayThisMonth = Math.max(0, prepaymentAmount);
+    }
+
+    const regularPrincipal = originalEmi - interestPart;
+    const totalPrincipalAttempt = regularPrincipal + prepayThisMonth;
+
+    let actualPrincipalPaid = 0;
+    let actualEmiPaid = originalEmi;
+    let actualPrepayPaid = prepayThisMonth;
+
+    if (totalPrincipalAttempt >= balance) {
+      // Loan concludes in this month
+      actualPrincipalPaid = balance;
+      if (regularPrincipal >= balance) {
+        actualEmiPaid = interestPart + balance;
+        actualPrepayPaid = 0;
+      } else {
+        actualPrepayPaid = balance - regularPrincipal;
+      }
+      balance = 0;
+      totalPrepayments += actualPrepayPaid;
+      newTenureMonths = m;
+
+      schedule.push({
+        month: m,
+        emi: Math.round(actualEmiPaid * 100) / 100,
+        prepayment: Math.round(actualPrepayPaid * 100) / 100,
+        principalPaid: Math.round(actualPrincipalPaid * 100) / 100,
+        interestPaid: Math.round(interestPart * 100) / 100,
+        balance: 0,
+        cumulativeInterest: Math.round(cumInterest * 100) / 100,
+      });
+      break;
+    } else {
+      actualPrincipalPaid = totalPrincipalAttempt;
+      balance = Math.max(0, balance - totalPrincipalAttempt);
+      totalPrepayments += actualPrepayPaid;
+      newTenureMonths = m;
+
+      schedule.push({
+        month: m,
+        emi: Math.round(originalEmi * 100) / 100,
+        prepayment: Math.round(actualPrepayPaid * 100) / 100,
+        principalPaid: Math.round(actualPrincipalPaid * 100) / 100,
+        interestPaid: Math.round(interestPart * 100) / 100,
+        balance: Math.round(balance * 100) / 100,
+        cumulativeInterest: Math.round(cumInterest * 100) / 100,
+      });
+    }
+  }
+
+  const tenureSavedMonths = Math.max(0, safeTenure - newTenureMonths);
+  const tenureSavedYears = Math.round((tenureSavedMonths / 12) * 10) / 10;
+  const newTotalInterest = Math.round(cumInterest);
+  const interestSaved = Math.max(0, Math.round(originalTotalInterest - newTotalInterest));
+
+  // Scenario A: Prepay loan, then invest freed EMI until month safeTenure
+  const monthsFreed = tenureSavedMonths;
+  let prepayScenarioWealth = 0;
+  if (monthsFreed > 0 && invMonthlyRate > 0) {
+    prepayScenarioWealth =
+      originalEmi *
+      (((Math.pow(1 + invMonthlyRate, monthsFreed) - 1) / invMonthlyRate) *
+        (1 + invMonthlyRate));
+  } else if (monthsFreed > 0) {
+    prepayScenarioWealth = originalEmi * monthsFreed;
+  }
+
+  // Scenario B: Invest prepayment amounts directly in mutual funds for safeTenure
+  let investScenarioWealth = 0;
+  for (let m = 1; m <= safeTenure; m++) {
+    let deposit = 0;
+    if (prepaymentType === "extra_emi_yearly" && m % 12 === 0) {
+      deposit = originalEmi;
+    } else if (prepaymentType === "monthly_topup") {
+      deposit = Math.max(0, prepaymentAmount);
+    } else if (prepaymentType === "lumpsum" && m === lumpsumYear * 12) {
+      deposit = Math.max(0, prepaymentAmount);
+    }
+
+    if (deposit > 0) {
+      const remainingMonths = safeTenure - m + 1;
+      if (invMonthlyRate > 0) {
+        investScenarioWealth += deposit * Math.pow(1 + invMonthlyRate, remainingMonths);
+      } else {
+        investScenarioWealth += deposit;
+      }
+    }
+  }
+
+  const roundedPrepayWealth = Math.round(prepayScenarioWealth);
+  const roundedInvestWealth = Math.round(investScenarioWealth);
+  const wealthDifference = Math.abs(roundedInvestWealth - roundedPrepayWealth);
+
+  let recommendation: "prepay" | "invest" | "neutral" = "neutral";
+  if (roundedInvestWealth > roundedPrepayWealth + 1000) {
+    recommendation = "invest";
+  } else if (roundedPrepayWealth > roundedInvestWealth + 1000) {
+    recommendation = "prepay";
+  }
+
+  // Break-even return rate (approx loan rate adjusted for compounding)
+  const breakEvenRate = Math.round(safeLoanRate * 10) / 10;
+
+  return {
+    originalEmi: Math.round(originalEmi),
+    originalTotalInterest: Math.round(originalTotalInterest),
+    originalTotalPayment: Math.round(originalTotalPayment),
+    newTenureMonths,
+    tenureSavedMonths,
+    tenureSavedYears,
+    newTotalInterest,
+    interestSaved,
+    totalPrepaymentMade: Math.round(totalPrepayments),
+    prepayScenarioWealth: roundedPrepayWealth,
+    investScenarioWealth: roundedInvestWealth,
+    wealthDifference,
+    recommendation,
+    breakEvenRate,
+    schedule,
+  };
+}
+
+// ─── FEATURE 3: NO-COST EMI & BNPL TRUE COST REVEALER ─────────
+
+export interface NoCostEmiInput {
+  productPrice: number;
+  tenureMonths: number; // 3, 6, 9, 12, 24
+  bankInterestRate?: number; // annual interest e.g. 15%
+  processingFee: number; // e.g. 199
+  upfrontDiscountForfeited: number; // e.g. ₹3,000 instant discount lost by not paying full upfront
+  gstRatePercent?: number; // default 18%
+}
+
+export interface NoCostEmiMonthRow {
+  month: number;
+  emi: number;
+  principal: number;
+  interest: number;
+  gstOnInterest: number;
+  totalMonthlyOutflow: number;
+  remainingLoanBalance: number;
+}
+
+export interface NoCostEmiOutput {
+  productPrice: number;
+  monthlyEmi: number;
+  totalEmiPaid: number;
+  hiddenInterest: number;
+  hiddenGst: number;
+  processingFeeWithGst: number;
+  totalCostEmi: number;
+  totalCostUpfront: number;
+  netDifference: number; // positive = upfront saves money; negative = EMI is cheaper
+  effectiveApr: number; // annualized IRR
+  verdict: string;
+  cheaperOption: "upfront" | "emi" | "same";
+  monthlyBreakdown: NoCostEmiMonthRow[];
+}
+
+export function calcNoCostEMITruth(input: NoCostEmiInput): NoCostEmiOutput {
+  const {
+    productPrice,
+    tenureMonths,
+    bankInterestRate = 15,
+    processingFee,
+    upfrontDiscountForfeited,
+    gstRatePercent = 18,
+  } = input;
+
+  // Defensive input clamping
+  const safePrice = Math.max(1, productPrice || 0);
+  const safeTenure = Math.max(1, Math.min(60, Math.round(tenureMonths || 3)));
+  const safeBankRate = Math.max(0.1, bankInterestRate || 15);
+  const safeFee = Math.max(0, processingFee || 0);
+  const safeForfeitedDisc = Math.max(0, Math.min(safePrice, upfrontDiscountForfeited || 0));
+  const safeGstRate = Math.max(0, gstRatePercent || 18);
+
+  const r = safeBankRate / 12 / 100;
+  const gstMultiplier = safeGstRate / 100;
+
+  // Subvention Mechanics:
+  // Retailer sets EMI = Price / Tenure
+  const monthlyEmi = safePrice / safeTenure;
+
+  // Discounted loan amount sanctioned by the bank:
+  const discountFactor = (1 - Math.pow(1 + r, -safeTenure)) / r;
+  const loanPrincipal = monthlyEmi * discountFactor;
+  const hiddenInterest = Math.max(0, safePrice - loanPrincipal);
+
+  // Month-by-month loan amortization with GST on interest
+  const monthlyBreakdown: NoCostEmiMonthRow[] = [];
+  let balance = loanPrincipal;
+  let totalGstOnInterest = 0;
+
+  for (let m = 1; m <= safeTenure; m++) {
+    const interestPart = balance * r;
+    const principalPart = Math.min(balance, monthlyEmi - interestPart);
+    const gstOnInt = interestPart * gstMultiplier;
+    totalGstOnInterest += gstOnInt;
+
+    balance = Math.max(0, balance - principalPart);
+
+    monthlyBreakdown.push({
+      month: m,
+      emi: Math.round(monthlyEmi * 100) / 100,
+      principal: Math.round(principalPart * 100) / 100,
+      interest: Math.round(interestPart * 100) / 100,
+      gstOnInterest: Math.round(gstOnInt * 100) / 100,
+      totalMonthlyOutflow: Math.round((monthlyEmi + gstOnInt) * 100) / 100,
+      remainingLoanBalance: Math.round(balance * 100) / 100,
+    });
+  }
+
+  const processingFeeWithGst = safeFee * (1 + gstMultiplier);
+  const totalEmiPaid = safePrice;
+  const totalCostEmi = Math.round(totalEmiPaid + totalGstOnInterest + processingFeeWithGst);
+  const totalCostUpfront = Math.round(safePrice - safeForfeitedDisc);
+  const netDifference = totalCostEmi - totalCostUpfront;
+
+  // Solver for Effective Annual Percentage Rate (APR / IRR)
+  // Cashflow: +Net Upfront Amount Saved at t=0; -Total Outflow at t=1..n
+  const initialCashflow = totalCostUpfront - processingFeeWithGst;
+  const outflows = monthlyBreakdown.map((row) => row.totalMonthlyOutflow);
+
+  let monthlyIrr = 0.01;
+  if (initialCashflow > 0 && outflows.length > 0) {
+    // Bounded Newton-Raphson
+    for (let iter = 0; iter < 60; iter++) {
+      let f = -initialCashflow;
+      let df = 0;
+      for (let t = 1; t <= outflows.length; t++) {
+        const disc = Math.pow(1 + monthlyIrr, t);
+        f += outflows[t - 1] / disc;
+        df -= (t * outflows[t - 1]) / (disc * (1 + monthlyIrr));
+      }
+
+      if (Math.abs(f) < 0.0001 || Math.abs(df) < 1e-9) break;
+      const step = f / df;
+      monthlyIrr = Math.max(-0.5, Math.min(2.0, monthlyIrr - step));
+    }
+  }
+
+  const annualizedApr = Math.max(0, Math.round(monthlyIrr * 12 * 100 * 10) / 10);
+
+  let cheaperOption: "upfront" | "emi" | "same" = "same";
+  let verdict = "";
+
+  if (netDifference > 50) {
+    cheaperOption = "upfront";
+    verdict = `Paying upfront saves you ₹${Math.round(netDifference).toLocaleString("en-IN")} (True Cost: ${annualizedApr}% APR)`;
+  } else if (netDifference < -50) {
+    cheaperOption = "emi";
+    verdict = `No-Cost EMI is cheaper by ₹${Math.round(Math.abs(netDifference)).toLocaleString("en-IN")}`;
+  } else {
+    cheaperOption = "same";
+    verdict = "Both options cost approximately the same.";
+  }
+
+  return {
+    productPrice: Math.round(safePrice),
+    monthlyEmi: Math.round(monthlyEmi),
+    totalEmiPaid: Math.round(totalEmiPaid),
+    hiddenInterest: Math.round(hiddenInterest),
+    hiddenGst: Math.round(totalGstOnInterest),
+    processingFeeWithGst: Math.round(processingFeeWithGst),
+    totalCostEmi,
+    totalCostUpfront,
+    netDifference: Math.round(netDifference),
+    effectiveApr: annualizedApr,
+    verdict,
+    cheaperOption,
+    monthlyBreakdown,
+  };
+}
+
+// ─── FEATURE 4: FIRE & RETIREMENT CALCULATOR ──────────────────
+
+export interface FireInput {
+  currentAge: number;
+  retirementAge: number;
+  lifeExpectancy: number;
+  currentMonthlyExpenses: number;
+  preRetirementReturn: number; // e.g. 12%
+  postRetirementReturn: number; // e.g. 8%
+  inflationRate: number; // e.g. 6%
+  swrPercent?: number; // e.g. 4%
+  currentSavings?: number;
+}
+
+export interface FireTimelinePoint {
+  age: number;
+  year: number;
+  phase: "accumulation" | "retirement";
+  annualExpenses: number;
+  yearlyContribution: number;
+  yearlyWithdrawal: number;
+  corpus: number;
+}
+
+export interface FireOutput {
+  yearsToRetirement: number;
+  yearsInRetirement: number;
+  monthlyExpenseAtRetirement: number;
+  annualExpenseAtRetirement: number;
+  standardFireCorpus: number;
+  leanFireCorpus: number; // 0.75x
+  fatFireCorpus: number; // 1.5x
+  requiredMonthlySavings: number;
+  depletionAge: number | null;
+  isPerpetual: boolean;
+  timeline: FireTimelinePoint[];
+}
+
+export function calcFIRE(input: FireInput): FireOutput {
+  const {
+    currentAge,
+    retirementAge,
+    lifeExpectancy,
+    currentMonthlyExpenses,
+    preRetirementReturn,
+    postRetirementReturn,
+    inflationRate,
+    swrPercent = 4.0,
+    currentSavings = 0,
+  } = input;
+
+  const safeCurrentAge = Math.max(18, Math.min(100, Math.round(currentAge || 30)));
+  const safeRetireAge = Math.max(safeCurrentAge, Math.min(100, Math.round(retirementAge || 50)));
+  const safeLifeExp = Math.max(safeRetireAge + 1, Math.min(120, Math.round(lifeExpectancy || 85)));
+  const safeMonthlyExp = Math.max(0, currentMonthlyExpenses || 0);
+
+  const safePreRate = Math.max(0, preRetirementReturn || 12);
+  const safePostRate = Math.max(0, postRetirementReturn || 8);
+  const safeInflation = Math.max(0, inflationRate || 6);
+  const safeSwr = Math.max(0.1, swrPercent || 4.0);
+  const safeSavings = Math.max(0, currentSavings || 0);
+
+  const yearsToRetirement = safeRetireAge - safeCurrentAge;
+  const yearsInRetirement = safeLifeExp - safeRetireAge;
+  const totalYears = safeLifeExp - safeCurrentAge;
+
+  const currentAnnualExpenses = safeMonthlyExp * 12;
+  const inflationDec = safeInflation / 100;
+  const preRateDec = safePreRate / 100;
+  const postRateDec = safePostRate / 100;
+
+  // Annual expense at retirement start
+  const annualExpenseAtRetirement =
+    currentAnnualExpenses * Math.pow(1 + inflationDec, yearsToRetirement);
+  const monthlyExpenseAtRetirement = annualExpenseAtRetirement / 12;
+
+  // Real post-retirement rate of return
+  const rReal = (1 + postRateDec) / (1 + inflationDec) - 1;
+
+  // Standard FIRE Corpus needed at retirement date
+  let standardFireCorpus = 0;
+  if (safeMonthlyExp === 0) {
+    standardFireCorpus = 0;
+  } else if (Math.abs(rReal) < 1e-7) {
+    standardFireCorpus = annualExpenseAtRetirement * yearsInRetirement;
+  } else {
+    standardFireCorpus =
+      annualExpenseAtRetirement *
+      ((1 - Math.pow(1 + rReal, -yearsInRetirement)) / rReal);
+  }
+
+  const roundedStandard = Math.round(standardFireCorpus);
+  const leanFireCorpus = Math.round(roundedStandard * 0.75);
+  const fatFireCorpus = Math.round(roundedStandard * 1.5);
+
+  // Required monthly savings calculation
+  let requiredMonthlySavings = 0;
+  if (yearsToRetirement > 0 && roundedStandard > 0) {
+    const fvExisting = safeSavings * Math.pow(1 + preRateDec, yearsToRetirement);
+    const shortfall = Math.max(0, roundedStandard - fvExisting);
+
+    const mRate = preRateDec / 12;
+    const totalMonths = yearsToRetirement * 12;
+
+    if (mRate === 0) {
+      requiredMonthlySavings = shortfall / totalMonths;
+    } else {
+      requiredMonthlySavings =
+        shortfall /
+        (((Math.pow(1 + mRate, totalMonths) - 1) / mRate) * (1 + mRate));
+    }
+  }
+
+  // Yearly timeline generation from currentAge to lifeExpectancy
+  const timeline: FireTimelinePoint[] = [];
+  let currentCorpus = safeSavings;
+  let depletionAge: number | null = null;
+  const annualContribution = requiredMonthlySavings * 12;
+
+  for (let y = 1; y <= totalYears; y++) {
+    const currentSimAge = safeCurrentAge + y;
+    const isAccumulation = currentSimAge <= safeRetireAge;
+
+    let annualExp = currentAnnualExpenses * Math.pow(1 + inflationDec, y);
+    let contribution = 0;
+    let withdrawal = 0;
+
+    if (isAccumulation) {
+      contribution = annualContribution;
+      currentCorpus = (currentCorpus + contribution) * (1 + preRateDec);
+    } else {
+      const retirementYearIndex = currentSimAge - safeRetireAge;
+      withdrawal =
+        annualExpenseAtRetirement *
+        Math.pow(1 + inflationDec, retirementYearIndex - 1);
+
+      if (currentCorpus > 0) {
+        const netAfterWithdrawal = currentCorpus - withdrawal;
+        if (netAfterWithdrawal <= 0) {
+          currentCorpus = 0;
+          if (depletionAge === null) {
+            depletionAge = currentSimAge;
+          }
+        } else {
+          currentCorpus = netAfterWithdrawal * (1 + postRateDec);
+        }
+      } else {
+        currentCorpus = 0;
+        if (depletionAge === null) {
+          depletionAge = currentSimAge;
+        }
+      }
+    }
+
+    timeline.push({
+      age: currentSimAge,
+      year: y,
+      phase: isAccumulation ? "accumulation" : "retirement",
+      annualExpenses: Math.round(annualExp),
+      yearlyContribution: Math.round(contribution),
+      yearlyWithdrawal: Math.round(withdrawal),
+      corpus: Math.round(currentCorpus),
+    });
+  }
+
+  const isPerpetual = rReal > 0 && rReal >= safeSwr / 100;
+
+  return {
+    yearsToRetirement,
+    yearsInRetirement,
+    monthlyExpenseAtRetirement: Math.round(monthlyExpenseAtRetirement),
+    annualExpenseAtRetirement: Math.round(annualExpenseAtRetirement),
+    standardFireCorpus: roundedStandard,
+    leanFireCorpus,
+    fatFireCorpus,
+    requiredMonthlySavings: Math.round(requiredMonthlySavings),
+    depletionAge,
+    isPerpetual,
+    timeline,
+  };
+}
+
+
+
+

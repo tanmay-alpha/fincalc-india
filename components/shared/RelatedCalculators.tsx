@@ -2,23 +2,69 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
 interface Props {
-  current: "sip" | "emi" | "fd" | "ppf" | "lumpsum" | "tax";
+  current:
+    | "sip"
+    | "emi"
+    | "fd"
+    | "ppf"
+    | "lumpsum"
+    | "tax"
+    | "step-up-sip"
+    | "loan-prepayment"
+    | "no-cost-emi"
+    | "fire"
+    | string;
 }
 
 const all = [
   {
+    id: "step-up-sip",
+    label: "Step-Up SIP",
+    icon: "📈",
+    desc: "Annual increment & goal planning",
+    href: "/step-up-sip",
+  },
+  {
+    id: "loan-prepayment",
+    label: "Loan Pre-Payment",
+    icon: "🏦",
+    desc: "Prepay vs Mutual Fund invest",
+    href: "/loan-prepayment",
+  },
+  {
+    id: "no-cost-emi",
+    label: "No-Cost EMI Truth",
+    icon: "📱",
+    desc: "Hidden interest & GST revealer",
+    href: "/no-cost-emi",
+  },
+  {
+    id: "fire",
+    label: "FIRE Retirement",
+    icon: "🏖️",
+    desc: "Financial freedom & corpus",
+    href: "/fire",
+  },
+  {
     id: "sip",
     label: "SIP",
-    icon: "📈",
+    icon: "📊",
     desc: "Monthly investment returns",
     href: "/sip",
   },
   {
     id: "emi",
     label: "EMI",
-    icon: "🏦",
+    icon: "💳",
     desc: "Loan EMI calculator",
     href: "/emi",
+  },
+  {
+    id: "tax",
+    label: "Income Tax",
+    icon: "🧾",
+    desc: "Old vs New regime",
+    href: "/tax",
   },
   {
     id: "fd",
@@ -40,13 +86,6 @@ const all = [
     icon: "💰",
     desc: "One-time investment growth",
     href: "/lumpsum",
-  },
-  {
-    id: "tax",
-    label: "Tax",
-    icon: "🧾",
-    desc: "Old vs New regime",
-    href: "/tax",
   },
 ] as const;
 

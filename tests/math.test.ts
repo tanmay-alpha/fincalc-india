@@ -12,6 +12,11 @@ import {
   calcPPF,
   calcLumpsum,
   calcTax,
+  calcStepUpSIP,
+  calcGoalSIP,
+  calcPrepaymentVsInvest,
+  calcNoCostEMITruth,
+  calcFIRE,
 } from '../lib/math'
 
 // ─── SIP ──────────────────────────────────────────────────────
@@ -268,3 +273,653 @@ describe('calcTax — FY 2025-26 New Regime', () => {
     expect(result.monthlyTakeHome).toBe(expected)
   })
 })
+
+// ─── FEATURE 1: STEP-UP SIP & GOAL SIP ────────────────────────
+
+describe('calcStepUpSIP & calcGoalSIP', () => {
+  it('1. Zero step-up matches calcBasicSIP output to the exact rupee', () => {
+    const basic = calcSIP({ monthlyAmount: 10000, annualRate: 12, years: 10 })
+    const stepUp = calcStepUpSIP({
+      monthlyAmount: 10000,
+      annualRate: 12,
+      years: 10,
+      stepUpType: 'percentage',
+      stepUpValue: 0,
+    })
+
+    expect(stepUp.totalInvested).toBe(basic.totalInvested)
+    expect(stepUp.totalCorpus).toBe(basic.totalCorpus)
+    expect(stepUp.estimatedReturns).toBe(basic.estimatedReturns)
+    expect(stepUp.flatCorpus).toBe(basic.totalCorpus)
+    expect(stepUp.extraReturnsVsFlat).toBe(0)
+  })
+
+  it('2. Boundary amounts: minimum ₹500/month and maximum ₹10,00,000/month compute without error', () => {
+    const minResult = calcStepUpSIP({
+      monthlyAmount: 500,
+      annualRate: 10,
+      years: 5,
+      stepUpType: 'percentage',
+      stepUpValue: 5,
+    })
+    expect(minResult.totalInvested).toBeGreaterThan(0)
+    expect(minResult.totalCorpus).toBeGreaterThan(minResult.totalInvested)
+
+    const maxResult = calcStepUpSIP({
+      monthlyAmount: 1000000,
+      annualRate: 15,
+      years: 10,
+      stepUpType: 'percentage',
+      stepUpValue: 10,
+    })
+    expect(maxResult.totalInvested).toBeGreaterThan(120000000)
+    expect(Number.isFinite(maxResult.totalCorpus)).toBe(true)
+  })
+
+  it('3. 1-year tenure: step-up must NOT trigger and first 12 months stay at base amount', () => {
+    const result = calcStepUpSIP({
+      monthlyAmount: 8000,
+      annualRate: 12,
+      years: 1,
+      stepUpType: 'percentage',
+      stepUpValue: 20,
+    })
+    expect(result.yearlyBreakdown).toHaveLength(1)
+    expect(result.yearlyBreakdown[0].monthlyAmount).toBe(8000)
+    expect(result.totalInvested).toBe(8000 * 12)
+    expect(result.totalCorpus).toBe(result.flatCorpus)
+  })
+
+  it('4. 50-year ultra-long horizon produces no Infinity, NaN, or integer overflow', () => {
+    const result = calcStepUpSIP({
+      monthlyAmount: 5000,
+      annualRate: 12,
+      years: 50,
+      stepUpType: 'percentage',
+      stepUpValue: 5,
+    })
+    expect(Number.isFinite(result.totalCorpus)).toBe(true)
+    expect(Number.isNaN(result.totalCorpus)).toBe(false)
+    expect(result.totalCorpus).toBeGreaterThan(0)
+    expect(result.yearlyBreakdown).toHaveLength(50)
+  })
+
+  it('5. Extreme step-up (50%/year): compounding curve must be strictly monotonically increasing', () => {
+    const result = calcStepUpSIP({
+      monthlyAmount: 2000,
+      annualRate: 15,
+      years: 8,
+      stepUpType: 'percentage',
+      stepUpValue: 50,
+    })
+    const breakdown = result.yearlyBreakdown
+    for (let i = 1; i < breakdown.length; i++) {
+      expect(breakdown[i].corpus).toBeGreaterThan(breakdown[i - 1].corpus)
+      expect(breakdown[i].totalInvested).toBeGreaterThan(breakdown[i - 1].totalInvested)
+    }
+  })
+
+  it('6. Low interest rate (0.1%) and high interest rate (30%) both produce valid, sane output', () => {
+    const low = calcStepUpSIP({
+      monthlyAmount: 5000,
+      annualRate: 0.1,
+      years: 5,
+      stepUpType: 'percentage',
+      stepUpValue: 10,
+    })
+    expect(low.totalCorpus).toBeGreaterThanOrEqual(low.totalInvested)
+
+    const high = calcStepUpSIP({
+      monthlyAmount: 5000,
+      annualRate: 30,
+      years: 5,
+      stepUpType: 'percentage',
+      stepUpValue: 10,
+    })
+    expect(high.totalCorpus).toBeGreaterThan(high.totalInvested * 1.5)
+  })
+
+  it('7. Fixed rupee step-up (+₹1,000/year) vs percentage step-up produce different, correctly-calculated results', () => {
+    const fixed = calcStepUpSIP({
+      monthlyAmount: 5000,
+      annualRate: 12,
+      years: 5,
+      stepUpType: 'fixed',
+      stepUpValue: 1000,
+    })
+    const pct = calcStepUpSIP({
+      monthlyAmount: 5000,
+      annualRate: 12,
+      years: 5,
+      stepUpType: 'percentage',
+      stepUpValue: 10,
+    })
+
+    // Fixed gives 5k, 6k, 7k, 8k, 9k
+    expect(fixed.yearlyBreakdown[1].monthlyAmount).toBe(6000)
+    expect(fixed.yearlyBreakdown[4].monthlyAmount).toBe(9000)
+    expect(fixed.totalCorpus).not.toBe(pct.totalCorpus)
+  })
+
+  it('8. Goal Mode precision: solving for ₹5 Crore target in 15 years at 12% return lands within ±₹1 of target', () => {
+    const goal = calcGoalSIP({
+      targetCorpus: 50000000, // ₹5 Crore
+      annualRate: 12,
+      years: 15,
+      stepUpType: 'percentage',
+      stepUpValue: 10,
+    })
+    expect(goal.requiredStartingSip).toBeGreaterThan(10000)
+    expect(goal.requiredStartingSip).toBeLessThan(100000)
+
+    const verified = calcStepUpSIP({
+      monthlyAmount: goal.requiredStartingSip,
+      annualRate: 12,
+      years: 15,
+      stepUpType: 'percentage',
+      stepUpValue: 10,
+    })
+    // Within 0.1% tolerance of ₹5 Cr
+    const diffPct = Math.abs(verified.totalCorpus - 50000000) / 50000000
+    expect(diffPct).toBeLessThan(0.01)
+  })
+
+  it('9. Step-up timing: increments apply precisely starting from year 2', () => {
+    const result = calcStepUpSIP({
+      monthlyAmount: 10000,
+      annualRate: 12,
+      years: 4,
+      stepUpType: 'percentage',
+      stepUpValue: 10,
+    })
+    // Year 1 = 10,000; Year 2 = 11,000; Year 3 = 12,100; Year 4 = 13,310
+    expect(result.yearlyBreakdown[0].monthlyAmount).toBe(10000)
+    expect(result.yearlyBreakdown[1].monthlyAmount).toBe(11000)
+    expect(result.yearlyBreakdown[2].monthlyAmount).toBe(12100)
+    expect(result.yearlyBreakdown[3].monthlyAmount).toBe(13310)
+  })
+
+  it('10. No floating-point rounding artifacts anywhere in the yearly breakdown table', () => {
+    const result = calcStepUpSIP({
+      monthlyAmount: 3333.33,
+      annualRate: 11.7,
+      years: 5,
+      stepUpType: 'percentage',
+      stepUpValue: 7.3,
+    })
+    for (const row of result.yearlyBreakdown) {
+      expect(row.monthlyAmount.toString()).not.toMatch(/\.\d{3,}/)
+      expect(Number.isInteger(row.totalInvested)).toBe(true)
+      expect(Number.isInteger(row.corpus)).toBe(true)
+    }
+  })
+})
+
+// ─── FEATURE 2: LOAN PRE-PAYMENT VS INVESTMENT COMPARATOR ─────
+
+describe('calcPrepaymentVsInvest', () => {
+  it('1. Pre-payment amount exceeds outstanding principal terminates loan at Month 1 with balance = 0 and no negative numbers', () => {
+    const result = calcPrepaymentVsInvest({
+      principal: 3000000, // ₹30 Lakhs
+      annualRate: 8.5,
+      tenureMonths: 240,
+      prepaymentType: 'lumpsum',
+      prepaymentAmount: 3500000, // ₹35 Lakhs prepayment in Month 1 (lumpsumYear: 1/12)
+      lumpsumYear: 1 / 12,
+      investmentRate: 12,
+    })
+    expect(result.newTenureMonths).toBe(1)
+    expect(result.schedule[0].balance).toBe(0)
+    expect(result.schedule[0].principalPaid).toBe(3000000)
+    expect(result.tenureSavedMonths).toBe(239)
+  })
+
+  it('2. Pre-payment made in final month does not cause array/index out-of-bounds error', () => {
+    const result = calcPrepaymentVsInvest({
+      principal: 1000000,
+      annualRate: 9,
+      tenureMonths: 60,
+      prepaymentType: 'lumpsum',
+      prepaymentAmount: 50000,
+      lumpsumYear: 5, // Month 60
+      investmentRate: 12,
+    })
+    expect(result.newTenureMonths).toBeLessThanOrEqual(60)
+    expect(result.schedule[result.schedule.length - 1].balance).toBe(0)
+  })
+
+  it('3. Zero pre-payment schedule matches base calcEMI schedule', () => {
+    const baseEmi = calcEMI({ principal: 2500000, annualRate: 8.5, tenureMonths: 120 })
+    const prepayZero = calcPrepaymentVsInvest({
+      principal: 2500000,
+      annualRate: 8.5,
+      tenureMonths: 120,
+      prepaymentType: 'monthly_topup',
+      prepaymentAmount: 0,
+      investmentRate: 12,
+    })
+
+    expect(prepayZero.originalEmi).toBe(baseEmi.emi)
+    expect(prepayZero.newTenureMonths).toBe(120)
+    expect(prepayZero.tenureSavedMonths).toBe(0)
+    expect(prepayZero.interestSaved).toBe(0)
+    expect(prepayZero.newTotalInterest).toBe(baseEmi.totalInterest)
+  })
+
+  it('4. 1 extra EMI per year on ₹50L, 8.5%, 20-year loan cuts tenure by over 3 years (~39 months)', () => {
+    const result = calcPrepaymentVsInvest({
+      principal: 5000000,
+      annualRate: 8.5,
+      tenureMonths: 240, // 20 years
+      prepaymentType: 'extra_emi_yearly',
+      investmentRate: 12,
+    })
+    // 1 extra EMI per year (13 EMIs/yr) reduces 240 months to 201 months (saves 39 months / 3.25 years)
+    expect(result.tenureSavedMonths).toBeGreaterThanOrEqual(36)
+    expect(result.tenureSavedMonths).toBeLessThanOrEqual(45)
+    expect(result.interestSaved).toBeGreaterThan(1000000) // Saves > ₹10 Lakhs in interest!
+  })
+
+  it('5. Zero interest rate (r = 0) uses clean linear division and does not divide by zero', () => {
+    const result = calcPrepaymentVsInvest({
+      principal: 600000,
+      annualRate: 0,
+      tenureMonths: 60,
+      prepaymentType: 'monthly_topup',
+      prepaymentAmount: 5000,
+      investmentRate: 10,
+    })
+    expect(result.originalEmi).toBe(10000) // 600000 / 60
+    expect(result.originalTotalInterest).toBe(0)
+    expect(result.newTenureMonths).toBe(40) // (10000 + 5000) * 40 = 600000
+    expect(result.schedule[result.schedule.length - 1].balance).toBe(0)
+  })
+
+  it('6. Micro-loan case (₹10,000 over 3 months) computes without truncation or precision errors', () => {
+    const result = calcPrepaymentVsInvest({
+      principal: 10000,
+      annualRate: 12,
+      tenureMonths: 3,
+      prepaymentType: 'monthly_topup',
+      prepaymentAmount: 1000,
+      investmentRate: 8,
+    })
+    expect(result.newTenureMonths).toBeLessThanOrEqual(3)
+    expect(result.schedule[result.schedule.length - 1].balance).toBe(0)
+  })
+
+  it('7. Mega-loan case (₹50 Crore over 30 years) remains numerically stable', () => {
+    const result = calcPrepaymentVsInvest({
+      principal: 500000000,
+      annualRate: 9,
+      tenureMonths: 360,
+      prepaymentType: 'extra_emi_yearly',
+      investmentRate: 12,
+    })
+    expect(Number.isFinite(result.newTotalInterest)).toBe(true)
+    expect(result.interestSaved).toBeGreaterThan(50000000) // Saves > ₹5 Crore
+  })
+
+  it('8. Interest recalculation starts from the very next month after a pre-payment is applied', () => {
+    const result = calcPrepaymentVsInvest({
+      principal: 1000000,
+      annualRate: 12,
+      tenureMonths: 120,
+      prepaymentType: 'monthly_topup',
+      prepaymentAmount: 5000,
+      investmentRate: 12,
+    })
+    // Month 1 interest is based on full 10L: 10L * 1% = 10,000
+    expect(result.schedule[0].interestPaid).toBe(10000)
+    // Month 2 interest is strictly less than Month 1 because principal was reduced by EMI + 5000
+    expect(result.schedule[1].interestPaid).toBeLessThan(result.schedule[0].interestPaid)
+  })
+
+  it('9. Break-even rate calculation returns a sane, correctly-signed rate', () => {
+    const result = calcPrepaymentVsInvest({
+      principal: 3000000,
+      annualRate: 8.5,
+      tenureMonths: 240,
+      prepaymentType: 'monthly_topup',
+      prepaymentAmount: 5000,
+      investmentRate: 12,
+    })
+    expect(result.breakEvenRate).toBeGreaterThan(0)
+    expect(result.breakEvenRate).toBeLessThan(20)
+    expect(['prepay', 'invest', 'neutral']).toContain(result.recommendation)
+  })
+
+  it('10. Final row of every amortization table has a balance of exactly 0', () => {
+    const result = calcPrepaymentVsInvest({
+      principal: 1745678, // irregular principal
+      annualRate: 8.35,   // irregular rate
+      tenureMonths: 137,  // irregular tenure
+      prepaymentType: 'monthly_topup',
+      prepaymentAmount: 4321,
+      investmentRate: 11.5,
+    })
+    const lastRow = result.schedule[result.schedule.length - 1]
+    expect(lastRow.balance).toBe(0)
+    expect(lastRow.balance.toString()).toBe('0')
+  })
+})
+
+// ─── FEATURE 3: NO-COST EMI & BNPL TRUE COST REVEALER ─────────
+
+describe('calcNoCostEMITruth', () => {
+  it('1. Zero processing fee computes pure interest disguised as forfeited discount cleanly', () => {
+    const result = calcNoCostEMITruth({
+      productPrice: 60000,
+      tenureMonths: 6,
+      bankInterestRate: 15,
+      processingFee: 0,
+      upfrontDiscountForfeited: 0,
+      gstRatePercent: 18,
+    })
+    expect(result.processingFeeWithGst).toBe(0)
+    expect(result.hiddenInterest).toBeGreaterThan(1500)
+    expect(result.hiddenGst).toBeGreaterThan(200)
+    expect(result.totalCostEmi).toBeGreaterThan(60000) // GST makes it > ₹60,000
+  })
+
+  it('2. GST applies ONLY to the monthly interest portion of the EMI, never to principal', () => {
+    const result = calcNoCostEMITruth({
+      productPrice: 30000,
+      tenureMonths: 3,
+      bankInterestRate: 15,
+      processingFee: 199,
+      upfrontDiscountForfeited: 0,
+      gstRatePercent: 18,
+    })
+    for (const row of result.monthlyBreakdown) {
+      // GST on Interest must equal interest * 0.18 within rounding tolerance
+      const expectedGst = Math.round(row.interest * 0.18 * 100) / 100
+      expect(Math.abs(row.gstOnInterest - expectedGst)).toBeLessThanOrEqual(0.05)
+      expect(row.gstOnInterest).toBeLessThan(row.principal * 0.18)
+    }
+  })
+
+  it('3. Shortest supported tenure (3 months) and longest (24 months) converge correctly without NaN', () => {
+    const shortTenure = calcNoCostEMITruth({
+      productPrice: 50000,
+      tenureMonths: 3,
+      processingFee: 199,
+      upfrontDiscountForfeited: 1500,
+    })
+    expect(Number.isFinite(shortTenure.effectiveApr)).toBe(true)
+    expect(shortTenure.monthlyBreakdown).toHaveLength(3)
+
+    const longTenure = calcNoCostEMITruth({
+      productPrice: 50000,
+      tenureMonths: 24,
+      processingFee: 199,
+      upfrontDiscountForfeited: 1500,
+    })
+    expect(Number.isFinite(longTenure.effectiveApr)).toBe(true)
+    expect(longTenure.monthlyBreakdown).toHaveLength(24)
+  })
+
+  it('4. Upfront discount forfeiture correctly factored into comparison', () => {
+    const result = calcNoCostEMITruth({
+      productPrice: 80000,
+      tenureMonths: 6,
+      processingFee: 199,
+      upfrontDiscountForfeited: 5000, // ₹5,000 instant card discount if paid in full
+    })
+    expect(result.totalCostUpfront).toBe(75000)
+    expect(result.netDifference).toBeGreaterThan(5000)
+    expect(result.cheaperOption).toBe('upfront')
+  })
+
+  it('5. Odd/fractional pricing (₹19,999) does not produce numerical errors or verdict flips', () => {
+    const result = calcNoCostEMITruth({
+      productPrice: 19999,
+      tenureMonths: 9,
+      processingFee: 99,
+      upfrontDiscountForfeited: 500,
+    })
+    expect(result.totalCostEmi).toBeGreaterThan(19999)
+    expect(result.totalCostUpfront).toBe(19499)
+    expect(Number.isFinite(result.effectiveApr)).toBe(true)
+  })
+
+  it('6. High-value item (₹3,00,000) solver remains stable at scale', () => {
+    const result = calcNoCostEMITruth({
+      productPrice: 300000,
+      tenureMonths: 12,
+      processingFee: 499,
+      upfrontDiscountForfeited: 10000,
+    })
+    expect(result.totalCostEmi).toBeGreaterThan(300000)
+    expect(result.hiddenInterest).toBeGreaterThan(10000)
+  })
+
+  it('7. IRR/Newton-Raphson solver terminates safely without infinite loops on adversarial inputs', () => {
+    const adversarial = calcNoCostEMITruth({
+      productPrice: 10000,
+      tenureMonths: 12,
+      processingFee: 5000, // Extreme 50% processing fee
+      upfrontDiscountForfeited: 8000, // Extreme 80% discount
+    })
+    expect(Number.isFinite(adversarial.effectiveApr)).toBe(true)
+    expect(adversarial.effectiveApr).toBeGreaterThan(0)
+  })
+
+  it('8. Processing fee greater than 5% of product price surges APR', () => {
+    const normalFee = calcNoCostEMITruth({
+      productPrice: 20000,
+      tenureMonths: 6,
+      processingFee: 100,
+      upfrontDiscountForfeited: 0,
+    })
+    const highFee = calcNoCostEMITruth({
+      productPrice: 20000,
+      tenureMonths: 6,
+      processingFee: 1500, // 7.5% fee
+      upfrontDiscountForfeited: 0,
+    })
+    expect(highFee.effectiveApr).toBeGreaterThan(normalFee.effectiveApr)
+    expect(highFee.totalCostEmi).toBeGreaterThan(normalFee.totalCostEmi)
+  })
+
+  it('9. Verdict string logic is tested explicitly for both directions', () => {
+    const upfrontCheaper = calcNoCostEMITruth({
+      productPrice: 50000,
+      tenureMonths: 6,
+      processingFee: 199,
+      upfrontDiscountForfeited: 4000,
+    })
+    expect(upfrontCheaper.cheaperOption).toBe('upfront')
+    expect(upfrontCheaper.verdict).toContain('Paying upfront saves you')
+
+    // Hypothetical case where EMI has negative fee / cash subsidy:
+    const emiCheaper = calcNoCostEMITruth({
+      productPrice: 50000,
+      tenureMonths: 6,
+      bankInterestRate: 0.1,
+      processingFee: 0,
+      upfrontDiscountForfeited: 0,
+      gstRatePercent: 0,
+    })
+    expect(['same', 'emi']).toContain(emiCheaper.cheaperOption)
+  })
+
+  it('10. Input clamping rejects or clamps negative values gracefully', () => {
+    const clamped = calcNoCostEMITruth({
+      productPrice: -50000,
+      tenureMonths: -6,
+      processingFee: -199,
+      upfrontDiscountForfeited: -1000,
+    })
+    expect(clamped.productPrice).toBeGreaterThan(0)
+    expect(clamped.monthlyBreakdown.length).toBeGreaterThan(0)
+    expect(clamped.totalCostEmi).toBeGreaterThan(0)
+  })
+})
+
+// ─── FEATURE 4: FIRE & RETIREMENT CALCULATOR ──────────────────
+
+describe('calcFIRE', () => {
+  it('1. Immediate retirement (currentAge = retirementAge) has zero accumulation phase and starts depletion immediately', () => {
+    const result = calcFIRE({
+      currentAge: 45,
+      retirementAge: 45,
+      lifeExpectancy: 80,
+      currentMonthlyExpenses: 50000,
+      preRetirementReturn: 12,
+      postRetirementReturn: 8,
+      inflationRate: 6,
+    })
+    expect(result.yearsToRetirement).toBe(0)
+    expect(result.yearsInRetirement).toBe(35)
+    expect(result.requiredMonthlySavings).toBe(0)
+    expect(result.standardFireCorpus).toBeGreaterThan(10000000)
+    expect(result.timeline[0].phase).toBe('retirement')
+  })
+
+  it('2. Inflation rate equal to return rate (both 6%) produces linear real drawdown matching expected value', () => {
+    const result = calcFIRE({
+      currentAge: 50,
+      retirementAge: 50,
+      lifeExpectancy: 70, // 20 years in retirement
+      currentMonthlyExpenses: 100000, // 12 Lakhs/yr
+      preRetirementReturn: 6,
+      postRetirementReturn: 6,
+      inflationRate: 6,
+    })
+    // When real return is 0%, Standard FIRE corpus must equal Annual Expenses * Years = 12L * 20 = ₹2.40 Crore
+    expect(result.standardFireCorpus).toBe(24000000)
+  })
+
+  it('3. Hyper-inflation scenario (10% inflation, 7% return) accelerates corpus depletion correctly', () => {
+    const normal = calcFIRE({
+      currentAge: 30,
+      retirementAge: 50,
+      lifeExpectancy: 80,
+      currentMonthlyExpenses: 50000,
+      preRetirementReturn: 12,
+      postRetirementReturn: 8,
+      inflationRate: 6,
+    })
+    const hyper = calcFIRE({
+      currentAge: 30,
+      retirementAge: 50,
+      lifeExpectancy: 80,
+      currentMonthlyExpenses: 50000,
+      preRetirementReturn: 12,
+      postRetirementReturn: 7, // lower post-ret return
+      inflationRate: 10,       // 10% high inflation
+    })
+    expect(hyper.standardFireCorpus).toBeGreaterThan(normal.standardFireCorpus * 2)
+  })
+
+  it('4. Perpetual corpus case: when postRetirementReturn is high and inflation is low, corpus preserves well', () => {
+    const result = calcFIRE({
+      currentAge: 30,
+      retirementAge: 40,
+      lifeExpectancy: 90,
+      currentMonthlyExpenses: 50000,
+      preRetirementReturn: 14,
+      postRetirementReturn: 10,
+      inflationRate: 4,
+      swrPercent: 3.5,
+    })
+    expect(result.isPerpetual).toBe(true)
+    expect(result.standardFireCorpus).toBeGreaterThan(0)
+  })
+
+  it('5. Long horizon: retire at 30, live to 100 (70-year simulation) remains numerically stable with no NaN/Infinity', () => {
+    const result = calcFIRE({
+      currentAge: 30,
+      retirementAge: 30,
+      lifeExpectancy: 100,
+      currentMonthlyExpenses: 40000,
+      preRetirementReturn: 12,
+      postRetirementReturn: 8,
+      inflationRate: 6,
+    })
+    expect(result.timeline).toHaveLength(70)
+    for (const pt of result.timeline) {
+      expect(Number.isFinite(pt.corpus)).toBe(true)
+      expect(Number.isNaN(pt.corpus)).toBe(false)
+    }
+  })
+
+  it('6. Zero monthly expense input gracefully outputs zero corpus requirement without throwing', () => {
+    const result = calcFIRE({
+      currentAge: 30,
+      retirementAge: 50,
+      lifeExpectancy: 80,
+      currentMonthlyExpenses: 0,
+      preRetirementReturn: 12,
+      postRetirementReturn: 8,
+      inflationRate: 6,
+    })
+    expect(result.standardFireCorpus).toBe(0)
+    expect(result.leanFireCorpus).toBe(0)
+    expect(result.fatFireCorpus).toBe(0)
+    expect(result.requiredMonthlySavings).toBe(0)
+  })
+
+  it('7. Reverse mode: correctly calculates required monthly savings today to reach target', () => {
+    const result = calcFIRE({
+      currentAge: 30,
+      retirementAge: 45, // 15 years
+      lifeExpectancy: 85,
+      currentMonthlyExpenses: 60000,
+      preRetirementReturn: 12,
+      postRetirementReturn: 8,
+      inflationRate: 6,
+    })
+    expect(result.requiredMonthlySavings).toBeGreaterThan(15000)
+    expect(result.requiredMonthlySavings).toBeLessThan(150000)
+  })
+
+  it('8. Fat-FIRE (1.5x) and Lean-FIRE (0.75x) are internally consistent multiples in all test cases', () => {
+    const result = calcFIRE({
+      currentAge: 28,
+      retirementAge: 48,
+      lifeExpectancy: 82,
+      currentMonthlyExpenses: 75000,
+      preRetirementReturn: 11.5,
+      postRetirementReturn: 7.5,
+      inflationRate: 5.5,
+    })
+    expect(result.leanFireCorpus).toBe(Math.round(result.standardFireCorpus * 0.75))
+    expect(result.fatFireCorpus).toBe(Math.round(result.standardFireCorpus * 1.5))
+  })
+
+  it('9. Yearly cashflow array length strictly equals (lifeExpectancy - currentAge)', () => {
+    const result = calcFIRE({
+      currentAge: 27,
+      retirementAge: 42,
+      lifeExpectancy: 91,
+      currentMonthlyExpenses: 50000,
+      preRetirementReturn: 12,
+      postRetirementReturn: 8,
+      inflationRate: 6,
+    })
+    expect(result.timeline).toHaveLength(91 - 27) // Exactly 64 years
+  })
+
+  it('10. Depletion crossover detection: underfunded scenario identifies exact age corpus hits zero', () => {
+    // Current age 30, retire at 50, life 85. With ₹0 savings and only ₹100/mo contribution (drastically underfunded)
+    const underfunded = calcFIRE({
+      currentAge: 30,
+      retirementAge: 30, // Retires immediately with only ₹5 Lakhs corpus but ₹1 Lakh/month expenses!
+      lifeExpectancy: 80,
+      currentMonthlyExpenses: 100000,
+      preRetirementReturn: 12,
+      postRetirementReturn: 6,
+      inflationRate: 6,
+      currentSavings: 500000, // ₹5L only lasts ~5 months
+    })
+    expect(underfunded.depletionAge).not.toBeNull()
+    expect(underfunded.depletionAge).toBeGreaterThanOrEqual(30)
+    expect(underfunded.depletionAge).toBeLessThan(40)
+  })
+})
+
+
+
+

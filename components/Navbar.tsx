@@ -13,7 +13,6 @@ import {
   History,
   Home,
   Landmark,
-  Lock,
   LogOut,
   Menu,
   Moon,
@@ -26,10 +25,11 @@ import { cn } from "@/lib/utils";
 const navLinks = [
   { href: "/", label: "Home", icon: Home },
   { href: "/sip", label: "SIP", icon: TrendingUp },
+  { href: "/step-up-sip", label: "Step-Up", icon: TrendingUp },
   { href: "/emi", label: "EMI", icon: Building2 },
-  { href: "/fd", label: "FD", icon: Lock },
-  { href: "/ppf", label: "PPF", icon: Landmark },
-  { href: "/lumpsum", label: "Lumpsum", icon: Coins },
+  { href: "/loan-prepayment", label: "Prepay", icon: Building2 },
+  { href: "/no-cost-emi", label: "0% EMI", icon: Coins },
+  { href: "/fire", label: "FIRE", icon: Landmark },
   { href: "/tax", label: "Tax", icon: FileText },
 ];
 
