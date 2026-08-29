@@ -1,5 +1,14 @@
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Explicit workspace root to avoid parent lockfile ambiguity warnings
+  outputFileTracingRoot: path.join(__dirname),
+
   // ─── Image domains ──────────────────────────────────────
   // We allow Google's avatar CDN (lh3.googleusercontent.com) because NextAuth
   // stores Google profile pictures there. If you add another image host, add

@@ -8,8 +8,6 @@ import InsightCard from "@/components/ui/InsightCard";
 import ShareButton from "@/components/ui/ShareButton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import RelatedCalculators from "@/components/shared/RelatedCalculators";
-import Breadcrumb from "@/components/ui/Breadcrumb";
 import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcSIP } from "@/lib/math";
@@ -56,26 +54,10 @@ export default function SIPCalculator() {
   if (!mounted) return <CalcPageSkeleton />;
 
   return (
-    <main id="main-content" className="page-shell pb-24 lg:pb-0">
+    <>
       <StickyResultBar label="Total Corpus" value={results.totalCorpus} />
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Breadcrumb
-            items={[{ label: "Home", href: "/" }, { label: "SIP Calculator" }]}
-          />
-          <div className="flex items-center gap-3 mb-1.5">
-            <span className="text-3xl" aria-hidden="true">📈</span>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
-              SIP Calculator
-            </h1>
-          </div>
-          <p className="text-muted-foreground">
-            Calculate returns on your monthly Systematic Investment Plan
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6 mt-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6 mt-6">
           {/* ────── INPUT PANEL ────── */}
           <div className="h-fit lg:sticky lg:top-6 space-y-4">
             <div className="surface-card p-6">
@@ -227,11 +209,8 @@ export default function SIPCalculator() {
               />
               <ShareButton shareId={shareId} />
             </div>
-
-            <RelatedCalculators current="sip" />
           </div>
         </div>
-      </div>
-    </main>
+    </>
   );
 }

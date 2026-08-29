@@ -21,7 +21,12 @@ import { prisma } from "@/lib/prisma";
  */
 const config: NextAuthConfig = {
   adapter: PrismaAdapter(prisma),
-  secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET,
+  secret:
+    process.env.NEXTAUTH_SECRET ??
+    process.env.AUTH_SECRET ??
+    (process.env.NODE_ENV !== "production"
+      ? "dev_secret_only_for_local_development_testing_min_32_chars"
+      : undefined),
   trustHost: true,
   // Database sessions: tokens never leave the server, can be invalidated.
   session: { strategy: "database", maxAge: 30 * 24 * 60 * 60 }, // 30 days

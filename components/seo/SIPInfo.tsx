@@ -52,7 +52,7 @@ export default function SIPInfo() {
             },
             {
               q: 'Does SIP calculator consider tax?',
-              a: 'This calculator shows pre-tax returns. Equity mutual fund gains over ₹1 lakh per year are taxed at 10% LTCG. Debt fund gains are taxed at your income tax slab rate.'
+              a: 'This calculator shows pre-tax returns. Long-term capital gains (LTCG) on equity mutual funds (held > 12 months) are exempt up to ₹1.25 lakh per financial year, with gains above this taxed at 12.5%. Short-term gains (STCG) are taxed at 20%. Debt fund gains are taxed at your applicable income tax slab rate.'
             },
             {
               q: 'How accurate is this SIP calculator?',
