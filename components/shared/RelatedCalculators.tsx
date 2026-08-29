@@ -18,6 +18,27 @@ interface Props {
 
 const all = [
   {
+    id: "capital-gains-tax",
+    label: "Capital Gains Tax",
+    icon: "🏛️",
+    desc: "Post-Budget 2024 STCG & LTCG",
+    href: "/capital-gains-tax",
+  },
+  {
+    id: "fno-brokerage",
+    label: "F&O Brokerage & STT",
+    icon: "⚡",
+    desc: "Turnover, taxes & break-even",
+    href: "/fno-brokerage",
+  },
+  {
+    id: "option-payoff",
+    label: "Option Strategy Payoff",
+    icon: "📈",
+    desc: "Multi-leg expiry payoff chart",
+    href: "/option-payoff",
+  },
+  {
     id: "step-up-sip",
     label: "Step-Up SIP",
     icon: "📈",

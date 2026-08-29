@@ -3,6 +3,7 @@ import SIPCalculator from "@/components/calculators/sip/SIPCalculator";
 import SIPInfo from "@/components/seo/SIPInfo";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import RelatedCalculators from "@/components/shared/RelatedCalculators";
+import CalculatorDisclaimer from "@/components/ui/CalculatorDisclaimer";
 
 export const metadata = {
   title: 'SIP Calculator',
@@ -32,6 +33,7 @@ export default function SIPPage() {
         </div>
         <SIPCalculator />
         <SIPInfo />
+        <CalculatorDisclaimer />
         <RelatedCalculators current="sip" />
       </div>
     </main>

@@ -30,6 +30,9 @@ const navLinks = [
   { href: "/loan-prepayment", label: "Prepay", icon: Building2 },
   { href: "/no-cost-emi", label: "0% EMI", icon: Coins },
   { href: "/fire", label: "FIRE", icon: Landmark },
+  { href: "/capital-gains-tax", label: "Cap Gains", icon: FileText },
+  { href: "/fno-brokerage", label: "F&O", icon: TrendingUp },
+  { href: "/option-payoff", label: "Options", icon: TrendingUp },
   { href: "/tax", label: "Tax", icon: FileText },
 ];
 

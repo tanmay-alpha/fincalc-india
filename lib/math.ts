@@ -1310,6 +1310,605 @@ export function calcFIRE(input: FireInput): FireOutput {
   };
 }
 
+// ─── PART B — FEATURE 1: CAPITAL GAINS TAX CALCULATOR ─────────
+
+export type AssetClass = "equity" | "debt_mf" | "real_estate" | "gold_sgb";
+
+export const CII_TABLE: Record<number, number> = {
+  2001: 100, 2002: 105, 2003: 109, 2004: 113, 2005: 117,
+  2006: 122, 2007: 129, 2008: 137, 2009: 148, 2010: 167,
+  2011: 184, 2012: 200, 2013: 220, 2014: 240, 2015: 254,
+  2016: 264, 2017: 272, 2018: 280, 2019: 289, 2020: 301,
+  2021: 317, 2022: 331, 2023: 348, 2024: 363, 2025: 363,
+};
+
+export interface CapitalGainsInput {
+  assetClass: AssetClass;
+  purchaseDate?: string; // YYYY-MM-DD
+  saleDate?: string;     // YYYY-MM-DD
+  holdingMonths?: number;
+  purchasePrice: number;
+  salePrice: number;
+  transferExpenses?: number;
+  purchaseCiiYear?: number;
+  saleCiiYear?: number;
+  isPurchasedBeforeCutoff?: boolean; // Cutoff: 23 July 2024
+  investorSlabRatePercent?: number;
+  priorExemptionUsed?: number; // Equity ₹1.25L exemption tracking
+}
+
+export interface CapitalGainsOutput {
+  assetClass: AssetClass;
+  gainType: "LTCG" | "STCG" | "LOSS";
+  holdingMonths: number;
+  grossSaleValue: number;
+  netSaleValue: number;
+  purchasePrice: number;
+  transferExpenses: number;
+  rawCapitalGain: number;
+  isLoss: boolean;
+  exemptionAllowed: number;
+  taxableGain: number;
+  taxRatePercent: number;
+  totalTaxPayable: number;
+  effectiveTaxRate: number;
+  realEstateComparison?: {
+    unindexedGain: number;
+    unindexedTax: number;
+    indexedCost: number;
+    indexedGain: number;
+    indexedTax: number;
+    recommendedOption: "unindexed_12_5" | "indexed_20";
+    taxSavedByBestOption: number;
+  };
+  explanation: string;
+}
+
+export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
+  const {
+    assetClass,
+    purchaseDate,
+    saleDate,
+    purchasePrice,
+    salePrice,
+    transferExpenses = 0,
+    purchaseCiiYear = 2015,
+    saleCiiYear = 2024,
+    investorSlabRatePercent = 30,
+    priorExemptionUsed = 0,
+  } = input;
+
+  const safeBuy = Math.max(0, purchasePrice || 0);
+  const safeSale = Math.max(0, salePrice || 0);
+  const safeExp = Math.max(0, transferExpenses || 0);
+  const safeSlab = Math.max(0, investorSlabRatePercent || 30);
+  const safePriorExemption = Math.max(0, Math.min(125000, priorExemptionUsed || 0));
+
+  // Determine holding months
+  let holdingMonths = input.holdingMonths ?? 0;
+  let isPurchasedBeforeCutoff = input.isPurchasedBeforeCutoff;
+
+  if (purchaseDate && saleDate) {
+    const pDate = new Date(purchaseDate);
+    const sDate = new Date(saleDate);
+    const diffTime = sDate.getTime() - pDate.getTime();
+    const diffDays = Math.max(0, Math.round(diffTime / (1000 * 60 * 60 * 24)));
+    holdingMonths = Math.round((diffDays / 365.25) * 12 * 10) / 10;
+
+    // Check 23 July 2024 cutoff
+    const cutoffDate = new Date("2024-07-23");
+    if (isPurchasedBeforeCutoff === undefined) {
+      isPurchasedBeforeCutoff = pDate < cutoffDate;
+    }
+  } else if (isPurchasedBeforeCutoff === undefined) {
+    isPurchasedBeforeCutoff = purchaseCiiYear < 2024;
+  }
+
+  const netSaleValue = Math.max(0, safeSale - safeExp);
+  const rawCapitalGain = netSaleValue - safeBuy;
+  const isLoss = rawCapitalGain <= 0;
+
+  let gainType: "LTCG" | "STCG" | "LOSS" = isLoss ? "LOSS" : "STCG";
+
+  // Determine LTCG threshold: Equity = >12m, Real Estate = >24m, Gold = >24m, Debt MF = N/A
+  let isLtcg = false;
+  if (!isLoss) {
+    if (assetClass === "equity" && holdingMonths > 12) {
+      isLtcg = true;
+    } else if ((assetClass === "real_estate" || assetClass === "gold_sgb") && holdingMonths > 24) {
+      isLtcg = true;
+    }
+    gainType = isLtcg ? "LTCG" : "STCG";
+  }
+
+  let exemptionAllowed = 0;
+  let taxableGain = Math.max(0, rawCapitalGain);
+  let taxRatePercent = 0;
+  let totalTaxPayable = 0;
+  let realEstateComparison: CapitalGainsOutput["realEstateComparison"];
+  let explanation = "";
+
+  if (isLoss) {
+    taxableGain = 0;
+    totalTaxPayable = 0;
+    explanation = `Capital Loss of ₹${Math.abs(Math.round(rawCapitalGain)).toLocaleString("en-IN")}. No tax is payable. This loss can be set off or carried forward for up to 8 financial years.`;
+  } else if (assetClass === "debt_mf") {
+    // Post-April 2023: All debt mutual funds taxed at investor slab rate
+    gainType = "STCG";
+    taxRatePercent = safeSlab;
+    totalTaxPayable = (taxableGain * safeSlab) / 100;
+    explanation = `Debt Mutual Fund gains are taxed at your income tax slab rate (${safeSlab}%) regardless of holding duration (Finance Act post-April 2023).`;
+  } else if (assetClass === "equity") {
+    if (isLtcg) {
+      // LTCG: 12.5% with ₹1.25L exemption
+      taxRatePercent = 12.5;
+      const remainingExemption = Math.max(0, 125000 - safePriorExemption);
+      exemptionAllowed = Math.min(taxableGain, remainingExemption);
+      const taxablePortion = Math.max(0, taxableGain - exemptionAllowed);
+      totalTaxPayable = (taxablePortion * 12.5) / 100;
+      explanation = `Listed Equity LTCG (>12 months) is taxed at 12.5% under Budget 2024. Exemption of ₹${Math.round(exemptionAllowed).toLocaleString("en-IN")} applied (out of ₹1.25L limit).`;
+    } else {
+      // STCG: 20%
+      taxRatePercent = 20;
+      totalTaxPayable = (taxableGain * 20) / 100;
+      explanation = `Listed Equity STCG (≤12 months) is taxed at a flat 20% rate (revised in Budget July 2024).`;
+    }
+  } else if (assetClass === "real_estate") {
+    if (isLtcg) {
+      const unindexedTax = (taxableGain * 12.5) / 100;
+
+      if (isPurchasedBeforeCutoff) {
+        // Grandfathering: Calculate both 12.5% without indexation and 20% with indexation
+        const buyCii = CII_TABLE[purchaseCiiYear] || 254;
+        const sellCii = CII_TABLE[saleCiiYear] || 363;
+        const indexedCost = safeBuy * (sellCii / buyCii);
+        const indexedGain = Math.max(0, netSaleValue - indexedCost);
+        const indexedTax = (indexedGain * 20) / 100;
+
+        const isUnindexedBetter = unindexedTax <= indexedTax;
+        const recommendedOption = isUnindexedBetter ? "unindexed_12_5" : "indexed_20";
+        totalTaxPayable = Math.min(unindexedTax, indexedTax);
+        taxRatePercent = isUnindexedBetter ? 12.5 : 20;
+        const taxSaved = Math.abs(unindexedTax - indexedTax);
+
+        realEstateComparison = {
+          unindexedGain: Math.round(taxableGain),
+          unindexedTax: Math.round(unindexedTax),
+          indexedCost: Math.round(indexedCost),
+          indexedGain: Math.round(indexedGain),
+          indexedTax: Math.round(indexedTax),
+          recommendedOption,
+          taxSavedByBestOption: Math.round(taxSaved),
+        };
+
+        explanation = `Grandfathered property (bought before 23 July 2024): ${
+          isUnindexedBetter
+            ? `12.5% without indexation saves you ₹${Math.round(taxSaved).toLocaleString("en-IN")} compared to 20% with indexation.`
+            : `20% with indexation saves you ₹${Math.round(taxSaved).toLocaleString("en-IN")} compared to 12.5% without indexation.`
+        }`;
+      } else {
+        // Purchased on or after 23 July 2024: Flat 12.5% without indexation only
+        taxRatePercent = 12.5;
+        totalTaxPayable = unindexedTax;
+        explanation = `Property purchased on/after 23 July 2024: Taxed at 12.5% LTCG (>24 months) without indexation benefit (Budget 2024).`;
+      }
+    } else {
+      // STCG: Slab rate
+      taxRatePercent = safeSlab;
+      totalTaxPayable = (taxableGain * safeSlab) / 100;
+      explanation = `Real Estate STCG (≤24 months) is taxed at your regular income tax slab rate (${safeSlab}%).`;
+    }
+  } else if (assetClass === "gold_sgb") {
+    if (isLtcg) {
+      taxRatePercent = 12.5;
+      totalTaxPayable = (taxableGain * 12.5) / 100;
+      explanation = `Physical Gold & Gold ETF LTCG (>24 months) is taxed at 12.5% without indexation (Budget 2024).`;
+    } else {
+      taxRatePercent = safeSlab;
+      totalTaxPayable = (taxableGain * safeSlab) / 100;
+      explanation = `Gold STCG (≤24 months) is taxed at your income tax slab rate (${safeSlab}%).`;
+    }
+  }
+
+  const effectiveTaxRate =
+    rawCapitalGain > 0
+      ? Math.round((totalTaxPayable / rawCapitalGain) * 100 * 100) / 100
+      : 0;
+
+  return {
+    assetClass,
+    gainType,
+    holdingMonths,
+    grossSaleValue: Math.round(safeSale),
+    netSaleValue: Math.round(netSaleValue),
+    purchasePrice: Math.round(safeBuy),
+    transferExpenses: Math.round(safeExp),
+    rawCapitalGain: Math.round(rawCapitalGain),
+    isLoss,
+    exemptionAllowed: Math.round(exemptionAllowed),
+    taxableGain: Math.round(taxableGain),
+    taxRatePercent,
+    totalTaxPayable: Math.round(totalTaxPayable),
+    effectiveTaxRate,
+    realEstateComparison,
+    explanation,
+  };
+}
+
+// ─── PART B — FEATURE 2: F&O BROKERAGE & BREAK-EVEN CALCULATOR ──
+
+export type FnOInstrument = "futures" | "options";
+
+export interface FnOBreakevenInput {
+  instrument: FnOInstrument;
+  buyPrice: number;
+  sellPrice: number;
+  quantity: number; // total shares / units (lots * lotSize)
+  brokeragePerOrder?: number; // default ₹20 per executed order
+  sttRatePercent?: number; // Options: 0.1% on sell premium; Futures: 0.02% on sell turnover
+  exchangeChargeRatePercent?: number; // Options: ~0.05% on premium; Futures: ~0.003% on turnover
+  sebiTurnoverFeePercent?: number; // 0.0001% (₹10 per Crore)
+  gstRatePercent?: number; // 18% on (brokerage + exchange charges + sebi fee)
+  stampDutyPercent?: number; // Buy side only: Options 0.003%, Futures 0.002%
+}
+
+export interface FnOBreakevenOutput {
+  instrument: FnOInstrument;
+  buyPrice: number;
+  sellPrice: number;
+  quantity: number;
+  buyTurnover: number;
+  sellTurnover: number;
+  totalTurnover: number;
+  grossPnl: number;
+  charges: {
+    brokerage: number;
+    stt: number;
+    exchangeCharges: number;
+    gst: number;
+    sebiFees: number;
+    stampDuty: number;
+  };
+  totalCharges: number;
+  netPnl: number;
+  isProfit: boolean;
+  breakevenSellPrice: number;
+  pointsToBreakeven: number;
+}
+
+function round2(num: number): number {
+  return Math.round((num + Number.EPSILON) * 100) / 100;
+}
+
+export function calcFnOBreakeven(input: FnOBreakevenInput): FnOBreakevenOutput {
+  const {
+    instrument,
+    buyPrice,
+    sellPrice,
+    quantity,
+    brokeragePerOrder = 20,
+    gstRatePercent = 18,
+  } = input;
+
+  const safeBuy = Math.max(0, buyPrice || 0);
+  const safeSell = Math.max(0, sellPrice || 0);
+  const safeQty = Math.max(0, quantity || 0);
+  const safeBrokerageOrder = Math.max(0, brokeragePerOrder);
+
+  const buyTurnover = round2(safeBuy * safeQty);
+  const sellTurnover = round2(safeSell * safeQty);
+  const totalTurnover = round2(buyTurnover + sellTurnover);
+  const grossPnl = round2(sellTurnover - buyTurnover);
+
+  // Default rates based on SEBI & Indian Exchange rules (Budget 2024 / FY25-26)
+  const defaultSttRate = instrument === "options" ? 0.1 : 0.02; // options on sell premium; futures on sell turnover
+  const defaultExchangeRate = instrument === "options" ? 0.05 : 0.0032;
+  const defaultSebiRate = 0.0001; // ₹10 per crore
+  const defaultStampDuty = instrument === "options" ? 0.003 : 0.002;
+
+  const sttRate = input.sttRatePercent ?? defaultSttRate;
+  const exchangeRate = input.exchangeChargeRatePercent ?? defaultExchangeRate;
+  const sebiRate = input.sebiTurnoverFeePercent ?? defaultSebiRate;
+  const stampDutyRate = input.stampDutyPercent ?? defaultStampDuty;
+
+  // 1. Brokerage: 2 orders (buy + sell)
+  const brokerage = safeQty > 0 ? round2(safeBrokerageOrder * 2) : 0;
+
+  // 2. STT: Applied ONLY on sell side
+  const stt = safeQty > 0 ? round2((sellTurnover * sttRate) / 100) : 0;
+
+  // 3. Exchange charges: Applied on total turnover
+  const exchangeCharges = safeQty > 0 ? round2((totalTurnover * exchangeRate) / 100) : 0;
+
+  // 4. SEBI turnover fee: Applied on total turnover
+  const sebiFees = safeQty > 0 ? round2((totalTurnover * sebiRate) / 100) : 0;
+
+  // 5. Stamp duty: Applied ONLY on buy side
+  const stampDuty = safeQty > 0 ? round2((buyTurnover * stampDutyRate) / 100) : 0;
+
+  // 6. GST: 18% applied strictly on (brokerage + exchangeCharges + sebiFees)
+  const gstTaxable = round2(brokerage + exchangeCharges + sebiFees);
+  const gst = safeQty > 0 ? round2((gstTaxable * gstRatePercent) / 100) : 0;
+
+  // Total charges = exact sum of line items to prevent penny drift
+  const totalCharges = round2(brokerage + stt + exchangeCharges + gst + sebiFees + stampDuty);
+  const netPnl = round2(grossPnl - totalCharges);
+  const isProfit = netPnl > 0;
+
+  const pointsToBreakeven = safeQty > 0 ? round2(totalCharges / safeQty) : 0;
+  const breakevenSellPrice = round2(safeBuy + pointsToBreakeven);
+
+  return {
+    instrument,
+    buyPrice: safeBuy,
+    sellPrice: safeSell,
+    quantity: safeQty,
+    buyTurnover,
+    sellTurnover,
+    totalTurnover,
+    grossPnl,
+    charges: {
+      brokerage,
+      stt,
+      exchangeCharges,
+      gst,
+      sebiFees,
+      stampDuty,
+    },
+    totalCharges,
+    netPnl,
+    isProfit,
+    breakevenSellPrice,
+    pointsToBreakeven,
+  };
+}
+
+// ─── PART B — FEATURE 3: OPTION STRATEGY PAYOFF VISUALIZER ────
+
+export type OptionType = "call" | "put";
+export type OptionPosition = "long" | "short";
+
+export interface OptionLeg {
+  id: string;
+  name?: string;
+  type: OptionType;
+  position: OptionPosition;
+  strike: number;
+  premium: number;
+  lots: number;
+}
+
+export type OptionStrategyPreset =
+  | "bull_call_spread"
+  | "bear_put_spread"
+  | "long_straddle"
+  | "long_strangle"
+  | "iron_condor"
+  | "covered_call"
+  | "custom";
+
+export interface OptionPayoffInput {
+  legs: OptionLeg[];
+  lotSize: number; // e.g. 50
+  underlyingPrice?: number;
+  minSpot?: number;
+  maxSpot?: number;
+  step?: number;
+}
+
+export interface PayoffDataPoint {
+  spot: number;
+  pnl: number;
+  [legKey: string]: number;
+}
+
+export interface OptionPayoffOutput {
+  legs: OptionLeg[];
+  lotSize: number;
+  underlyingPrice: number;
+  chartData: PayoffDataPoint[];
+  maxProfit: number | "Unlimited";
+  maxLoss: number | "Unlimited";
+  riskRewardRatio: string;
+  breakevens: number[];
+  netPremiumPaidOrReceived: number;
+  isNetCredit: boolean;
+}
+
+export function calcOptionPayoff(input: OptionPayoffInput): OptionPayoffOutput {
+  const { legs, lotSize = 50, underlyingPrice = 24000 } = input;
+  const safeLotSize = Math.max(1, lotSize);
+  const safeUnderlying = Math.max(0, underlyingPrice);
+
+  if (!legs || legs.length === 0) {
+    return {
+      legs: [],
+      lotSize: safeLotSize,
+      underlyingPrice: safeUnderlying,
+      chartData: [],
+      maxProfit: 0,
+      maxLoss: 0,
+      riskRewardRatio: "1 : 1",
+      breakevens: [],
+      netPremiumPaidOrReceived: 0,
+      isNetCredit: false,
+    };
+  }
+
+  // Determine spot price range for evaluation
+  const strikes = legs.map((l) => l.strike).filter((s) => s > 0);
+  const minStrike = strikes.length > 0 ? Math.min(...strikes) : safeUnderlying;
+  const maxStrike = strikes.length > 0 ? Math.max(...strikes) : safeUnderlying;
+  const baseRange = Math.max(maxStrike - minStrike, safeUnderlying * 0.1, 500);
+
+  const minSpot = Math.max(0, input.minSpot ?? Math.floor((minStrike - baseRange * 1.5) / 100) * 100);
+  const maxSpot = input.maxSpot ?? Math.ceil((maxStrike + baseRange * 1.5) / 100) * 100;
+  const numSteps = 80;
+  const step = input.step ?? Math.max(10, Math.round((maxSpot - minSpot) / numSteps));
+
+  // Compute Net Premium (Debit vs Credit)
+  let netPremium = 0;
+  for (const leg of legs) {
+    const qty = leg.lots * safeLotSize;
+    if (leg.position === "long") {
+      netPremium += leg.premium * qty; // Debit (paid)
+    } else {
+      netPremium -= leg.premium * qty; // Credit (received)
+    }
+  }
+
+  // Generate comprehensive sample spot prices including exact critical points
+  const spotSet = new Set<number>();
+  for (let s = minSpot; s <= maxSpot; s += step) {
+    spotSet.add(s);
+  }
+  for (const leg of legs) {
+    if (leg.strike >= minSpot && leg.strike <= maxSpot) spotSet.add(leg.strike);
+    if (leg.strike - leg.premium >= minSpot) spotSet.add(round2(leg.strike - leg.premium));
+    if (leg.strike + leg.premium <= maxSpot) spotSet.add(round2(leg.strike + leg.premium));
+    // For net debit/credit offsets across all legs
+    const totalNetPrem = Math.abs(netPremium / safeLotSize);
+    if (leg.strike - totalNetPrem >= minSpot) spotSet.add(round2(leg.strike - totalNetPrem));
+    if (leg.strike + totalNetPrem <= maxSpot) spotSet.add(round2(leg.strike + totalNetPrem));
+  }
+  const sortedSpots = Array.from(spotSet).sort((a, b) => a - b);
+
+  // Calculate Payoff Curve across Spot Range
+  const chartData: PayoffDataPoint[] = [];
+  let minPnl = Infinity;
+  let maxPnl = -Infinity;
+
+  for (const s of sortedSpots) {
+    let combinedPnl = 0;
+    const point: PayoffDataPoint = { spot: s, pnl: 0 };
+
+    for (let i = 0; i < legs.length; i++) {
+      const leg = legs[i];
+      const qty = leg.lots * safeLotSize;
+      let legPnl = 0;
+
+      if (leg.type === "call") {
+        const intrinsic = Math.max(0, s - leg.strike);
+        legPnl = leg.position === "long" ? (intrinsic - leg.premium) * qty : (leg.premium - intrinsic) * qty;
+      } else {
+        const intrinsic = Math.max(0, leg.strike - s);
+        legPnl = leg.position === "long" ? (intrinsic - leg.premium) * qty : (leg.premium - intrinsic) * qty;
+      }
+
+      point[`leg_${i}`] = round2(legPnl);
+      combinedPnl += legPnl;
+    }
+
+    point.pnl = round2(combinedPnl);
+    if (combinedPnl < minPnl) minPnl = combinedPnl;
+    if (combinedPnl > maxPnl) maxPnl = combinedPnl;
+    chartData.push(point);
+  }
+
+  // Breakeven Detection (Zero-crossings via exact checks & linear interpolation)
+  const breakevens: number[] = [];
+  for (let i = 0; i < chartData.length; i++) {
+    const p1 = chartData[i];
+    if (Math.abs(p1.pnl) < 0.01) {
+      if (!breakevens.some((b) => Math.abs(b - p1.spot) < 1)) {
+        breakevens.push(p1.spot);
+      }
+    } else if (i < chartData.length - 1) {
+      const p2 = chartData[i + 1];
+      if ((p1.pnl < 0 && p2.pnl > 0) || (p1.pnl > 0 && p2.pnl < 0)) {
+        const zeroSpot = round2(p1.spot + (-p1.pnl * (p2.spot - p1.spot)) / (p2.pnl - p1.pnl));
+        if (!breakevens.some((b) => Math.abs(b - zeroSpot) < 5)) {
+          breakevens.push(zeroSpot);
+        }
+      }
+    }
+  }
+
+  // Detect Uncapped / Unlimited Upside or Downside
+  // Check slopes at extremes
+  const leftSlope = chartData.length > 2 ? chartData[1].pnl - chartData[0].pnl : 0;
+  const rightSlope = chartData.length > 2 ? chartData[chartData.length - 1].pnl - chartData[chartData.length - 2].pnl : 0;
+
+  let maxProfitResult: number | "Unlimited" = round2(maxPnl);
+  let maxLossResult: number | "Unlimited" = round2(minPnl);
+
+  if (rightSlope > 5) {
+    maxProfitResult = "Unlimited";
+  } else if (rightSlope < -5) {
+    maxLossResult = "Unlimited";
+  }
+
+  if (leftSlope < -5 && minSpot === 0) {
+    // Put downside capped at spot = 0
+  }
+
+  let riskRewardRatio = "1 : 1";
+  if (typeof maxProfitResult === "number" && typeof maxLossResult === "number" && maxLossResult !== 0) {
+    const ratio = Math.abs(maxProfitResult / maxLossResult);
+    riskRewardRatio = `1 : ${round2(ratio)}`;
+  } else if (maxProfitResult === "Unlimited") {
+    riskRewardRatio = "1 : Unlimited";
+  }
+
+  return {
+    legs,
+    lotSize: safeLotSize,
+    underlyingPrice: safeUnderlying,
+    chartData,
+    maxProfit: maxProfitResult,
+    maxLoss: maxLossResult,
+    riskRewardRatio,
+    breakevens,
+    netPremiumPaidOrReceived: round2(netPremium),
+    isNetCredit: netPremium < 0,
+  };
+}
+
+export function getOptionPresetLegs(preset: OptionStrategyPreset, spotPrice = 24000): OptionLeg[] {
+  const roundSpot = Math.round(spotPrice / 100) * 100;
+
+  switch (preset) {
+    case "bull_call_spread":
+      return [
+        { id: "1", name: "ATM Long Call", type: "call", position: "long", strike: roundSpot, premium: 200, lots: 1 },
+        { id: "2", name: "OTM Short Call", type: "call", position: "short", strike: roundSpot + 300, premium: 80, lots: 1 },
+      ];
+    case "bear_put_spread":
+      return [
+        { id: "1", name: "ATM Long Put", type: "put", position: "long", strike: roundSpot, premium: 190, lots: 1 },
+        { id: "2", name: "OTM Short Put", type: "put", position: "short", strike: roundSpot - 300, premium: 75, lots: 1 },
+      ];
+    case "long_straddle":
+      return [
+        { id: "1", name: "ATM Long Call", type: "call", position: "long", strike: roundSpot, premium: 220, lots: 1 },
+        { id: "2", name: "ATM Long Put", type: "put", position: "long", strike: roundSpot, premium: 210, lots: 1 },
+      ];
+    case "long_strangle":
+      return [
+        { id: "1", name: "OTM Long Call", type: "call", position: "long", strike: roundSpot + 200, premium: 120, lots: 1 },
+        { id: "2", name: "OTM Long Put", type: "put", position: "long", strike: roundSpot - 200, premium: 115, lots: 1 },
+      ];
+    case "iron_condor":
+      return [
+        { id: "1", name: "Far OTM Long Put", type: "put", position: "long", strike: roundSpot - 500, premium: 40, lots: 1 },
+        { id: "2", name: "OTM Short Put", type: "put", position: "short", strike: roundSpot - 200, premium: 110, lots: 1 },
+        { id: "3", name: "OTM Short Call", type: "call", position: "short", strike: roundSpot + 200, premium: 115, lots: 1 },
+        { id: "4", name: "Far OTM Long Call", type: "call", position: "long", strike: roundSpot + 500, premium: 45, lots: 1 },
+      ];
+    case "covered_call":
+      return [
+        { id: "1", name: "Deep ITM Long Call (Stock proxy)", type: "call", position: "long", strike: roundSpot - 1000, premium: 1020, lots: 1 },
+        { id: "2", name: "OTM Short Call", type: "call", position: "short", strike: roundSpot + 300, premium: 90, lots: 1 },
+      ];
+    default:
+      return [
+        { id: "1", name: "ATM Long Call", type: "call", position: "long", strike: roundSpot, premium: 200, lots: 1 },
+      ];
+  }
+}
+
+
+
 
 
 

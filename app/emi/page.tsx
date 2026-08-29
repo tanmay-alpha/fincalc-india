@@ -3,13 +3,14 @@ import EMICalculator from '@/components/calculators/emi/EMICalculatorIsland'
 import EMIInfo from '@/components/seo/EMIInfo'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import RelatedCalculators from '@/components/shared/RelatedCalculators'
+import CalculatorDisclaimer from '@/components/ui/CalculatorDisclaimer'
 
 export const metadata: Metadata = {
   title: 'EMI Calculator',
-  description: 'Calculate home loan, car loan, and personal loan EMI instantly. Full amortization schedule with principal vs interest breakdown.',
+  description: 'Calculate loan EMI, total interest, and total payment for home, car, and personal loans. Monthly amortization schedule and interactive interest split chart.',
   openGraph: {
     title: 'EMI Calculator — FinCalc India',
-    description: 'Free EMI calculator with amortization schedule for Indian borrowers.',
+    description: 'Free home loan, car loan & personal loan EMI calculator. Accurate monthly amortization schedule.',
     url: 'https://fincalc-india.vercel.app/emi',
   },
 }
@@ -28,12 +29,13 @@ export default function EMIPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">EMI Calculator</h1>
           </div>
           <p className="text-muted-foreground text-sm mt-1 max-w-2xl">
-            Calculate your monthly loan instalment for home, car, or personal loans. Get full amortization schedule with principal vs interest breakdown.
+            Calculate your monthly loan EMI, total interest payable, and amortization schedule for home, car, or personal loans.
           </p>
         </div>
         
         <EMICalculator />
         <EMIInfo />
+        <CalculatorDisclaimer />
         <RelatedCalculators current="emi" />
       </div>
     </main>

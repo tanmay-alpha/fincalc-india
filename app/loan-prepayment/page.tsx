@@ -3,6 +3,7 @@ import LoanPrepaymentCalculator from "@/components/calculators/loan-prepayment/L
 import LoanPrepaymentInfo from "@/components/seo/LoanPrepaymentInfo";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import RelatedCalculators from "@/components/shared/RelatedCalculators";
+import CalculatorDisclaimer from "@/components/ui/CalculatorDisclaimer";
 
 export const metadata: Metadata = {
   title: "Loan Pre-Payment & Prepay vs Invest Calculator",
@@ -39,6 +40,7 @@ export default function LoanPrepaymentPage() {
 
         <LoanPrepaymentCalculator />
         <LoanPrepaymentInfo />
+        <CalculatorDisclaimer />
         <RelatedCalculators current="loan-prepayment" />
       </div>
     </main>

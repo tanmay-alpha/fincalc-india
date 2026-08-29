@@ -111,6 +111,39 @@ const calculators: CalculatorCard[] = [
     badge: "Regime compare",
   },
   {
+    id: "capital-gains-tax",
+    name: "Capital Gains Tax Calculator",
+    shortName: "Cap Gains",
+    icon: FileText,
+    description: "Calculate STCG & LTCG on Equity, Real Estate, Debt MF, and Gold with post-Budget 2024 rules.",
+    bestFor: "Stock, mutual fund & property sales",
+    includes: "12.5% LTCG, ₹1.25L exemption, CII comparison",
+    href: "/capital-gains-tax",
+    badge: "Budget 2024",
+  },
+  {
+    id: "fno-brokerage",
+    name: "F&O Brokerage & Break-Even",
+    shortName: "F&O",
+    icon: TrendingUp,
+    description: "Calculate itemized brokerage, revised STT, exchange charges, GST, and exact break-even exit price.",
+    bestFor: "Intraday & positional options traders",
+    includes: "Revised STT, GST, Break-even points",
+    href: "/fno-brokerage",
+    badge: "Active Traders",
+  },
+  {
+    id: "option-payoff",
+    name: "Option Strategy Payoff Visualizer",
+    shortName: "Options",
+    icon: LineChart,
+    description: "Multi-leg expiry payoff chart with Bull Call, Straddle, and Iron Condor presets.",
+    bestFor: "Options strategy analysis & hedging",
+    includes: "Payoff chart, Multi-breakevens, Max loss",
+    href: "/option-payoff",
+    badge: "Payoff Visualizer",
+  },
+  {
     id: "fd",
     name: "FD Calculator",
     shortName: "FD",
@@ -143,7 +176,7 @@ const calculators: CalculatorCard[] = [
 ];
 
 const stats = [
-  { value: "10", label: "Calculators" },
+  { value: "13", label: "Calculators" },
   { value: "100%", label: "Free forever" },
   { value: "0", label: "Ads" },
   { value: "FY 2025-26", label: "Tax updated" },

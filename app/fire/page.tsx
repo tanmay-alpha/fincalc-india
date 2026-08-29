@@ -3,6 +3,7 @@ import FIRECalculator from "@/components/calculators/fire/FIRECalculator";
 import FIREInfo from "@/components/seo/FIREInfo";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import RelatedCalculators from "@/components/shared/RelatedCalculators";
+import CalculatorDisclaimer from "@/components/ui/CalculatorDisclaimer";
 
 export const metadata: Metadata = {
   title: "FIRE & Early Retirement Calculator",
@@ -39,6 +40,7 @@ export default function FIREPage() {
 
         <FIRECalculator />
         <FIREInfo />
+        <CalculatorDisclaimer />
         <RelatedCalculators current="fire" />
       </div>
     </main>

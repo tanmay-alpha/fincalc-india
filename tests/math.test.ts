@@ -17,6 +17,10 @@ import {
   calcPrepaymentVsInvest,
   calcNoCostEMITruth,
   calcFIRE,
+  calcCapitalGains,
+  calcFnOBreakeven,
+  calcOptionPayoff,
+  getOptionPresetLegs,
 } from '../lib/math'
 
 // ─── SIP ──────────────────────────────────────────────────────
@@ -919,6 +923,461 @@ describe('calcFIRE', () => {
     expect(underfunded.depletionAge).toBeLessThan(40)
   })
 })
+
+// ─── PART B — FEATURE 1: CAPITAL GAINS TAX (POST-BUDGET 2024) ───
+
+describe('Feature 1: Capital Gains Tax Calculator (calcCapitalGains)', () => {
+  it('1. Equity LTCG exactly at the ₹1,25,000 exemption threshold produces ₹0 tax', () => {
+    const result = calcCapitalGains({
+      assetClass: 'equity',
+      holdingMonths: 18,
+      purchasePrice: 500000,
+      salePrice: 625000, // Exactly ₹1,25,000 gain
+    })
+    expect(result.gainType).toBe('LTCG')
+    expect(result.rawCapitalGain).toBe(125000)
+    expect(result.exemptionAllowed).toBe(125000)
+    expect(result.totalTaxPayable).toBe(0)
+    expect(result.effectiveTaxRate).toBe(0)
+  })
+
+  it('2. Equity LTCG of ₹5,00,000 taxes only the amount exceeding ₹1,25,000 at 12.5%', () => {
+    const result = calcCapitalGains({
+      assetClass: 'equity',
+      holdingMonths: 24,
+      purchasePrice: 1000000,
+      salePrice: 1500000, // ₹5,00,000 gain
+    })
+    expect(result.gainType).toBe('LTCG')
+    expect(result.rawCapitalGain).toBe(500000)
+    expect(result.exemptionAllowed).toBe(125000)
+    // Taxable = 5,00,000 - 1,25,000 = 3,75,000. Tax at 12.5% = 46,875
+    expect(result.totalTaxPayable).toBe(46875)
+    expect(result.taxRatePercent).toBe(12.5)
+  })
+
+  it('3. Equity holding period boundary (364 vs 366 days) correctly classifies STCG (20%) vs LTCG (12.5%)', () => {
+    // 364 days (<12 months) -> STCG at 20%
+    const stcgResult = calcCapitalGains({
+      assetClass: 'equity',
+      purchaseDate: '2024-01-01',
+      saleDate: '2024-12-30', // 364 days
+      purchasePrice: 100000,
+      salePrice: 200000,
+    })
+    expect(stcgResult.gainType).toBe('STCG')
+    expect(stcgResult.taxRatePercent).toBe(20)
+    expect(stcgResult.totalTaxPayable).toBe(20000) // 100,000 * 20%
+
+    // 366 days (>12 months) -> LTCG at 12.5%
+    const ltcgResult = calcCapitalGains({
+      assetClass: 'equity',
+      purchaseDate: '2024-01-01',
+      saleDate: '2025-01-02', // 366 days
+      purchasePrice: 100000,
+      salePrice: 300000, // 200k gain
+    })
+    expect(ltcgResult.gainType).toBe('LTCG')
+    expect(ltcgResult.taxRatePercent).toBe(12.5)
+    // (200k - 125k) * 12.5% = 75k * 12.5% = 9375
+    expect(ltcgResult.totalTaxPayable).toBe(9375)
+  })
+
+  it('4. Debt MF always uses slab-rate treatment regardless of holding period (1 month or 10 years)', () => {
+    const shortDebt = calcCapitalGains({
+      assetClass: 'debt_mf',
+      holdingMonths: 1,
+      purchasePrice: 100000,
+      salePrice: 110000,
+      investorSlabRatePercent: 30,
+    })
+    expect(shortDebt.totalTaxPayable).toBe(3000) // 10k * 30%
+
+    const longDebt = calcCapitalGains({
+      assetClass: 'debt_mf',
+      holdingMonths: 120, // 10 years
+      purchasePrice: 100000,
+      salePrice: 250000,
+      investorSlabRatePercent: 30,
+    })
+    expect(longDebt.taxRatePercent).toBe(30)
+    expect(longDebt.totalTaxPayable).toBe(45000) // 150k * 30% (zero indexation)
+  })
+
+  it('5. Real estate purchased before cutoff computes both indexation & non-indexation and displays both figures', () => {
+    const result = calcCapitalGains({
+      assetClass: 'real_estate',
+      purchaseDate: '2015-06-01', // Before 23 July 2024 cutoff
+      saleDate: '2024-10-01',
+      purchaseCiiYear: 2015, // CII = 254
+      saleCiiYear: 2024,     // CII = 363
+      purchasePrice: 5000000, // ₹50 Lakhs
+      salePrice: 9000000,     // ₹90 Lakhs
+    })
+    expect(result.gainType).toBe('LTCG')
+    expect(result.realEstateComparison).toBeDefined()
+    // Unindexed: 40L gain * 12.5% = 5,00,000
+    expect(result.realEstateComparison?.unindexedTax).toBe(500000)
+    // Indexed Cost: 50L * (363 / 254) = 71,45,669. Indexed Gain = ~18,54,331. Indexed Tax at 20% = ~3,70,866
+    expect(result.realEstateComparison?.indexedTax).toBeLessThan(result.realEstateComparison!.unindexedTax)
+    expect(result.realEstateComparison?.recommendedOption).toBe('indexed_20')
+    expect(result.totalTaxPayable).toBe(result.realEstateComparison?.indexedTax)
+  })
+
+  it('6. Real estate purchased after cutoff does not offer the indexation option', () => {
+    const result = calcCapitalGains({
+      assetClass: 'real_estate',
+      purchaseDate: '2024-08-01', // After 23 July 2024
+      saleDate: '2026-10-01',     // > 24 months
+      purchasePrice: 5000000,
+      salePrice: 7000000,
+    })
+    expect(result.gainType).toBe('LTCG')
+    expect(result.realEstateComparison).toBeUndefined()
+    expect(result.taxRatePercent).toBe(12.5)
+    expect(result.totalTaxPayable).toBe(250000) // 20L * 12.5%
+  })
+
+  it('7. Purchase date exactly on 23 July 2024 cutoff falls under the post-cutoff rule', () => {
+    const result = calcCapitalGains({
+      assetClass: 'real_estate',
+      purchaseDate: '2024-07-23', // Exactly on cutoff date
+      saleDate: '2026-08-01',     // > 24 months
+      purchasePrice: 10000000,
+      salePrice: 13000000,
+    })
+    expect(result.gainType).toBe('LTCG')
+    expect(result.realEstateComparison).toBeUndefined()
+    expect(result.taxRatePercent).toBe(12.5)
+    expect(result.totalTaxPayable).toBe(375000) // 30L * 12.5%
+  })
+
+  it('8. Capital loss (sale price < purchase price) outputs ₹0 tax and never negative tax', () => {
+    const result = calcCapitalGains({
+      assetClass: 'equity',
+      holdingMonths: 6,
+      purchasePrice: 500000,
+      salePrice: 350000, // ₹1.5L loss
+    })
+    expect(result.isLoss).toBe(true)
+    expect(result.gainType).toBe('LOSS')
+    expect(result.rawCapitalGain).toBe(-150000)
+    expect(result.taxableGain).toBe(0)
+    expect(result.totalTaxPayable).toBe(0)
+  })
+
+  it('9. Multiple equity LTCG entries / prior exemption tracking applies ₹1,25,000 aggregate limit', () => {
+    const result = calcCapitalGains({
+      assetClass: 'equity',
+      holdingMonths: 15,
+      purchasePrice: 1000000,
+      salePrice: 1300000, // ₹3,00,000 gain
+      priorExemptionUsed: 100000, // ₹1,00,000 already used in another trade this FY
+    })
+    // Only ₹25,000 remaining exemption allowed
+    expect(result.exemptionAllowed).toBe(25000)
+    // Taxable = 3,00,000 - 25,000 = 2,75,000. Tax at 12.5% = 34,375
+    expect(result.totalTaxPayable).toBe(34375)
+  })
+
+  it('10. Very large gain (₹10 Crore+) computes cleanly without precision loss', () => {
+    const result = calcCapitalGains({
+      assetClass: 'equity',
+      holdingMonths: 36,
+      purchasePrice: 100000000,  // ₹10 Cr
+      salePrice: 250000000,     // ₹25 Cr (₹15 Cr gain)
+    })
+    expect(result.rawCapitalGain).toBe(150000000)
+    expect(result.totalTaxPayable).toBe(Math.round((150000000 - 125000) * 0.125))
+    expect(result.effectiveTaxRate).toBeCloseTo(12.49, 1)
+  })
+})
+
+// ─── PART B — FEATURE 2: F&O BROKERAGE & BREAK-EVEN CALCULATOR ───
+
+describe('Feature 2: F&O Brokerage & Break-Even Calculator (calcFnOBreakeven)', () => {
+  it('1. STT is applied strictly to the sell leg (options: premium; futures: turnover)', () => {
+    // Options: Buy 100 qty @ 100, Sell 100 qty @ 150
+    const opt = calcFnOBreakeven({
+      instrument: 'options',
+      buyPrice: 100,
+      sellPrice: 150,
+      quantity: 100,
+      brokeragePerOrder: 20,
+    })
+    // Sell turnover = 15,000. STT @ 0.1% = 15
+    expect(opt.charges.stt).toBe(15)
+
+    // Futures: Buy 100 qty @ 1000, Sell 100 qty @ 1050
+    const fut = calcFnOBreakeven({
+      instrument: 'futures',
+      buyPrice: 1000,
+      sellPrice: 1050,
+      quantity: 100,
+      brokeragePerOrder: 20,
+    })
+    // Sell turnover = 105,000. STT @ 0.02% = 21
+    expect(fut.charges.stt).toBe(21)
+  })
+
+  it('2. GST is computed only on (brokerage + exchange charges + SEBI fee), never on STT or stamp duty', () => {
+    const result = calcFnOBreakeven({
+      instrument: 'options',
+      buyPrice: 200,
+      sellPrice: 250,
+      quantity: 50,
+      brokeragePerOrder: 20, // Brokerage = 40
+      gstRatePercent: 18,
+    })
+    const taxableBase = result.charges.brokerage + result.charges.exchangeCharges + result.charges.sebiFees
+    const expectedGst = Math.round((taxableBase * 0.18) * 100) / 100
+    expect(result.charges.gst).toBeCloseTo(expectedGst, 2)
+  })
+
+  it('3. Stamp duty is applied only on the buy side, never on the sell side', () => {
+    const result = calcFnOBreakeven({
+      instrument: 'options',
+      buyPrice: 300,
+      sellPrice: 500,
+      quantity: 100,
+      stampDutyPercent: 0.003,
+    })
+    // Buy turnover = 30,000. Stamp duty @ 0.003% = 0.90
+    expect(result.charges.stampDuty).toBe(0.9)
+  })
+
+  it('4. Options vs Futures STT calculation bases are correctly differentiated', () => {
+    const optionsResult = calcFnOBreakeven({
+      instrument: 'options',
+      buyPrice: 100,
+      sellPrice: 100,
+      quantity: 1000,
+    })
+    const futuresResult = calcFnOBreakeven({
+      instrument: 'futures',
+      buyPrice: 100,
+      sellPrice: 100,
+      quantity: 1000,
+    })
+    // Options STT = 100,000 * 0.1% = 100
+    expect(optionsResult.charges.stt).toBe(100)
+    // Futures STT = 100,000 * 0.02% = 20
+    expect(futuresResult.charges.stt).toBe(20)
+  })
+
+  it('5. Break-even point matches exact calculation for a known trade', () => {
+    const result = calcFnOBreakeven({
+      instrument: 'options',
+      buyPrice: 100,
+      sellPrice: 100,
+      quantity: 50,
+      brokeragePerOrder: 20,
+    })
+    expect(result.pointsToBreakeven).toBeGreaterThan(0)
+    expect(result.breakevenSellPrice).toBeCloseTo(result.buyPrice + result.pointsToBreakeven, 2)
+  })
+
+  it('6. Zero-brokerage input (discount broker ₹0 plan) computes cleanly without NaN or zero division', () => {
+    const result = calcFnOBreakeven({
+      instrument: 'options',
+      buyPrice: 150,
+      sellPrice: 180,
+      quantity: 100,
+      brokeragePerOrder: 0,
+    })
+    expect(result.charges.brokerage).toBe(0)
+    expect(Number.isNaN(result.totalCharges)).toBe(false)
+    expect(Number.isNaN(result.breakevenSellPrice)).toBe(false)
+    expect(result.netPnl).toBeGreaterThan(0)
+  })
+
+  it('7. Large multi-lot trade charges scale linearly and correctly with quantity', () => {
+    const trade1Lot = calcFnOBreakeven({
+      instrument: 'futures',
+      buyPrice: 24000,
+      sellPrice: 24200,
+      quantity: 50, // 1 lot
+    })
+    const trade10Lots = calcFnOBreakeven({
+      instrument: 'futures',
+      buyPrice: 24000,
+      sellPrice: 24200,
+      quantity: 500, // 10 lots
+    })
+    expect(trade10Lots.charges.stt).toBeCloseTo(trade1Lot.charges.stt * 10, 1)
+    expect(trade10Lots.charges.exchangeCharges).toBeCloseTo(trade1Lot.charges.exchangeCharges * 10, 1)
+  })
+
+  it('8. Net loss scenario still deducts all statutory charges correctly and maintains correct sign', () => {
+    const result = calcFnOBreakeven({
+      instrument: 'options',
+      buyPrice: 200,
+      sellPrice: 120, // Loss trade
+      quantity: 100,
+    })
+    expect(result.grossPnl).toBe(-8000)
+    expect(result.totalCharges).toBeGreaterThan(0)
+    expect(result.netPnl).toBeLessThan(-8000)
+    expect(result.isProfit).toBe(false)
+  })
+
+  it('9. All itemized charges round to 2 decimals and exactly sum to total charges', () => {
+    const result = calcFnOBreakeven({
+      instrument: 'options',
+      buyPrice: 173.45,
+      sellPrice: 219.85,
+      quantity: 67, // irregular qty
+      brokeragePerOrder: 15,
+    })
+    const c = result.charges
+    const sumLineItems = Math.round((c.brokerage + c.stt + c.exchangeCharges + c.gst + c.sebiFees + c.stampDuty) * 100) / 100
+    expect(result.totalCharges).toBe(sumLineItems)
+  })
+
+  it('10. Negative or zero quantity/price inputs are safely clamped without throwing exceptions', () => {
+    const zeroTrade = calcFnOBreakeven({
+      instrument: 'options',
+      buyPrice: 0,
+      sellPrice: 0,
+      quantity: 0,
+    })
+    expect(zeroTrade.totalCharges).toBe(0)
+    expect(zeroTrade.netPnl).toBe(0)
+    expect(zeroTrade.breakevenSellPrice).toBe(0)
+  })
+})
+
+// ─── PART B — FEATURE 3: OPTION STRATEGY PAYOFF VISUALIZER ──────
+
+describe('Feature 3: Option Strategy Payoff Visualizer (calcOptionPayoff)', () => {
+  it('1. Single long call matches textbook formula: max loss = premium paid (bounded), upside uncapped', () => {
+    const result = calcOptionPayoff({
+      legs: [{ id: '1', type: 'call', position: 'long', strike: 24000, premium: 200, lots: 1 }],
+      lotSize: 50,
+      underlyingPrice: 24000,
+    })
+    expect(result.maxLoss).toBe(-10000) // 200 * 50 = -10,000
+    expect(result.maxProfit).toBe('Unlimited')
+    expect(result.breakevens).toEqual([24200]) // Strike 24000 + Premium 200
+  })
+
+  it('2. Single short put: max profit = premium received (bounded), max loss bounded at spot = 0', () => {
+    const result = calcOptionPayoff({
+      legs: [{ id: '1', type: 'put', position: 'short', strike: 24000, premium: 150, lots: 1 }],
+      lotSize: 50,
+      underlyingPrice: 24000,
+      minSpot: 0,
+    })
+    expect(result.maxProfit).toBe(7500) // 150 * 50 = +7,500
+    expect(result.breakevens).toEqual([23850]) // Strike 24000 - Premium 150
+  })
+
+  it('3. Long straddle (long call + long put at same strike) correctly calculates payoff and two breakevens', () => {
+    const result = calcOptionPayoff({
+      legs: [
+        { id: '1', type: 'call', position: 'long', strike: 24000, premium: 200, lots: 1 },
+        { id: '2', type: 'put', position: 'long', strike: 24000, premium: 200, lots: 1 },
+      ],
+      lotSize: 50,
+      underlyingPrice: 24000,
+    })
+    expect(result.maxLoss).toBe(-20000) // (200 + 200) * 50 = -20,000
+    expect(result.maxProfit).toBe('Unlimited')
+    expect(result.breakevens.length).toBe(2)
+    // Lower BE: 24000 - 400 = 23600, Upper BE: 24000 + 400 = 24400
+    expect(result.breakevens[0]).toBeCloseTo(23600, -1)
+    expect(result.breakevens[1]).toBeCloseTo(24400, -1)
+  })
+
+  it('4. Iron Condor (4 legs) correctly calculates bounded max profit, max loss, and two breakevens', () => {
+    const legs = getOptionPresetLegs('iron_condor', 24000)
+    const result = calcOptionPayoff({
+      legs,
+      lotSize: 50,
+      underlyingPrice: 24000,
+    })
+    expect(result.legs).toHaveLength(4)
+    expect(typeof result.maxProfit).toBe('number')
+    expect(typeof result.maxLoss).toBe('number')
+    expect(result.maxProfit).toBeGreaterThan(0)
+    expect(result.maxLoss).toBeLessThan(0)
+    expect(result.breakevens.length).toBe(2)
+  })
+
+  it('5. Covered Call strategy nets correctly with capped upside and cushioned downside', () => {
+    const legs = getOptionPresetLegs('covered_call', 24000)
+    const result = calcOptionPayoff({
+      legs,
+      lotSize: 50,
+      underlyingPrice: 24000,
+    })
+    expect(result.legs).toHaveLength(2)
+    expect(result.chartData.length).toBeGreaterThan(10)
+  })
+
+  it('6. Spot price range including zero does not throw errors or break calculations', () => {
+    const result = calcOptionPayoff({
+      legs: [{ id: '1', type: 'call', position: 'long', strike: 500, premium: 50, lots: 1 }],
+      lotSize: 10,
+      minSpot: 0,
+      maxSpot: 1000,
+      step: 50,
+    })
+    expect(result.chartData[0].spot).toBe(0)
+    expect(result.chartData[0].pnl).toBe(-500) // 50 * 10 = -500
+  })
+
+  it('7. Preset generator creates clean, fresh leg arrays without state leaks', () => {
+    const bullCall = getOptionPresetLegs('bull_call_spread', 24000)
+    const bearPut = getOptionPresetLegs('bear_put_spread', 24000)
+    expect(bullCall[0].type).toBe('call')
+    expect(bearPut[0].type).toBe('put')
+    expect(bullCall[0].strike).not.toBe(bearPut[1].strike)
+  })
+
+  it('8. Custom multi-leg strategy (5+ legs) sums payoff accurately across all legs', () => {
+    const fiveLegs = [
+      { id: '1', type: 'call' as const, position: 'long' as const, strike: 23800, premium: 300, lots: 1 },
+      { id: '2', type: 'call' as const, position: 'short' as const, strike: 24000, premium: 180, lots: 2 },
+      { id: '3', type: 'call' as const, position: 'long' as const, strike: 24200, premium: 90, lots: 1 },
+      { id: '4', type: 'put' as const, position: 'long' as const, strike: 23500, premium: 50, lots: 1 },
+      { id: '5', type: 'put' as const, position: 'short' as const, strike: 23300, premium: 25, lots: 1 },
+    ]
+    const result = calcOptionPayoff({
+      legs: fiveLegs,
+      lotSize: 50,
+      underlyingPrice: 24000,
+    })
+    expect(result.legs).toHaveLength(5)
+    expect(result.chartData.length).toBeGreaterThan(0)
+    expect(result.chartData[0].leg_4).toBeDefined()
+  })
+
+  it('9. Breakeven detection correctly surfaces multiple distinct breakevens', () => {
+    const strangle = getOptionPresetLegs('long_strangle', 24000)
+    const result = calcOptionPayoff({
+      legs: strangle,
+      lotSize: 50,
+      underlyingPrice: 24000,
+    })
+    expect(result.breakevens.length).toBe(2)
+    expect(result.breakevens[0]).toBeLessThan(24000)
+    expect(result.breakevens[1]).toBeGreaterThan(24000)
+  })
+
+  it('10. Max profit, max loss, and breakeven values in summary match values on chart data points', () => {
+    const result = calcOptionPayoff({
+      legs: getOptionPresetLegs('bull_call_spread', 24000),
+      lotSize: 50,
+      underlyingPrice: 24000,
+    })
+    const chartMaxPnl = Math.max(...result.chartData.map((d) => d.pnl))
+    const chartMinPnl = Math.min(...result.chartData.map((d) => d.pnl))
+    expect(result.maxProfit).toBe(chartMaxPnl)
+    expect(result.maxLoss).toBe(chartMinPnl)
+  })
+})
+
 
 
 

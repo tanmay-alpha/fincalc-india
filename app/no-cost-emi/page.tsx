@@ -3,6 +3,7 @@ import NoCostEMICalculator from "@/components/calculators/no-cost-emi/NoCostEMIC
 import NoCostEMIInfo from "@/components/seo/NoCostEMIInfo";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import RelatedCalculators from "@/components/shared/RelatedCalculators";
+import CalculatorDisclaimer from "@/components/ui/CalculatorDisclaimer";
 
 export const metadata: Metadata = {
   title: "No-Cost EMI Truth & Hidden Cost Calculator",
@@ -39,6 +40,7 @@ export default function NoCostEMIPage() {
 
         <NoCostEMICalculator />
         <NoCostEMIInfo />
+        <CalculatorDisclaimer />
         <RelatedCalculators current="no-cost-emi" />
       </div>
     </main>
