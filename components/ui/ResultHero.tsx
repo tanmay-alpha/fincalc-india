@@ -7,7 +7,7 @@ import { formatCompact } from "@/lib/format";
 interface ResultHeroProps {
   label: string;
   value: number;
-  formatValue?: (val: number) => string;
+  formatValue?: (_val: number) => string;
   breakdown: Array<{
     label: string;
     value: number;

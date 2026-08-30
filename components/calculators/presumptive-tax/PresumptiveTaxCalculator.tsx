@@ -15,13 +15,11 @@ import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
 import { clsx } from "clsx";
 import {
-  ShieldCheck,
   Stethoscope,
   Store,
   AlertTriangle,
   CheckCircle2,
   AlertCircle,
-  FileSpreadsheet,
   Lock,
   Scale,
 } from "lucide-react";
@@ -41,6 +39,7 @@ export default function PresumptiveTaxCalculator() {
   const [regime, setRegime] = useState<TaxRegime>("new");
   const [deduction80C, setDeduction80C] = useState(150000);
   const [deduction80D, setDeduction80D] = useState(25000);
+  const [shareId, setShareId] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -478,19 +477,19 @@ export default function PresumptiveTaxCalculator() {
           {/* Action buttons */}
           <div className="flex items-center gap-3">
             <SaveCalculationButton
-              type="Presumptive Tax"
-              inputs={inputs}
-              results={{
-                turnover: result.grossTurnover,
-                presumptiveIncome: result.presumptiveIncome,
-                taxPayable: result.presumptiveTaxPayable,
-                eligible: result.isEligibleForPresumptive,
+              calcType="Presumptive Tax"
+              data={{
+                inputs: inputs as unknown as Record<string, unknown>,
+                results: {
+                  turnover: result.grossTurnover,
+                  presumptiveIncome: result.presumptiveIncome,
+                  taxPayable: result.presumptiveTaxPayable,
+                  eligible: result.isEligibleForPresumptive,
+                },
               }}
+              onSaved={setShareId}
             />
-            <ShareButton
-              title="Presumptive Tax Calculator"
-              text={`My presumptive tax is ₹${result.presumptiveTaxPayable.toLocaleString("en-IN")} on ₹${(result.grossTurnover / 100000).toFixed(1)}L turnover via FinCalc India!`}
-            />
+            <ShareButton shareId={shareId} />
           </div>
         </div>
       </div>

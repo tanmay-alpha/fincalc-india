@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import InsightCard from "@/components/ui/InsightCard";
 import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
@@ -19,9 +18,6 @@ import {
   ShieldCheck,
   Building2,
   Users,
-  CheckCircle2,
-  AlertCircle,
-  HelpCircle,
   Sparkles,
 } from "lucide-react";
 
@@ -44,6 +40,7 @@ export default function HRACalculator() {
   const [isPayingToParents, setIsPayingToParents] = useState(false);
   const [parentsSlabRate, setParentsSlabRate] = useState(0);
   const [userSlabRate, setUserSlabRate] = useState(30);
+  const [shareId, setShareId] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -497,18 +494,18 @@ export default function HRACalculator() {
           {/* Action buttons */}
           <div className="flex items-center gap-3">
             <SaveCalculationButton
-              type="HRA Exemption"
-              inputs={inputs}
-              results={{
-                exemptHra: result.annualExemptHra,
-                taxableHra: result.annualTaxableHra,
-                taxSaved: result.taxSaved,
+              calcType="HRA Exemption"
+              data={{
+                inputs: inputs as unknown as Record<string, unknown>,
+                results: {
+                  exemptHra: result.annualExemptHra,
+                  taxableHra: result.annualTaxableHra,
+                  taxSaved: result.taxSaved,
+                },
               }}
+              onSaved={setShareId}
             />
-            <ShareButton
-              title="HRA Exemption & Rent Optimizer"
-              text={`My tax-exempt HRA is ₹${result.annualExemptHra.toLocaleString("en-IN")}/yr via FinCalc India!`}
-            />
+            <ShareButton shareId={shareId} />
           </div>
         </div>
       </div>

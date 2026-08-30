@@ -15,16 +15,12 @@ import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
 import { clsx } from "clsx";
 import {
-  ShieldCheck,
   Building,
   Landmark,
   Scale,
-  Calendar,
   AlertTriangle,
   CheckCircle2,
   AlertCircle,
-  FileCheck,
-  Sparkles,
 } from "lucide-react";
 
 const Section54Chart = dynamic(
@@ -41,7 +37,7 @@ export default function Section54Calculator() {
   const [propertyTimelineMonths, setPropertyTimelineMonths] = useState(6);
   const [bondsInvestmentAmount, setBondsInvestmentAmount] = useState(5000000);
   const [bondsTimelineMonths, setBondsTimelineMonths] = useState(3);
-  const [taxRatePercent, setTaxRatePercent] = useState(12.5);
+  const [shareId, setShareId] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -56,7 +52,7 @@ export default function Section54Calculator() {
       propertyTimelineMonths,
       bondsInvestmentAmount,
       bondsTimelineMonths,
-      taxRatePercent,
+      taxRatePercent: 12.5,
     }),
     [
       capitalGainsAmount,
@@ -66,7 +62,6 @@ export default function Section54Calculator() {
       propertyTimelineMonths,
       bondsInvestmentAmount,
       bondsTimelineMonths,
-      taxRatePercent,
     ]
   );
 
@@ -430,19 +425,19 @@ export default function Section54Calculator() {
           {/* Action buttons */}
           <div className="flex items-center gap-3">
             <SaveCalculationButton
-              type="Section 54 Exemption"
-              inputs={inputs}
-              results={{
-                initialGains: result.initialLtcgGains,
-                exemptionAllowed: result.activeResult.exemptionAllowed,
-                taxSaved: result.activeResult.taxSaved,
-                taxPayable: result.activeResult.taxAfterExemption,
+              calcType="Section 54 Exemption"
+              data={{
+                inputs: inputs as unknown as Record<string, unknown>,
+                results: {
+                  initialGains: result.initialLtcgGains,
+                  exemptionAllowed: result.activeResult.exemptionAllowed,
+                  taxSaved: result.activeResult.taxSaved,
+                  taxPayable: result.activeResult.taxAfterExemption,
+                },
               }}
+              onSaved={setShareId}
             />
-            <ShareButton
-              title="Section 54 / 54EC Exemption Planner"
-              text={`Saved ₹${result.activeResult.taxSaved.toLocaleString("en-IN")} on real estate LTCG tax via FinCalc India!`}
-            />
+            <ShareButton shareId={shareId} />
           </div>
         </div>
       </div>

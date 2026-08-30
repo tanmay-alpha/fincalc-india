@@ -14,14 +14,7 @@ import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
 import { clsx } from "clsx";
 import {
-  TrendingUp,
-  TrendingDown,
-  ShieldAlert,
   AlertTriangle,
-  Target,
-  Scale,
-  Zap,
-  CheckCircle2,
 } from "lucide-react";
 
 export default function PositionSizeCalculator() {
@@ -33,6 +26,7 @@ export default function PositionSizeCalculator() {
   const [riskRewardRatio, setRiskRewardRatio] = useState(2);
   const [tradeDirection, setTradeDirection] = useState<"auto" | "long" | "short">("auto");
   const [leverageMultiplier, setLeverageMultiplier] = useState(1);
+  const [shareId, setShareId] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -355,19 +349,19 @@ export default function PositionSizeCalculator() {
           {/* Action buttons */}
           <div className="flex items-center gap-3">
             <SaveCalculationButton
-              type="Position Size"
-              inputs={inputs}
-              results={{
-                quantity: result.quantity,
-                positionValue: result.positionValue,
-                actualRisk: result.actualRiskAmount,
-                targetPrice: result.targetPrice,
+              calcType="Position Size"
+              data={{
+                inputs: inputs as unknown as Record<string, unknown>,
+                results: {
+                  quantity: result.quantity,
+                  positionValue: result.positionValue,
+                  actualRisk: result.actualRiskAmount,
+                  targetPrice: result.targetPrice,
+                },
               }}
+              onSaved={setShareId}
             />
-            <ShareButton
-              title="Intraday Risk-Reward & Position Size Calculator"
-              text={`Position size: ${result.quantity} shares (Target: ₹${result.targetPrice}, Risk: ₹${result.actualRiskAmount}) via FinCalc India!`}
-            />
+            <ShareButton shareId={shareId} />
           </div>
         </div>
       </div>

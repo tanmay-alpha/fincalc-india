@@ -1,7 +1,6 @@
 "use client";
 
 import { formatINR } from "@/lib/format";
-import { clsx } from "clsx";
 
 interface PositionSizeVisualizerProps {
   entryPrice: number;
