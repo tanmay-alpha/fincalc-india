@@ -226,6 +226,57 @@ export interface HRAExemptionOutput {
   summary: string;
 }
 
+// ─── PRESUMPTIVE TAXATION (44AD & 44ADA) ──────────────────────
+
+export type PresumptiveProfessionType = "44ADA_professional" | "44AD_business";
+
+export interface PresumptiveTaxInput {
+  professionType: PresumptiveProfessionType;
+  grossTurnover: number;
+  digitalReceiptsPercentage?: number; // 0 to 100, default 100
+  actualProfit?: number;
+  regime?: TaxRegime;
+  deduction80C?: number;
+  deduction80D?: number;
+  otherDeductions?: number;
+}
+
+export interface PresumptiveTaxOutput {
+  professionType: PresumptiveProfessionType;
+  grossTurnover: number;
+  digitalReceiptsPercentage: number;
+  digitalTurnover: number;
+  cashTurnover: number;
+  isEnhancedLimitApplicable: boolean;
+  maxTurnoverLimit: number;
+  isEligibleForPresumptive: boolean;
+  ineligibilityReason?: string;
+  presumptiveRateEffective: number;
+  presumptiveIncome: number;
+  presumptiveTaxPayable: number;
+  presumptiveTaxDetails: {
+    taxableIncome: number;
+    totalTax: number;
+    effectiveRate: number;
+    slabBreakdown: TaxSlabRow[];
+  };
+  actualProfit: number;
+  actualTaxPayable: number;
+  actualTaxDetails: {
+    taxableIncome: number;
+    totalTax: number;
+    effectiveRate: number;
+    slabBreakdown: TaxSlabRow[];
+  };
+  taxDifference: number; // presumptiveTaxPayable - actualTaxPayable
+  isPresumptiveCheaper: boolean;
+  isAuditTriggeredByOptOut: boolean;
+  auditTriggerReason?: string;
+  fiveYearLockoutTriggered: boolean;
+  recommendation: string;
+}
+
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  CALCULATIONS
@@ -2104,6 +2155,224 @@ export function calcHRAExemption(input: HRAExemptionInput): HRAExemptionOutput {
     taxSaved,
     payingToParentsDetails,
     summary,
+  };
+}
+
+// ─── PRESUMPTIVE TAXATION ENGINE (44AD & 44ADA) ───────────────
+/**
+ * Helper to compute income tax on PGBP (Profits & Gains from Business or Profession)
+ * Reuses official slab rates, rebates u/s 87A, surcharges, and cess without salary standard deductions.
+ */
+export function computePGBPTax(
+  netBusinessIncome: number,
+  regime: TaxRegime = "new",
+  deduction80C = 0,
+  deduction80D = 0,
+  otherDeductions = 0
+): {
+  taxableIncome: number;
+  totalTax: number;
+  effectiveRate: number;
+  slabBreakdown: TaxSlabRow[];
+} {
+  const safeIncome = Math.max(0, netBusinessIncome || 0);
+  let totalDeductions = 0;
+  if (regime === "old") {
+    const capped80C = Math.min(deduction80C, 150000);
+    const capped80D = Math.min(deduction80D, 100000);
+    totalDeductions = capped80C + capped80D + (otherDeductions || 0);
+  }
+  const taxableIncome = Math.max(0, safeIncome - totalDeductions);
+  const slabs = regime === "new" ? NEW_REGIME_SLABS : OLD_REGIME_SLABS;
+  const { rawTax, breakdown } = internalSlabCalc(taxableIncome, slabs);
+
+  // Rebate u/s 87A
+  let rebate = 0;
+  if (regime === "new" && taxableIncome <= 1200000) {
+    rebate = rawTax; // Full rebate up to ₹12L in FY 2025-26 new regime
+  } else if (regime === "old" && taxableIncome <= 500000) {
+    rebate = Math.min(rawTax, 12500);
+  }
+
+  const taxAfterRebate = Math.max(0, rawTax - rebate);
+  const surcharge = internalSurcharge(taxAfterRebate, safeIncome);
+  const cess = (taxAfterRebate + surcharge) * 0.04;
+  const totalTax = Math.round(taxAfterRebate + surcharge + cess);
+  const effectiveRate = safeIncome > 0 ? Math.round((totalTax / safeIncome) * 100 * 100) / 100 : 0;
+
+  return {
+    taxableIncome: Math.round(taxableIncome),
+    totalTax,
+    effectiveRate,
+    slabBreakdown: breakdown,
+  };
+}
+
+/**
+ * Presumptive Taxation Calculator (Section 44AD & Section 44ADA)
+ *
+ * Section 44ADA (Professionals):
+ * - Presumptive profit: 50% of gross receipts
+ * - Threshold: ₹50 Lakhs (base) or ₹75 Lakhs (enhanced if digital receipts ≥ 95%)
+ *
+ * Section 44AD (Eligible Businesses):
+ * - Presumptive profit: 6% on digital turnover + 8% on cash turnover
+ * - Threshold: ₹2 Crore (base) or ₹3 Crore (enhanced if digital receipts ≥ 95%)
+ *
+ * Audit Triggers:
+ * - If actual profit < presumptive income and total income > basic exemption limit,
+ *   maintaining books u/s 44AA and tax audit u/s 44AB are triggered.
+ * - Under 44AD(4), opting out also locks the assessee out of 44AD for the next 5 consecutive AYs.
+ */
+export function calcPresumptiveTax(input: PresumptiveTaxInput): PresumptiveTaxOutput {
+  const {
+    professionType,
+    grossTurnover = 0,
+    digitalReceiptsPercentage = 100,
+    actualProfit: userActualProfit,
+    regime = "new",
+    deduction80C = 0,
+    deduction80D = 0,
+    otherDeductions = 0,
+  } = input;
+
+  const safeTurnover = Math.max(0, grossTurnover || 0);
+  const safeDigitalPct = Math.min(100, Math.max(0, digitalReceiptsPercentage ?? 100));
+  const isEnhancedLimitApplicable = safeDigitalPct >= 95;
+
+  let maxTurnoverLimit = 0;
+  let isEligibleForPresumptive = true;
+  let ineligibilityReason: string | undefined = undefined;
+
+  if (professionType === "44ADA_professional") {
+    maxTurnoverLimit = isEnhancedLimitApplicable ? 7500000 : 5000000;
+    if (safeTurnover > maxTurnoverLimit) {
+      isEligibleForPresumptive = false;
+      if (safeTurnover <= 7500000 && !isEnhancedLimitApplicable) {
+        ineligibilityReason = `Turnover (₹${(safeTurnover / 100000).toFixed(2)}L) exceeds the standard ₹50 Lakh limit, and digital receipts are ${safeDigitalPct}% (under the 95% threshold required for the enhanced ₹75 Lakh limit).`;
+      } else {
+        ineligibilityReason = `Gross receipts of ₹${(safeTurnover / 100000).toFixed(2)} Lakh exceed the maximum ₹75 Lakh limit allowed under Section 44ADA.`;
+      }
+    }
+  } else {
+    // 44AD Business
+    maxTurnoverLimit = isEnhancedLimitApplicable ? 30000000 : 20000000;
+    if (safeTurnover > maxTurnoverLimit) {
+      isEligibleForPresumptive = false;
+      if (safeTurnover <= 30000000 && !isEnhancedLimitApplicable) {
+        ineligibilityReason = `Turnover (₹${(safeTurnover / 10000000).toFixed(2)} Cr) exceeds standard ₹2 Crore limit, and digital receipts are ${safeDigitalPct}% (under the 95% threshold required for enhanced ₹3 Crore limit).`;
+      } else {
+        ineligibilityReason = `Gross turnover of ₹${(safeTurnover / 10000000).toFixed(2)} Crore exceeds the maximum ₹3 Crore limit allowed under Section 44AD.`;
+      }
+    }
+  }
+
+  // Calculate turnover splits
+  const digitalTurnover = Math.round(safeTurnover * (safeDigitalPct / 100));
+  const cashTurnover = Math.max(0, safeTurnover - digitalTurnover);
+
+  // Presumptive Income
+  let presumptiveIncome = 0;
+  let presumptiveRateEffective = 0;
+
+  if (safeTurnover > 0 && isEligibleForPresumptive) {
+    if (professionType === "44ADA_professional") {
+      presumptiveIncome = Math.round(safeTurnover * 0.50);
+      presumptiveRateEffective = 50;
+    } else {
+      // 44AD: 6% digital, 8% cash
+      presumptiveIncome = Math.round((digitalTurnover * 0.06) + (cashTurnover * 0.08));
+      presumptiveRateEffective = Math.round((presumptiveIncome / safeTurnover) * 100 * 100) / 100;
+    }
+  } else if (safeTurnover === 0) {
+    presumptiveIncome = 0;
+    presumptiveRateEffective = professionType === "44ADA_professional" ? 50 : 6;
+  }
+
+  // Actual Profit
+  const actualProfit = userActualProfit !== undefined ? Math.max(0, userActualProfit) : presumptiveIncome;
+
+  // Calculate Taxes using shared tax engine
+  const presumptiveTaxDetails = computePGBPTax(
+    presumptiveIncome,
+    regime,
+    deduction80C,
+    deduction80D,
+    otherDeductions
+  );
+
+  const actualTaxDetails = computePGBPTax(
+    actualProfit,
+    regime,
+    deduction80C,
+    deduction80D,
+    otherDeductions
+  );
+
+  const presumptiveTaxPayable = isEligibleForPresumptive ? presumptiveTaxDetails.totalTax : 0;
+  const actualTaxPayable = actualTaxDetails.totalTax;
+  const taxDifference = presumptiveTaxPayable - actualTaxPayable;
+  const isPresumptiveCheaper = presumptiveTaxPayable <= actualTaxPayable;
+
+  // Audit triggers:
+  // If eligible for presumptive taxation, but assessee declares profit lower than the presumptive percentage:
+  let isAuditTriggeredByOptOut = false;
+  let auditTriggerReason: string | undefined = undefined;
+  let fiveYearLockoutTriggered = false;
+
+  const basicExemptionLimit = regime === "new" ? 400000 : 250000;
+
+  if (isEligibleForPresumptive && safeTurnover > 0 && actualProfit < presumptiveIncome && actualProfit > basicExemptionLimit) {
+    isAuditTriggeredByOptOut = true;
+    if (professionType === "44ADA_professional") {
+      auditTriggerReason = "Declared profit is below 50% presumptive rate and total income exceeds basic exemption. Maintenance of books of account u/s 44AA and Tax Audit u/s 44AB(d) by a Chartered Accountant are mandatorily required.";
+    } else {
+      fiveYearLockoutTriggered = true;
+      auditTriggerReason = "Declared profit is below 6%/8% presumptive rate and income exceeds basic exemption. Maintenance of books u/s 44AA + Tax Audit u/s 44AB(e) are required. Under Section 44AD(4), you will be barred from opting into 44AD for the next 5 assessment years.";
+    }
+  }
+
+  // Recommendation
+  let recommendation = "";
+  if (!isEligibleForPresumptive) {
+    recommendation = ineligibilityReason || "Turnover exceeds eligible limits for presumptive taxation. Regular books of account and normal tax filing apply.";
+  } else if (safeTurnover === 0) {
+    recommendation = "Enter your gross turnover to calculate presumptive taxation vs actual profit.";
+  } else if (actualProfit === presumptiveIncome) {
+    recommendation = `Presumptive scheme u/s ${professionType === "44ADA_professional" ? "44ADA" : "44AD"} is optimal: No need to maintain detailed accounting books or undergo a mandatory tax audit. Tax payable is ₹${presumptiveTaxPayable.toLocaleString("en-IN")}.`;
+  } else if (isPresumptiveCheaper) {
+    recommendation = `Presumptive scheme saves ₹${Math.abs(taxDifference).toLocaleString("en-IN")} in tax compared to your actual profit, while eliminating all bookkeeping and tax audit compliance overhead.`;
+  } else {
+    recommendation = `Declaring actual profit saves ₹${Math.abs(taxDifference).toLocaleString("en-IN")} in tax, but ${
+      isAuditTriggeredByOptOut
+        ? "triggers mandatory CA Tax Audit and accounting compliance overhead."
+        : "requires maintaining regular books of accounts."
+    }`;
+  }
+
+  return {
+    professionType,
+    grossTurnover: Math.round(safeTurnover),
+    digitalReceiptsPercentage: safeDigitalPct,
+    digitalTurnover,
+    cashTurnover,
+    isEnhancedLimitApplicable,
+    maxTurnoverLimit,
+    isEligibleForPresumptive,
+    ineligibilityReason,
+    presumptiveRateEffective,
+    presumptiveIncome,
+    presumptiveTaxPayable,
+    presumptiveTaxDetails,
+    actualProfit: Math.round(actualProfit),
+    actualTaxPayable,
+    actualTaxDetails,
+    taxDifference,
+    isPresumptiveCheaper,
+    isAuditTriggeredByOptOut,
+    auditTriggerReason,
+    fiveYearLockoutTriggered,
+    recommendation,
   };
 }
 

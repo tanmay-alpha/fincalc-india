@@ -22,6 +22,7 @@ import {
   calcOptionPayoff,
   getOptionPresetLegs,
   calcHRAExemption,
+  calcPresumptiveTax,
 } from '../lib/math'
 
 // ─── SIP ──────────────────────────────────────────────────────
@@ -1570,6 +1571,159 @@ describe('calcHRAExemption', () => {
     })
     expect(parentThirtySlab.payingToParentsDetails?.parentTaxPayable).toBe(75600)
     expect(parentThirtySlab.payingToParentsDetails?.netHouseholdTaxSaved).toBe(7200)
+  })
+})
+
+// ─── PRESUMPTIVE TAXATION (44AD & 44ADA) ──────────────────────
+
+describe('calcPresumptiveTax', () => {
+  it('1. 44ADA turnover exactly at ₹75 lakh threshold with ≥95% digital receipts — still eligible', () => {
+    const result = calcPresumptiveTax({
+      professionType: '44ADA_professional',
+      grossTurnover: 7500000,
+      digitalReceiptsPercentage: 95,
+      regime: 'new',
+    })
+    expect(result.isEligibleForPresumptive).toBe(true)
+    expect(result.isEnhancedLimitApplicable).toBe(true)
+    expect(result.maxTurnoverLimit).toBe(7500000)
+    expect(result.presumptiveIncome).toBe(3750000) // 50% of 75L
+    expect(result.presumptiveTaxPayable).toBeGreaterThan(0)
+  })
+
+  it('2. 44ADA turnover marginally above ₹50 lakh but digital receipts below 95% — reverts to ₹50L and flagged ineligible', () => {
+    const result = calcPresumptiveTax({
+      professionType: '44ADA_professional',
+      grossTurnover: 5100000,
+      digitalReceiptsPercentage: 90, // < 95%
+      regime: 'new',
+    })
+    expect(result.isEnhancedLimitApplicable).toBe(false)
+    expect(result.maxTurnoverLimit).toBe(5000000)
+    expect(result.isEligibleForPresumptive).toBe(false)
+    expect(result.ineligibilityReason).toContain('50 Lakh')
+  })
+
+  it('3. 44AD with 100% digital receipts — 6% rate applied correctly', () => {
+    // Turnover ₹1 Crore, 100% digital -> Presumptive income = ₹6,00,000
+    const result = calcPresumptiveTax({
+      professionType: '44AD_business',
+      grossTurnover: 10000000,
+      digitalReceiptsPercentage: 100,
+      regime: 'new',
+    })
+    expect(result.isEligibleForPresumptive).toBe(true)
+    expect(result.presumptiveIncome).toBe(600000)
+    expect(result.presumptiveRateEffective).toBe(6)
+  })
+
+  it('4. 44AD with significant cash receipts — mixed 6% digital + 8% cash applied accurately', () => {
+    // Turnover ₹1 Crore: ₹60L digital (6% = 3,60,000) + ₹40L cash (8% = 3,20,000) -> Total = 6,80,000
+    const result = calcPresumptiveTax({
+      professionType: '44AD_business',
+      grossTurnover: 10000000,
+      digitalReceiptsPercentage: 60,
+      regime: 'new',
+    })
+    expect(result.digitalTurnover).toBe(6000000)
+    expect(result.cashTurnover).toBe(4000000)
+    expect(result.presumptiveIncome).toBe(680000)
+    expect(result.presumptiveRateEffective).toBe(6.8)
+  })
+
+  it('5. Turnover of ₹0 — presumptive income and tax both compute to ₹0 without division errors', () => {
+    const result = calcPresumptiveTax({
+      professionType: '44ADA_professional',
+      grossTurnover: 0,
+      digitalReceiptsPercentage: 100,
+    })
+    expect(result.presumptiveIncome).toBe(0)
+    expect(result.presumptiveTaxPayable).toBe(0)
+    expect(result.actualTaxPayable).toBe(0)
+  })
+
+  it('6. Actual profit is lower than presumptive income — output flags presumptive costs more and notes audit conditions', () => {
+    // 44ADA: 60L turnover -> Presumptive income = 30L (tax ~ ₹4.73L in new regime)
+    // Actual profit = 10L (tax = 0 in new regime due to rebate)
+    const result = calcPresumptiveTax({
+      professionType: '44ADA_professional',
+      grossTurnover: 6000000,
+      digitalReceiptsPercentage: 100,
+      actualProfit: 1000000,
+      regime: 'new',
+    })
+    expect(result.presumptiveIncome).toBe(3000000)
+    expect(result.actualProfit).toBe(1000000)
+    expect(result.isPresumptiveCheaper).toBe(false)
+    expect(result.isAuditTriggeredByOptOut).toBe(true)
+    expect(result.auditTriggerReason).toBeDefined()
+  })
+
+  it('7. Turnover exceeding the presumptive scheme threshold entirely — clearly states ineligible and does not compute false valid status', () => {
+    // 44ADA with 80L turnover (> 75L enhanced limit)
+    const result = calcPresumptiveTax({
+      professionType: '44ADA_professional',
+      grossTurnover: 8000000,
+      digitalReceiptsPercentage: 100,
+    })
+    expect(result.isEligibleForPresumptive).toBe(false)
+    expect(result.presumptiveTaxPayable).toBe(0)
+    expect(result.ineligibilityReason).toContain('exceed the maximum ₹75 Lakh limit')
+  })
+
+  it('8. Extremely high turnover under enhanced 44AD limit (₹2.9 Crore) — calculates correctly without boundary bugs', () => {
+    // 44AD: 2.9 Crore turnover with 98% digital -> Eligible under 3 Crore enhanced limit
+    const result = calcPresumptiveTax({
+      professionType: '44AD_business',
+      grossTurnover: 29000000,
+      digitalReceiptsPercentage: 98,
+      regime: 'new',
+    })
+    expect(result.isEligibleForPresumptive).toBe(true)
+    expect(result.maxTurnoverLimit).toBe(30000000)
+    // Digital: 2,84,20,000 * 6% = 17,05,200; Cash: 5,80,000 * 8% = 46,400 -> Total = 17,51,600
+    expect(result.presumptiveIncome).toBe(1751600)
+    expect(result.presumptiveTaxPayable).toBeGreaterThan(0)
+  })
+
+  it('9. Slab-rate tax calculation on presumptive income correctly uses the income tax slab logic', () => {
+    // 44ADA with ₹20L turnover -> Presumptive income = ₹10L.
+    // In FY 2025-26 new regime: income ≤ 12L gets 87A rebate -> Tax is ₹0!
+    const resUnderRebate = calcPresumptiveTax({
+      professionType: '44ADA_professional',
+      grossTurnover: 2000000,
+      digitalReceiptsPercentage: 100,
+      regime: 'new',
+    })
+    expect(resUnderRebate.presumptiveIncome).toBe(1000000)
+    expect(resUnderRebate.presumptiveTaxPayable).toBe(0)
+
+    // In old regime: income ₹10L with ₹1.5L 80C -> Taxable ₹8.5L.
+    // Slabs: 0-2.5L 0, 2.5-5L 12.5k, 5-8.5L 70k -> Raw tax 82.5k + 4% cess = 85.8k
+    const resOldRegime = calcPresumptiveTax({
+      professionType: '44ADA_professional',
+      grossTurnover: 2000000,
+      digitalReceiptsPercentage: 100,
+      regime: 'old',
+      deduction80C: 150000,
+    })
+    expect(resOldRegime.presumptiveTaxDetails.taxableIncome).toBe(850000)
+    expect(resOldRegime.presumptiveTaxPayable).toBe(85800)
+  })
+
+  it('10. Audit-trigger and 5-year lockout flags activate when opting out of 44AD with lower declared profit', () => {
+    // 44AD: Turnover 1.5 Cr -> Presumptive income = 9 Lakhs.
+    // Assessee declares actual profit of 5 Lakhs (which is < 9 Lakhs and > basic exemption of 4 Lakhs)
+    const result = calcPresumptiveTax({
+      professionType: '44AD_business',
+      grossTurnover: 15000000,
+      digitalReceiptsPercentage: 100,
+      actualProfit: 500000,
+      regime: 'new',
+    })
+    expect(result.isAuditTriggeredByOptOut).toBe(true)
+    expect(result.fiveYearLockoutTriggered).toBe(true)
+    expect(result.auditTriggerReason).toContain('Section 44AD(4)')
   })
 })
 

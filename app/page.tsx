@@ -155,6 +155,17 @@ const calculators: CalculatorCard[] = [
     badge: "Rent Optimizer",
   },
   {
+    id: "presumptive-tax",
+    name: "Presumptive Tax (44AD/ADA)",
+    shortName: "44AD/ADA",
+    icon: FileText,
+    description: "Calculate presumptive profit and tax for professionals (50%) and businesses (6%/8%) with audit trigger analysis.",
+    bestFor: "Freelancers, doctors, CAs & small businesses",
+    includes: "₹75L / ₹3Cr digital limits, Audit triggers",
+    href: "/presumptive-tax",
+    badge: "No Bookkeeping",
+  },
+  {
     id: "fd",
     name: "FD Calculator",
     shortName: "FD",

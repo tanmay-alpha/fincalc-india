@@ -35,6 +35,7 @@ const navLinks = [
   { href: "/option-payoff", label: "Options", icon: TrendingUp },
   { href: "/tax", label: "Tax", icon: FileText },
   { href: "/hra-exemption", label: "HRA", icon: Building2 },
+  { href: "/presumptive-tax", label: "44AD/ADA", icon: FileText },
 ];
 
 
