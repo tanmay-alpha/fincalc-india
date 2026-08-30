@@ -417,8 +417,30 @@ export interface Section54ExemptionOutput {
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  CALCULATIONS
+//  CALCULATIONS — ENGINE V2 (DEFENSIVE & PRECISION HARDENED)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+/**
+ * Coerces unknown / null / NaN inputs to finite numbers with fallback.
+ */
+export function safeNum(val: unknown, fallback = 0): number {
+  if (typeof val === "number") {
+    return Number.isFinite(val) ? val : fallback;
+  }
+  if (typeof val === "string") {
+    const parsed = parseFloat(val);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+  return fallback;
+}
+
+/**
+ * Guarantees non-negative finite value
+ */
+export function safePositive(val: unknown, fallback = 0): number {
+  const num = safeNum(val, fallback);
+  return Math.max(0, num);
+}
 
 // ─── SIP ──────────────────────────────────────────────────────
 /**
@@ -427,26 +449,32 @@ export interface Section54ExemptionOutput {
  * n = years × 12
  */
 export function calcSIP(input: SipInput): SipOutput {
-  const { monthlyAmount, annualRate, years } = input;
+  const monthlyAmount = safePositive(input.monthlyAmount);
+  const annualRate = safePositive(input.annualRate);
+  const years = safePositive(input.years);
+
   const i = annualRate / 12 / 100;
-  const n = years * 12;
+  const n = Math.round(years * 12);
   const totalInvested = monthlyAmount * n;
 
-  let totalCorpus: number;
-  if (i === 0) {
+  let totalCorpus = 0;
+  if (monthlyAmount === 0 || n === 0) {
+    totalCorpus = 0;
+  } else if (i === 0) {
     totalCorpus = totalInvested;
   } else {
     totalCorpus = monthlyAmount * (((Math.pow(1 + i, n) - 1) / i) * (1 + i));
   }
 
-  const estimatedReturns = Math.round(totalCorpus) - Math.round(totalInvested);
+  const estimatedReturns = Math.max(0, Math.round(totalCorpus) - Math.round(totalInvested));
   const absoluteReturn = totalInvested > 0
     ? (estimatedReturns / totalInvested) * 100
     : 0;
 
   // Year-by-year breakdown
   const yearlyBreakdown: SipYearRow[] = [];
-  for (let y = 1; y <= years; y++) {
+  const roundedYears = Math.round(years);
+  for (let y = 1; y <= roundedYears; y++) {
     const months = y * 12;
     const inv = monthlyAmount * months;
     let corp: number;
@@ -458,7 +486,7 @@ export function calcSIP(input: SipInput): SipOutput {
     yearlyBreakdown.push({
       year: y,
       invested: Math.round(inv),
-      returns: Math.round(corp) - Math.round(inv),
+      returns: Math.max(0, Math.round(corp) - Math.round(inv)),
       corpus: Math.round(corp),
     });
   }
@@ -478,11 +506,15 @@ export function calcSIP(input: SipInput): SipOutput {
  * Includes full amortization schedule with cumulative tracking.
  */
 export function calcEMI(input: EmiInput): EmiOutput {
-  const { principal, annualRate, tenureMonths } = input;
+  const principal = safePositive(input.principal);
+  const annualRate = safePositive(input.annualRate);
+  const tenureMonths = Math.max(1, Math.round(safePositive(input.tenureMonths, 1)));
   const r = annualRate / 12 / 100;
 
-  let emi: number;
-  if (r === 0) {
+  let emi = 0;
+  if (principal === 0) {
+    emi = 0;
+  } else if (r === 0) {
     emi = principal / tenureMonths;
   } else {
     const factor = Math.pow(1 + r, tenureMonths);
@@ -490,8 +522,8 @@ export function calcEMI(input: EmiInput): EmiOutput {
   }
 
   const totalPayment = emi * tenureMonths;
-  const totalInterest = totalPayment - principal;
-  const interestPercentage = principal > 0
+  const totalInterest = Math.max(0, totalPayment - principal);
+  const interestPercentage = totalPayment > 0
     ? (totalInterest / totalPayment) * 100
     : 0;
 
@@ -535,19 +567,24 @@ export function calcEMI(input: EmiInput): EmiOutput {
  * n = compounding frequency, t = tenure in years
  */
 export function calcFD(input: FdInput): FdOutput {
-  const { principal, annualRate, tenureYears, compoundingFrequency: freq } = input;
+  const principal = safePositive(input.principal);
+  const annualRate = safePositive(input.annualRate);
+  const tenureYears = safePositive(input.tenureYears);
+  const freq: CompoundingFrequency = (input.compoundingFrequency && [1, 2, 4, 12].includes(input.compoundingFrequency))
+    ? input.compoundingFrequency
+    : 4;
 
   const maturityAmount = principal *
     Math.pow(1 + annualRate / (freq * 100), freq * tenureYears);
 
-  const totalInterest = maturityAmount - principal;
+  const totalInterest = Math.max(0, maturityAmount - principal);
 
   // Growth data for charting
   const steps = Math.min(Math.max(Math.ceil(tenureYears * 4), 8), 60);
   const growthData: FdGrowthPoint[] = [];
 
   for (let s = 0; s <= steps; s++) {
-    const t = (tenureYears * s) / steps;
+    const t = steps > 0 ? (tenureYears * s) / steps : 0;
     const amount = principal *
       Math.pow(1 + annualRate / (freq * 100), freq * t);
     const label = t < 1 ? `${Math.round(t * 12)}m` : `${t.toFixed(1)}y`;
@@ -574,7 +611,9 @@ export function calcFD(input: FdInput): FdOutput {
  * Loans allowed years 3–6.
  */
 export function calcPPF(input: PpfInput): PpfOutput {
-  const { yearlyInvestment, years, rate } = input;
+  const yearlyInvestment = safePositive(input.yearlyInvestment);
+  const years = Math.max(1, Math.min(50, Math.round(safePositive(input.years, 15))));
+  const rate = safePositive(input.rate, 7.1);
 
   let balance = 0;
   let totalInvested = 0;
@@ -612,21 +651,24 @@ export function calcPPF(input: PpfInput): PpfOutput {
  * CAGR = ((FV/PV)^(1/t) − 1) × 100
  */
 export function calcLumpsum(input: LumpsumInput): LumpsumOutput {
-  const { principal, annualRate, years } = input;
+  const principal = safePositive(input.principal);
+  const annualRate = safePositive(input.annualRate);
+  const years = safePositive(input.years);
 
   const totalCorpus = principal * Math.pow(1 + annualRate / 100, years);
-  const estimatedReturns = Math.round(totalCorpus) - Math.round(principal);
+  const estimatedReturns = Math.max(0, Math.round(totalCorpus) - Math.round(principal));
   const absoluteReturn = principal > 0
     ? (estimatedReturns / principal) * 100
     : 0;
-  const CAGR = years > 0
+  const CAGR = (years > 0 && principal > 0)
     ? (Math.pow(totalCorpus / principal, 1 / years) - 1) * 100
     : 0;
   const wealthRatio = principal > 0 ? totalCorpus / principal : 0;
 
   // Growth curve for charting
   const growthData: LumpsumGrowthPoint[] = [];
-  for (let y = 0; y <= years; y++) {
+  const roundedYears = Math.round(years);
+  for (let y = 0; y <= roundedYears; y++) {
     growthData.push({
       year: y,
       value: Math.round(principal * Math.pow(1 + annualRate / 100, y)),
