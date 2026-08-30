@@ -235,7 +235,7 @@ export default function PresumptiveTaxCalculator() {
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  New Regime (FY 25-26)
+                  ⚡ Tax Year 2026-27
                 </button>
                 <button
                   type="button"
@@ -247,7 +247,7 @@ export default function PresumptiveTaxCalculator() {
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  Old Regime
+                  📋 Old Regime
                 </button>
               </div>
             </div>

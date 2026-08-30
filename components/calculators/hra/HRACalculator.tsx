@@ -19,6 +19,9 @@ import {
   Building2,
   Users,
   Sparkles,
+  ChevronDown,
+  ChevronUp,
+  SlidersHorizontal,
 } from "lucide-react";
 
 const HRAChart = dynamic(
@@ -30,6 +33,7 @@ export default function HRACalculator() {
   const [mounted, setMounted] = useState(false);
   const [salaryPeriod, setSalaryPeriod] = useState<SalaryPeriod>("monthly");
   const [basicSalary, setBasicSalary] = useState(50000);
+  const [showAdvancedDa, setShowAdvancedDa] = useState(false);
   const [dearnessAllowance, setDearnessAllowance] = useState(0);
   const [daFormsRetirement, setDaFormsRetirement] = useState(false);
   const [hraReceived, setHraReceived] = useState(25000);
@@ -201,29 +205,6 @@ export default function HRACalculator() {
               prefix="₹"
             />
 
-            <div className="space-y-2">
-              <HybridInput
-                label={`Dearness Allowance (DA) (${isMonthly ? "Monthly" : "Annual"})`}
-                value={dearnessAllowance}
-                onChange={setDearnessAllowance}
-                min={0}
-                max={isMonthly ? 500000 : 6000000}
-                step={isMonthly ? 1000 : 10000}
-                prefix="₹"
-              />
-              <label className="flex items-center gap-2 cursor-pointer pt-1">
-                <input
-                  type="checkbox"
-                  checked={daFormsRetirement}
-                  onChange={(e) => setDaFormsRetirement(e.target.checked)}
-                  className="rounded border-slate-300 text-primary focus:ring-primary h-4 w-4"
-                />
-                <span className="text-xs text-muted-foreground">
-                  DA forms part of retirement benefits (included in HRA salary base per rules)
-                </span>
-              </label>
-            </div>
-
             <HybridInput
               label={`HRA Received from Employer (${isMonthly ? "Monthly" : "Annual"})`}
               value={hraReceived}
@@ -243,6 +224,51 @@ export default function HRACalculator() {
               step={isMonthly ? 1000 : 10000}
               prefix="₹"
             />
+
+            {/* Collapsible Advanced: Dearness Allowance (DA) */}
+            <div className="pt-2 border-t border-border/50">
+              <button
+                type="button"
+                onClick={() => setShowAdvancedDa(!showAdvancedDa)}
+                className="w-full flex items-center justify-between py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <span className="flex items-center gap-1.5">
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  Advanced: Dearness Allowance (DA)
+                  {dearnessAllowance > 0 && (
+                    <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-primary/10 text-primary">
+                      {formatINR(dearnessAllowance)}
+                    </span>
+                  )}
+                </span>
+                {showAdvancedDa ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+
+              {showAdvancedDa && (
+                <div className="space-y-3 pt-3">
+                  <HybridInput
+                    label={`Dearness Allowance (DA) (${isMonthly ? "Monthly" : "Annual"})`}
+                    value={dearnessAllowance}
+                    onChange={setDearnessAllowance}
+                    min={0}
+                    max={isMonthly ? 500000 : 6000000}
+                    step={isMonthly ? 1000 : 10000}
+                    prefix="₹"
+                  />
+                  <label className="flex items-center gap-2 cursor-pointer pt-1">
+                    <input
+                      type="checkbox"
+                      checked={daFormsRetirement}
+                      onChange={(e) => setDaFormsRetirement(e.target.checked)}
+                      className="rounded border-slate-300 text-primary focus:ring-primary h-4 w-4"
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      DA forms part of retirement benefits (included in HRA salary base)
+                    </span>
+                  </label>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Paying Rent to Parents Module */}
