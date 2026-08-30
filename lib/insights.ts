@@ -5,6 +5,18 @@ import type {
   PpfOutput,
   LumpsumOutput,
   TaxOutput,
+  StepUpSipOutput,
+  GoalSipOutput,
+  PrepaymentVsInvestOutput,
+  NoCostEmiOutput,
+  FireOutput,
+  CapitalGainsOutput,
+  FnOBreakevenOutput,
+  OptionPayoffOutput,
+  HRAExemptionOutput,
+  PresumptiveTaxOutput,
+  PositionSizeOutput,
+  Section54ExemptionOutput,
 } from "./math";
 import { formatCompact, formatINR, formatPercent } from "./format";
 
@@ -190,7 +202,7 @@ export function getTaxInsights(r: TaxOutput): InsightItem[] {
     {
       icon: "🧾",
       title: `Effective tax rate: ${r.effectiveRate.toFixed(1)}%`,
-      subtitle: `Total tax: ${formatINR(r.totalTax)} (incl. cess)`,
+      subtitle: `Total tax: ${formatINR(r.totalTax)} (Tax Year 2026-27)`,
       type: r.effectiveRate > 20 ? "warning" : "info",
     },
     {
@@ -210,6 +222,229 @@ export function getTaxInsights(r: TaxOutput): InsightItem[] {
   ];
 }
 
+export function getStepUpSipInsights(r: StepUpSipOutput): InsightItem[] {
+  const extraGainPct = r.flatCorpus > 0 ? ((r.extraReturnsVsFlat / r.flatCorpus) * 100).toFixed(1) : "0";
+  return [
+    {
+      icon: "🚀",
+      title: `Step-Up creates ${formatCompact(r.extraReturnsVsFlat)} extra wealth (+${extraGainPct}%)`,
+      subtitle: `Corpus: ${formatCompact(r.totalCorpus)} vs Flat SIP: ${formatCompact(r.flatCorpus)}`,
+      type: "good",
+    },
+    {
+      icon: "📈",
+      title: `Total Gain: ${formatCompact(r.estimatedReturns)}`,
+      subtitle: `Invested ${formatCompact(r.totalInvested)} over tenure`,
+      type: "good",
+    },
+    {
+      icon: "💡",
+      title: "Compounding Acceleration",
+      subtitle: "Increasing your SIP annually combats inflation automatically",
+      type: "info",
+    },
+  ];
+}
+
+export function getGoalSipInsights(r: GoalSipOutput, targetCorpus: number): InsightItem[] {
+  return [
+    {
+      icon: "🎯",
+      title: `Starting SIP: ${formatINR(r.requiredStartingSip)} / month`,
+      subtitle: `To reach ${formatCompact(targetCorpus)} target goal`,
+      type: "good",
+    },
+    {
+      icon: "💰",
+      title: `Estimated wealth gain: ${formatCompact(r.estimatedReturns)}`,
+      subtitle: `Total investment required: ${formatCompact(r.totalInvested)}`,
+      type: "info",
+    },
+  ];
+}
+
+export function getPrepaymentVsInvestInsights(r: PrepaymentVsInvestOutput): InsightItem[] {
+  return [
+    {
+      icon: r.interestSaved > 0 ? "🎉" : "ℹ️",
+      title: `Interest Saved: ${formatCompact(r.interestSaved)}`,
+      subtitle: `Cuts tenure by ${Math.floor(r.tenureSavedMonths / 12)} years ${r.tenureSavedMonths % 12} months`,
+      type: r.interestSaved > 0 ? "good" : "info",
+    },
+    {
+      icon: "⚖️",
+      title: r.recommendation === "invest" ? "Investing beats Prepayment" : "Prepayment recommended",
+      subtitle: `Net wealth delta: ${formatCompact(Math.abs(r.wealthDifference))}`,
+      type: r.recommendation === "invest" ? "good" : "info",
+    },
+    {
+      icon: "📊",
+      title: `Break-even return: ${r.breakEvenRate}% p.a.`,
+      subtitle: "If your investments yield more than this, investing is mathematically superior",
+      type: "info",
+    },
+  ];
+}
+
+export function getNoCostEmiInsights(r: NoCostEmiOutput): InsightItem[] {
+  return [
+    {
+      icon: r.cheaperOption === "upfront" ? "💡" : "⚡",
+      title: r.cheaperOption === "upfront" ? "Upfront payment is cheaper" : "No-Cost EMI is viable",
+      subtitle: r.verdict,
+      type: r.cheaperOption === "upfront" ? "good" : "info",
+    },
+    {
+      icon: "🔍",
+      title: `Effective Annual Cost: ${r.effectiveApr}% APR`,
+      subtitle: `Includes ₹${r.hiddenGst} hidden GST on subvention interest`,
+      type: r.effectiveApr > 15 ? "warning" : "info",
+    },
+  ];
+}
+
+export function getFireInsights(r: FireOutput): InsightItem[] {
+  return [
+    {
+      icon: "🔥",
+      title: `Target FIRE Corpus: ${formatCompact(r.standardFireCorpus)}`,
+      subtitle: `Lean FIRE: ${formatCompact(r.leanFireCorpus)} | Fat FIRE: ${formatCompact(r.fatFireCorpus)}`,
+      type: "good",
+    },
+    {
+      icon: "💰",
+      title: `Required Savings: ${formatINR(r.requiredMonthlySavings)} / mo`,
+      subtitle: `For the next ${r.yearsToRetirement} years until age ${r.yearsToRetirement + 30}`,
+      type: "info",
+    },
+    {
+      icon: r.isPerpetual ? "♾️" : "⏳",
+      title: r.isPerpetual ? "Perpetual Corpus (Generational Wealth)" : `Depletion at Age ${r.depletionAge ?? "N/A"}`,
+      subtitle: r.isPerpetual ? "Real return covers SWR fully" : "Consider adjusting savings or withdrawal rate",
+      type: r.isPerpetual ? "good" : "warning",
+    },
+  ];
+}
+
+export function getCapitalGainsInsights(r: CapitalGainsOutput): InsightItem[] {
+  return [
+    {
+      icon: r.isLoss ? "🛡️" : "🏛️",
+      title: r.isLoss ? "Capital Loss (Carry Forward Eligible)" : `Tax Payable: ${formatINR(r.totalTaxPayable)}`,
+      subtitle: `Effective tax rate: ${r.effectiveTaxRate}% (${r.taxYear})`,
+      type: r.isLoss ? "info" : "good",
+    },
+    {
+      icon: "📜",
+      title: `${r.gainType}: ${formatINR(r.taxableGain)} Taxable Gain`,
+      subtitle: r.exemptionAllowed > 0 ? `Exemption applied: ${formatINR(r.exemptionAllowed)}` : "No statutory exemption",
+      type: "info",
+    },
+  ];
+}
+
+export function getFnOBreakevenInsights(r: FnOBreakevenOutput): InsightItem[] {
+  return [
+    {
+      icon: "⚡",
+      title: `Break-even Exit: ₹${r.breakevenSellPrice.toFixed(2)}`,
+      subtitle: `Need +${r.pointsToBreakeven.toFixed(2)} pts to clear statutory charges`,
+      type: "info",
+    },
+    {
+      icon: r.isProfit ? "📈" : "⚠️",
+      title: `Net P&L: ${formatINR(r.netPnl)}`,
+      subtitle: `Total charges: ${formatINR(r.totalCharges)} (STT: ₹${r.charges.stt})`,
+      type: r.isProfit ? "good" : "warning",
+    },
+  ];
+}
+
+export function getOptionPayoffInsights(r: OptionPayoffOutput): InsightItem[] {
+  return [
+    {
+      icon: "🎯",
+      title: `Max Profit: ${typeof r.maxProfit === "number" ? formatINR(r.maxProfit) : r.maxProfit}`,
+      subtitle: `Max Loss: ${typeof r.maxLoss === "number" ? formatINR(r.maxLoss) : r.maxLoss}`,
+      type: "info",
+    },
+    {
+      icon: "⚖️",
+      title: `Risk-Reward: ${r.riskRewardRatio}`,
+      subtitle: r.isNetCredit ? `Net Credit: ${formatINR(r.netPremiumPaidOrReceived)}` : `Net Debit: ${formatINR(r.netPremiumPaidOrReceived)}`,
+      type: "info",
+    },
+  ];
+}
+
+export function getHraInsights(r: HRAExemptionOutput): InsightItem[] {
+  return [
+    {
+      icon: "🏠",
+      title: `Annual Exempt HRA: ${formatINR(r.annualExemptHra)}`,
+      subtitle: `Taxable HRA: ${formatINR(r.annualTaxableHra)} per year`,
+      type: "good",
+    },
+    {
+      icon: "💡",
+      title: `Tax Saved: ${formatINR(r.taxSaved)}`,
+      subtitle: `Binding limit: ${r.bindingConstraint.replace(/_/g, " ")}`,
+      type: "good",
+    },
+  ];
+}
+
+export function getPresumptiveTaxInsights(r: PresumptiveTaxOutput): InsightItem[] {
+  return [
+    {
+      icon: "💼",
+      title: `Deemed Profit: ${formatINR(r.presumptiveIncome)} (${r.presumptiveRateEffective}%)`,
+      subtitle: `Presumptive Tax: ${formatINR(r.presumptiveTaxPayable)}`,
+      type: "good",
+    },
+    {
+      icon: r.isPresumptiveCheaper ? "✅" : "📊",
+      title: r.isPresumptiveCheaper ? "Presumptive Tax is Cheaper" : "Regular Books may be Cheaper",
+      subtitle: r.recommendation,
+      type: r.isPresumptiveCheaper ? "good" : "info",
+    },
+  ];
+}
+
+export function getPositionSizeInsights(r: PositionSizeOutput): InsightItem[] {
+  return [
+    {
+      icon: "🎯",
+      title: `Recommended Qty: ${r.quantity} shares`,
+      subtitle: `Position Value: ${formatINR(r.positionValue)} (${r.tradeDirection.toUpperCase()})`,
+      type: "good",
+    },
+    {
+      icon: "🛡️",
+      title: `Max Risk: ${formatINR(r.actualRiskAmount)} (${r.actualRiskPercent}%)`,
+      subtitle: `Target Profit: ${formatINR(r.potentialProfit)} (R:R ${r.riskRewardRatio})`,
+      type: "info",
+    },
+  ];
+}
+
+export function getSection54Insights(r: Section54ExemptionOutput): InsightItem[] {
+  return [
+    {
+      icon: "🏡",
+      title: `Tax Saved: ${formatINR(r.activeResult.taxSaved)}`,
+      subtitle: `Exemption Claimed: ${formatINR(r.activeResult.exemptionAllowed)}`,
+      type: "good",
+    },
+    {
+      icon: "📜",
+      title: `Remaining Taxable LTCG: ${formatINR(r.activeResult.taxableGainsRemaining)}`,
+      subtitle: `Net Tax Payable: ${formatINR(r.activeResult.taxAfterExemption)}`,
+      type: "info",
+    },
+  ];
+}
+
 export const generateSIPInsights = getSIPInsights;
 export const generateEMIInsights = getEMIInsights;
 export const generateFDInsights = getFDInsights;
@@ -217,5 +452,5 @@ export const generatePPFInsights = getPPFInsights;
 export const generateLumpsumInsights = getLumpsumInsights;
 export const generateTaxInsights = getTaxInsights;
 
-// Touch safeDiv so it doesn't get tree-shaken if other modules import it indirectly.
+// Touch safeDiv so it doesn't get tree-shaken
 void safeDiv;
