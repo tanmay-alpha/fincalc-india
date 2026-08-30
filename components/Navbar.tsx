@@ -34,6 +34,7 @@ const navLinks = [
   { href: "/fno-brokerage", label: "F&O", icon: TrendingUp },
   { href: "/option-payoff", label: "Options", icon: TrendingUp },
   { href: "/tax", label: "Tax", icon: FileText },
+  { href: "/hra-exemption", label: "HRA", icon: Building2 },
 ];
 
 

@@ -21,6 +21,7 @@ import {
   calcFnOBreakeven,
   calcOptionPayoff,
   getOptionPresetLegs,
+  calcHRAExemption,
 } from '../lib/math'
 
 // ─── SIP ──────────────────────────────────────────────────────
@@ -1375,6 +1376,200 @@ describe('Feature 3: Option Strategy Payoff Visualizer (calcOptionPayoff)', () =
     const chartMinPnl = Math.min(...result.chartData.map((d) => d.pnl))
     expect(result.maxProfit).toBe(chartMaxPnl)
     expect(result.maxLoss).toBe(chartMinPnl)
+  })
+})
+
+// ─── HRA EXEMPTION ────────────────────────────────────────────
+
+describe('calcHRAExemption', () => {
+  it('1. Standard case — minimum of three limits picks the correct smallest value', () => {
+    // Basic: 50,000/mo (6,00,000/yr), HRA received: 25,000/mo (3,00,000/yr), Rent: 20,000/mo (2,40,000/yr), Metro (Delhi)
+    // Limit A (Actual HRA): 3,00,000
+    // Limit B (Rent - 10% Basic): 2,40,000 - 60,000 = 1,80,000
+    // Limit C (50% Basic): 3,00,000
+    // Min is 1,80,000 (15,000/mo)
+    const result = calcHRAExemption({
+      basicSalary: 50000,
+      salaryPeriod: 'monthly',
+      hraReceived: 25000,
+      rentPaid: 20000,
+      cityType: 'metro',
+    })
+    expect(result.annualExemptHra).toBe(180000)
+    expect(result.monthlyExemptHra).toBe(15000)
+    expect(result.annualTaxableHra).toBe(120000)
+    expect(result.monthlyTaxableHra).toBe(10000)
+    expect(result.bindingConstraint).toBe('rent_minus_10pct')
+  })
+
+  it('2. Rent paid is zero — exempt HRA must be ₹0, not negative', () => {
+    const result = calcHRAExemption({
+      basicSalary: 60000,
+      salaryPeriod: 'monthly',
+      hraReceived: 30000,
+      rentPaid: 0,
+      cityType: 'metro',
+    })
+    expect(result.annualExemptHra).toBe(0)
+    expect(result.monthlyExemptHra).toBe(0)
+    expect(result.annualTaxableHra).toBe(360000)
+  })
+
+  it('3. Rent paid is less than 10% of basic salary — exempt HRA correctly clamps to ₹0 (never negative)', () => {
+    // Basic: 50,000/mo (10% = 5,000), Rent: 4,000/mo -> Rent - 10% basic = -1,000 -> clamped to 0
+    const result = calcHRAExemption({
+      basicSalary: 50000,
+      salaryPeriod: 'monthly',
+      hraReceived: 20000,
+      rentPaid: 4000,
+      cityType: 'metro',
+    })
+    expect(result.annualExemptHra).toBe(0)
+    expect(result.rentMinusTenPercentLimit).toBe(0)
+    expect(result.annualTaxableHra).toBe(240000)
+  })
+
+  it('4. Metro vs Non-metro — same inputs produce different 50%/40% caps', () => {
+    // Basic: 1,00,000/mo (12,00,000/yr), HRA: 60,000/mo (7,20,000/yr), Rent: 60,000/mo (7,20,000 - 1,20,000 = 6,00,000)
+    // Metro cap (50%): 6,00,000
+    // Non-metro cap (40%): 4,80,000
+    const metroRes = calcHRAExemption({
+      basicSalary: 100000,
+      hraReceived: 60000,
+      rentPaid: 60000,
+      cityType: 'metro',
+    })
+    const nonMetroRes = calcHRAExemption({
+      basicSalary: 100000,
+      hraReceived: 60000,
+      rentPaid: 60000,
+      cityType: 'non_metro',
+    })
+    expect(metroRes.salaryPercentageLimit).toBe(600000)
+    expect(nonMetroRes.salaryPercentageLimit).toBe(480000)
+    expect(metroRes.annualExemptHra).toBe(600000)
+    expect(nonMetroRes.annualExemptHra).toBe(480000)
+  })
+
+  it('5. HRA received is ₹0 — exemption is ₹0 regardless of rent paid', () => {
+    const result = calcHRAExemption({
+      basicSalary: 80000,
+      hraReceived: 0,
+      rentPaid: 35000,
+      cityType: 'metro',
+    })
+    expect(result.annualExemptHra).toBe(0)
+    expect(result.annualTaxableHra).toBe(0)
+  })
+
+  it('6. Monthly vs annual input mode — both produce identical final results when converted correctly', () => {
+    const monthlyResult = calcHRAExemption({
+      basicSalary: 60000,
+      salaryPeriod: 'monthly',
+      hraReceived: 30000,
+      rentPaid: 25000,
+      cityType: 'metro',
+    })
+    const annualResult = calcHRAExemption({
+      basicSalary: 720000,
+      salaryPeriod: 'annual',
+      hraReceived: 360000,
+      rentPaid: 300000,
+      cityType: 'metro',
+    })
+    expect(monthlyResult.annualExemptHra).toBe(annualResult.annualExemptHra)
+    expect(monthlyResult.annualTaxableHra).toBe(annualResult.annualTaxableHra)
+    expect(monthlyResult.bindingConstraint).toBe(annualResult.bindingConstraint)
+  })
+
+  it('7. DA-included vs DA-excluded toggle — produces different, correctly calculated basic-salary base', () => {
+    // Basic: 50,000/mo, DA: 10,000/mo, HRA: 30,000/mo, Rent: 25,000/mo, Metro
+    // If DA excluded: Base = 6,00,000 -> 10% = 60,000 -> Rent - 10% = 3,00,000 - 60,000 = 2,40,000. 50% = 3,00,000
+    const daExcluded = calcHRAExemption({
+      basicSalary: 50000,
+      dearnessAllowance: 10000,
+      daFormsPartOfRetirementBenefits: false,
+      hraReceived: 30000,
+      rentPaid: 25000,
+      cityType: 'metro',
+    })
+    // If DA included: Base = 7,20,000 -> 10% = 72,000 -> Rent - 10% = 3,00,000 - 72,000 = 2,28,000. 50% = 3,60,000
+    const daIncluded = calcHRAExemption({
+      basicSalary: 50000,
+      dearnessAllowance: 10000,
+      daFormsPartOfRetirementBenefits: true,
+      hraReceived: 30000,
+      rentPaid: 25000,
+      cityType: 'metro',
+    })
+    expect(daExcluded.annualBasicSalaryBase).toBe(600000)
+    expect(daIncluded.annualBasicSalaryBase).toBe(720000)
+    expect(daExcluded.annualExemptHra).toBe(240000)
+    expect(daIncluded.annualExemptHra).toBe(228000)
+  })
+
+  it('8. Extremely high rent relative to modest salary — 50%/40% cap correctly becomes binding constraint', () => {
+    // Basic: 30,000/mo (3,60,000/yr), HRA: 20,000/mo (2,40,000/yr), Rent: 5,00,000/mo (60,00,000/yr), Non-metro
+    // Limit A (HRA): 2,40,000
+    // Limit B (Rent - 10% Basic): 60,00,000 - 36,000 = 59,64,000
+    // Limit C (40% Basic): 1,44,000
+    // Min is Limit C: 1,44,000 (salary_cap)
+    const result = calcHRAExemption({
+      basicSalary: 30000,
+      hraReceived: 20000,
+      rentPaid: 500000,
+      cityType: 'non_metro',
+    })
+    expect(result.annualExemptHra).toBe(144000)
+    expect(result.bindingConstraint).toBe('salary_cap')
+  })
+
+  it('9. Boundary case — rent paid minus 10% salary equals exactly the 50%/40% cap', () => {
+    // Basic: 1,00,000/mo (12,00,000/yr). 50% cap = 6,00,000.
+    // 10% basic = 1,20,000. Rent = 7,20,000/yr (60,000/mo). Rent - 10% = 6,00,000.
+    // HRA received = 8,00,000.
+    const result = calcHRAExemption({
+      basicSalary: 100000,
+      hraReceived: 70000,
+      rentPaid: 60000,
+      cityType: 'metro',
+    })
+    expect(result.rentMinusTenPercentLimit).toBe(600000)
+    expect(result.salaryPercentageLimit).toBe(600000)
+    expect(result.annualExemptHra).toBe(600000)
+  })
+
+  it('10. Paying-rent-to-parents mode — net household tax benefit is directionally correct', () => {
+    // Employee in 30% slab, Parents in 0% slab
+    // Rent: 30,000/mo (3,60,000/yr), HRA: 30,000/mo, Basic: 70,000/mo (8,40,000/yr), Metro
+    // Exemption = min(3.6L, 3.6L - 0.84L = 2.76L, 4.2L) = 2,76,000
+    // Employee tax saved = 2,76,000 * 30% = 82,800
+    // Parent rental income = 3,60,000. Standard deduction u/s 24 = 30% (1,08,000). Taxable = 2,52,000.
+    // Parent tax at 0% = 0. Net family savings = 82,800.
+    const parentZeroSlab = calcHRAExemption({
+      basicSalary: 70000,
+      hraReceived: 30000,
+      rentPaid: 30000,
+      cityType: 'metro',
+      isPayingToParents: true,
+      userSlabRatePercent: 30,
+      parentsSlabRatePercent: 0,
+    })
+    expect(parentZeroSlab.payingToParentsDetails?.isBeneficial).toBe(true)
+    expect(parentZeroSlab.payingToParentsDetails?.netHouseholdTaxSaved).toBe(82800)
+
+    // Parent in 30% slab -> Parent tax = 2,52,000 * 30% = 75,600. Net savings = 82,800 - 75,600 = 7,200 (still positive due to 30% standard deduction!)
+    const parentThirtySlab = calcHRAExemption({
+      basicSalary: 70000,
+      hraReceived: 30000,
+      rentPaid: 30000,
+      cityType: 'metro',
+      isPayingToParents: true,
+      userSlabRatePercent: 30,
+      parentsSlabRatePercent: 30,
+    })
+    expect(parentThirtySlab.payingToParentsDetails?.parentTaxPayable).toBe(75600)
+    expect(parentThirtySlab.payingToParentsDetails?.netHouseholdTaxSaved).toBe(7200)
   })
 })
 

@@ -144,6 +144,17 @@ const calculators: CalculatorCard[] = [
     badge: "Payoff Visualizer",
   },
   {
+    id: "hra-exemption",
+    name: "HRA & Rent Optimizer",
+    shortName: "HRA",
+    icon: Building2,
+    description: "Calculate tax-exempt HRA under Section 10(13A) and optimize household tax savings when paying rent to parents.",
+    bestFor: "Salaried employees paying rent",
+    includes: "3-Limit formula, Metro/Non-metro, Parent rent",
+    href: "/hra-exemption",
+    badge: "Rent Optimizer",
+  },
+  {
     id: "fd",
     name: "FD Calculator",
     shortName: "FD",

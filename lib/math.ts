@@ -176,6 +176,56 @@ export interface TaxOutput {
   comparison: TaxComparison;
 }
 
+// ─── HRA EXEMPTION ────────────────────────────────────────────
+
+export type CityType = "metro" | "non_metro";
+export type SalaryPeriod = "monthly" | "annual";
+
+export interface HRAExemptionInput {
+  basicSalary: number;
+  salaryPeriod?: SalaryPeriod;
+  dearnessAllowance?: number;
+  daFormsPartOfRetirementBenefits?: boolean;
+  hraReceived: number;
+  rentPaid: number;
+  cityType: CityType;
+  isPayingToParents?: boolean;
+  parentsSlabRatePercent?: number;
+  userSlabRatePercent?: number;
+}
+
+export interface HRAExemptionOutput {
+  salaryPeriod: SalaryPeriod;
+  annualBasicSalaryBase: number;
+  monthlyBasicSalaryBase: number;
+  annualHraReceived: number;
+  monthlyHraReceived: number;
+  annualRentPaid: number;
+  monthlyRentPaid: number;
+  cityType: CityType;
+  actualHraLimit: number;
+  rentMinusTenPercentLimit: number;
+  salaryPercentageLimit: number;
+  salaryPercentageUsed: number;
+  bindingConstraint: "actual_hra" | "rent_minus_10pct" | "salary_cap";
+  annualExemptHra: number;
+  monthlyExemptHra: number;
+  annualTaxableHra: number;
+  monthlyTaxableHra: number;
+  taxSaved: number;
+  payingToParentsDetails?: {
+    parentGrossRentalIncome: number;
+    parentStandardDeductionSection24: number;
+    parentTaxableRentalIncome: number;
+    parentTaxPayable: number;
+    employeeTaxSaved: number;
+    netHouseholdTaxSaved: number;
+    isBeneficial: boolean;
+    recommendation: string;
+  };
+  summary: string;
+}
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  CALCULATIONS
@@ -1905,6 +1955,156 @@ export function getOptionPresetLegs(preset: OptionStrategyPreset, spotPrice = 24
         { id: "1", name: "ATM Long Call", type: "call", position: "long", strike: roundSpot, premium: 200, lots: 1 },
       ];
   }
+}
+
+// ─── HRA EXEMPTION CALCULATOR ─────────────────────────────────
+/**
+ * HRA Exemption Calculator (Section 10(13A) of Income Tax Act)
+ *
+ * Exempt HRA is minimum of:
+ * 1. Actual HRA received
+ * 2. Rent paid minus 10% of salary (Basic + DA if included)
+ * 3. 50% of salary (Metro: Delhi, Mumbai, Kolkata, Chennai) or 40% (Non-Metro)
+ *
+ * Also calculates net household tax benefit for "paying rent to parents" mode
+ * incorporating Section 24(a) 30% statutory deduction for parents.
+ */
+export function calcHRAExemption(input: HRAExemptionInput): HRAExemptionOutput {
+  const {
+    basicSalary,
+    salaryPeriod = "monthly",
+    dearnessAllowance = 0,
+    daFormsPartOfRetirementBenefits = false,
+    hraReceived,
+    rentPaid,
+    cityType,
+    isPayingToParents = false,
+    parentsSlabRatePercent = 0,
+    userSlabRatePercent = 30,
+  } = input;
+
+  const multiplier = salaryPeriod === "annual" ? 1 : 12;
+
+  const safeBasic = Math.max(0, basicSalary || 0);
+  const safeDa = daFormsPartOfRetirementBenefits ? Math.max(0, dearnessAllowance || 0) : 0;
+  const safeHra = Math.max(0, hraReceived || 0);
+  const safeRent = Math.max(0, rentPaid || 0);
+
+  const annualBasicSalaryBase = (safeBasic + safeDa) * multiplier;
+  const monthlyBasicSalaryBase = annualBasicSalaryBase / 12;
+
+  const annualHraReceived = safeHra * multiplier;
+  const monthlyHraReceived = annualHraReceived / 12;
+
+  const annualRentPaid = safeRent * multiplier;
+  const monthlyRentPaid = annualRentPaid / 12;
+
+  // Limits
+  const actualHraLimit = annualHraReceived;
+  const rentMinusTenPercentLimit = Math.max(0, annualRentPaid - 0.10 * annualBasicSalaryBase);
+  const salaryPercentageUsed = cityType === "metro" ? 50 : 40;
+  const salaryPercentageLimit = (salaryPercentageUsed / 100) * annualBasicSalaryBase;
+
+  // Minimum of three
+  let annualExemptHra = 0;
+  let bindingConstraint: HRAExemptionOutput["bindingConstraint"] = "actual_hra";
+
+  if (annualHraReceived > 0 && annualRentPaid > 0) {
+    const minCalculated = Math.min(actualHraLimit, rentMinusTenPercentLimit, salaryPercentageLimit);
+    annualExemptHra = Math.max(0, Math.min(minCalculated, annualHraReceived));
+
+    if (annualExemptHra === actualHraLimit) {
+      bindingConstraint = "actual_hra";
+    } else if (annualExemptHra === rentMinusTenPercentLimit) {
+      bindingConstraint = "rent_minus_10pct";
+    } else {
+      bindingConstraint = "salary_cap";
+    }
+  } else {
+    annualExemptHra = 0;
+    bindingConstraint = annualHraReceived === 0 ? "actual_hra" : "rent_minus_10pct";
+  }
+
+  // Round to nearest rupee
+  annualExemptHra = Math.round(annualExemptHra);
+  const monthlyExemptHra = Math.round((annualExemptHra / 12) * 100) / 100;
+
+  const annualTaxableHra = Math.max(0, Math.round(annualHraReceived - annualExemptHra));
+  const monthlyTaxableHra = Math.round((annualTaxableHra / 12) * 100) / 100;
+
+  const safeUserSlab = Math.max(0, userSlabRatePercent || 0);
+  const taxSaved = Math.round((annualExemptHra * safeUserSlab) / 100);
+
+  // Paying rent to parents mode
+  let payingToParentsDetails: HRAExemptionOutput["payingToParentsDetails"] | undefined = undefined;
+
+  if (isPayingToParents) {
+    const parentGrossRentalIncome = annualRentPaid;
+    // Section 24(a) statutory deduction: 30% on rental income
+    const parentStandardDeductionSection24 = Math.round(parentGrossRentalIncome * 0.30);
+    const parentTaxableRentalIncome = Math.max(0, parentGrossRentalIncome - parentStandardDeductionSection24);
+    const safeParentSlab = Math.max(0, parentsSlabRatePercent || 0);
+    const parentTaxPayable = Math.round((parentTaxableRentalIncome * safeParentSlab) / 100);
+    const employeeTaxSaved = taxSaved;
+    const netHouseholdTaxSaved = employeeTaxSaved - parentTaxPayable;
+    const isBeneficial = netHouseholdTaxSaved > 0;
+
+    let recommendation = "";
+    if (safeParentSlab >= safeUserSlab) {
+      recommendation = `Not tax-optimal: Parent is in ${safeParentSlab}% slab vs your ${safeUserSlab}% slab. Net household tax increases or remains neutral.`;
+    } else if (isBeneficial) {
+      recommendation = `Highly beneficial! You save ₹${employeeTaxSaved.toLocaleString("en-IN")}, parents pay ₹${parentTaxPayable.toLocaleString("en-IN")}, resulting in a net family tax savings of ₹${netHouseholdTaxSaved.toLocaleString("en-IN")}/year.`;
+    } else {
+      recommendation = `Neutral impact: Net family savings is ₹${netHouseholdTaxSaved.toLocaleString("en-IN")}.`;
+    }
+
+    payingToParentsDetails = {
+      parentGrossRentalIncome,
+      parentStandardDeductionSection24,
+      parentTaxableRentalIncome,
+      parentTaxPayable,
+      employeeTaxSaved,
+      netHouseholdTaxSaved,
+      isBeneficial,
+      recommendation,
+    };
+  }
+
+  let summary = "";
+  if (annualExemptHra === 0) {
+    if (annualHraReceived === 0) {
+      summary = "No HRA component received from employer. Exemption is ₹0.";
+    } else if (annualRentPaid === 0) {
+      summary = "No rent paid. Full HRA received is taxable.";
+    } else {
+      summary = "Rent paid is less than or equal to 10% of basic salary. No HRA exemption is admissible.";
+    }
+  } else {
+    summary = `You are eligible for ₹${annualExemptHra.toLocaleString("en-IN")}/year (₹${Math.round(annualExemptHra / 12).toLocaleString("en-IN")}/mo) HRA tax exemption under Section 10(13A).`;
+  }
+
+  return {
+    salaryPeriod,
+    annualBasicSalaryBase: Math.round(annualBasicSalaryBase),
+    monthlyBasicSalaryBase: Math.round(monthlyBasicSalaryBase),
+    annualHraReceived: Math.round(annualHraReceived),
+    monthlyHraReceived: Math.round(monthlyHraReceived),
+    annualRentPaid: Math.round(annualRentPaid),
+    monthlyRentPaid: Math.round(monthlyRentPaid),
+    cityType,
+    actualHraLimit: Math.round(actualHraLimit),
+    rentMinusTenPercentLimit: Math.round(rentMinusTenPercentLimit),
+    salaryPercentageLimit: Math.round(salaryPercentageLimit),
+    salaryPercentageUsed,
+    bindingConstraint,
+    annualExemptHra,
+    monthlyExemptHra,
+    annualTaxableHra,
+    monthlyTaxableHra,
+    taxSaved,
+    payingToParentsDetails,
+    summary,
+  };
 }
 
 
