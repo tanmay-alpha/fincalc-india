@@ -166,6 +166,17 @@ const calculators: CalculatorCard[] = [
     badge: "No Bookkeeping",
   },
   {
+    id: "position-size",
+    name: "Position Size & Risk-Reward",
+    shortName: "Risk & Size",
+    icon: TrendingUp,
+    description: "Calculate optimal share quantity, rupee risk per trade, stop-loss distance, and target prices using the 1% risk rule.",
+    bestFor: "Intraday & swing equity traders",
+    includes: "1% Risk formula, SEBI MIS leverage, Price ladder",
+    href: "/position-size",
+    badge: "Active Traders",
+  },
+  {
     id: "fd",
     name: "FD Calculator",
     shortName: "FD",

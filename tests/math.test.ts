@@ -23,6 +23,7 @@ import {
   getOptionPresetLegs,
   calcHRAExemption,
   calcPresumptiveTax,
+  calcPositionSize,
 } from '../lib/math'
 
 // ─── SIP ──────────────────────────────────────────────────────
@@ -1724,6 +1725,189 @@ describe('calcPresumptiveTax', () => {
     expect(result.isAuditTriggeredByOptOut).toBe(true)
     expect(result.fiveYearLockoutTriggered).toBe(true)
     expect(result.auditTriggerReason).toContain('Section 44AD(4)')
+  })
+})
+
+// ─── POSITION SIZE & RISK-REWARD ──────────────────────────────
+
+describe('calcPositionSize', () => {
+  it('1. Standard long trade — entry > stop-loss; quantity, risk amount, and target compute correctly', () => {
+    // Capital: 1,00,000, Risk: 1% (1,000), Entry: 500, Stop: 480 (diff=20), RR: 1:2 (2)
+    // Raw qty = 1000 / 20 = 50 shares. Max affordable = 100000 / 500 = 200 shares.
+    // Qty = 50. Position Value = 25,000. Risk = 1,000. Target = 500 + 2*20 = 540. Profit = 50*40 = 2,000.
+    const result = calcPositionSize({
+      capital: 100000,
+      riskPercent: 1,
+      entryPrice: 500,
+      stopLossPrice: 480,
+      riskRewardRatio: 2,
+    })
+    expect(result.isValid).toBe(true)
+    expect(result.tradeDirection).toBe('long')
+    expect(result.maxRiskAmount).toBe(1000)
+    expect(result.riskPerShare).toBe(20)
+    expect(result.quantity).toBe(50)
+    expect(result.positionValue).toBe(25000)
+    expect(result.actualRiskAmount).toBe(1000)
+    expect(result.targetPrice).toBe(540)
+    expect(result.potentialProfit).toBe(2000)
+    expect(result.isCappedByCapital).toBe(false)
+  })
+
+  it('2. Short trade — entry < stop-loss; correctly flips to short and target price is below entry', () => {
+    // Capital: 1,00,000, Risk: 1% (1,000), Entry: 500, Stop: 520 (diff=20), RR: 1:2
+    // Target price = 500 - 2*20 = 460.
+    const result = calcPositionSize({
+      capital: 100000,
+      riskPercent: 1,
+      entryPrice: 500,
+      stopLossPrice: 520,
+      riskRewardRatio: 2,
+    })
+    expect(result.isValid).toBe(true)
+    expect(result.tradeDirection).toBe('short')
+    expect(result.quantity).toBe(50)
+    expect(result.targetPrice).toBe(460)
+    expect(result.potentialProfit).toBe(2000)
+  })
+
+  it('3. Stop-loss equal to entry price — handled gracefully with validation message, no division by zero', () => {
+    const result = calcPositionSize({
+      capital: 100000,
+      riskPercent: 1,
+      entryPrice: 500,
+      stopLossPrice: 500,
+      riskRewardRatio: 2,
+    })
+    expect(result.isValid).toBe(false)
+    expect(result.validationError).toContain('cannot be equal')
+    expect(result.quantity).toBe(0)
+  })
+
+  it('4. Extremely tight stop-loss (₹0.05) — quantity is capped at total affordable capital', () => {
+    // Capital: 1,00,000, Risk: 1% (1,000), Entry: 1000, Stop: 999.95 (diff=0.05).
+    // Risk qty = 1000 / 0.05 = 20,000 shares (would cost 2 Crore!).
+    // Capped by capital: 100,000 / 1000 = 100 shares.
+    const result = calcPositionSize({
+      capital: 100000,
+      riskPercent: 1,
+      entryPrice: 1000,
+      stopLossPrice: 999.95,
+      riskRewardRatio: 2,
+    })
+    expect(result.isValid).toBe(true)
+    expect(result.quantity).toBe(100)
+    expect(result.positionValue).toBe(100000)
+    expect(result.isCappedByCapital).toBe(true)
+    expect(result.warning).toBeDefined()
+  })
+
+  it('5. Position size implied by risk cap exceeds what capital can afford — caps at affordable max and flags it', () => {
+    // Capital: 50,000, Risk: 2% (1,000), Entry: 500, Stop: 495 (diff=5).
+    // Risk qty = 1000 / 5 = 200 shares (value = 1,00,000 > 50,000 capital).
+    // Max affordable = 50,000 / 500 = 100 shares.
+    const result = calcPositionSize({
+      capital: 50000,
+      riskPercent: 2,
+      entryPrice: 500,
+      stopLossPrice: 495,
+      riskRewardRatio: 2,
+    })
+    expect(result.quantity).toBe(100)
+    expect(result.isCappedByCapital).toBe(true)
+    expect(result.actualRiskAmount).toBe(500) // 100 * 5
+  })
+
+  it('6. Zero or negative capital input — rejected with clear validation message', () => {
+    const zeroCapital = calcPositionSize({
+      capital: 0,
+      riskPercent: 1,
+      entryPrice: 100,
+      stopLossPrice: 95,
+      riskRewardRatio: 2,
+    })
+    expect(zeroCapital.isValid).toBe(false)
+    expect(zeroCapital.validationError).toContain('greater than zero')
+
+    const negCapital = calcPositionSize({
+      capital: -50000,
+      riskPercent: 1,
+      entryPrice: 100,
+      stopLossPrice: 95,
+      riskRewardRatio: 2,
+    })
+    expect(negCapital.isValid).toBe(false)
+    expect(negCapital.validationError).toContain('greater than zero')
+  })
+
+  it('7. Custom risk-reward ratio (e.g. 1:2.5) — target price calculation handles non-integer ratios correctly', () => {
+    // Entry: 200, Stop: 190 (diff=10), RR: 2.5
+    // Target = 200 + 2.5 * 10 = 225.
+    const result = calcPositionSize({
+      capital: 100000,
+      riskPercent: 1,
+      entryPrice: 200,
+      stopLossPrice: 190,
+      riskRewardRatio: 2.5,
+    })
+    expect(result.targetPrice).toBe(225)
+    expect(result.riskRewardRatio).toBe(2.5)
+  })
+
+  it('8. 1% risk on ₹1,00,000 capital — exact rupee risk (₹1,000) and quantity verified against manual calculation', () => {
+    // Capital: 1,00,000, Risk: 1% = 1,000. Entry: 250, Stop: 240 (diff=10).
+    // Qty = 1,000 / 10 = 100 shares.
+    const result = calcPositionSize({
+      capital: 100000,
+      riskPercent: 1,
+      entryPrice: 250,
+      stopLossPrice: 240,
+      riskRewardRatio: 3,
+    })
+    expect(result.maxRiskAmount).toBe(1000)
+    expect(result.quantity).toBe(100)
+    expect(result.actualRiskAmount).toBe(1000)
+    expect(result.potentialProfit).toBe(3000)
+    expect(result.targetPrice).toBe(280)
+  })
+
+  it('9. Fractional share quantity result — correctly rounds down (floor) to nearest whole share, never exceeds risk cap', () => {
+    // Capital: 1,00,000, Risk: 1% (1,000), Entry: 100, Stop: 70 (diff=30).
+    // Raw qty = 1000 / 30 = 33.3333 shares.
+    // Must floor to 33 shares (never 34 which would risk 1020 > 1000).
+    const result = calcPositionSize({
+      capital: 100000,
+      riskPercent: 1,
+      entryPrice: 100,
+      stopLossPrice: 70,
+      riskRewardRatio: 2,
+    })
+    expect(result.quantity).toBe(33)
+    expect(result.actualRiskAmount).toBe(990)
+    expect(result.actualRiskAmount).toBeLessThanOrEqual(1000)
+  })
+
+  it('10. Risk percentage input at boundary values (0.1% minimum, 10% maximum) — both compute without error', () => {
+    const minRisk = calcPositionSize({
+      capital: 100000,
+      riskPercent: 0.1,
+      entryPrice: 100,
+      stopLossPrice: 95,
+      riskRewardRatio: 2,
+    })
+    expect(minRisk.maxRiskAmount).toBe(100)
+    expect(minRisk.quantity).toBe(20) // 100 / 5
+
+    const maxRisk = calcPositionSize({
+      capital: 100000,
+      riskPercent: 10,
+      entryPrice: 100,
+      stopLossPrice: 95,
+      riskRewardRatio: 2,
+    })
+    expect(maxRisk.maxRiskAmount).toBe(10000)
+    expect(maxRisk.quantity).toBe(1000) // 10000 / 5 = 2000 capped at 100000/100 = 1000
+    expect(maxRisk.positionValue).toBe(100000)
   })
 })
 

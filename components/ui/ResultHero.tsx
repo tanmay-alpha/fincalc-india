@@ -7,6 +7,7 @@ import { formatCompact } from "@/lib/format";
 interface ResultHeroProps {
   label: string;
   value: number;
+  formatValue?: (val: number) => string;
   breakdown: Array<{
     label: string;
     value: number;
@@ -21,9 +22,11 @@ const colorMap = {
   purple: "bg-chart-5",
 };
 
-export default function ResultHero({ label, value, breakdown }: ResultHeroProps) {
+export default function ResultHero({ label, value, formatValue, breakdown }: ResultHeroProps) {
   const animatedValue = useCountUp(value);
   const total = breakdown.reduce((sum, item) => sum + Math.max(0, item.value), 0);
+
+  const displayValue = formatValue ? formatValue(animatedValue) : formatCompact(animatedValue);
 
   return (
     <div className="surface-card p-6">
@@ -32,7 +35,7 @@ export default function ResultHero({ label, value, breakdown }: ResultHeroProps)
       </p>
 
       <p className="mt-1 text-4xl font-bold tracking-tight text-card-foreground">
-        {formatCompact(animatedValue)}
+        {displayValue}
       </p>
 
       <div className="mt-4 flex h-2 overflow-hidden rounded-full bg-muted">

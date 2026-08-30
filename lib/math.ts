@@ -276,6 +276,44 @@ export interface PresumptiveTaxOutput {
   recommendation: string;
 }
 
+// ─── POSITION SIZE & RISK-REWARD ──────────────────────────────
+
+export interface PositionSizeInput {
+  capital: number;
+  riskPercent: number; // e.g. 1 for 1%
+  entryPrice: number;
+  stopLossPrice: number;
+  riskRewardRatio: number; // e.g. 2 for 1:2, 2.5 for 1:2.5
+  tradeDirection?: "long" | "short" | "auto";
+  leverageMultiplier?: number;
+}
+
+export interface PositionSizeOutput {
+  capital: number;
+  riskPercent: number;
+  maxRiskAmount: number;
+  entryPrice: number;
+  stopLossPrice: number;
+  riskRewardRatio: number;
+  tradeDirection: "long" | "short";
+  riskPerShare: number;
+  rawQuantityByRisk: number;
+  maxAffordableQuantity: number;
+  quantity: number;
+  positionValue: number;
+  actualRiskAmount: number;
+  actualRiskPercent: number;
+  targetPrice: number;
+  potentialProfit: number;
+  capitalUtilizationPercent: number;
+  isCappedByCapital: boolean;
+  isValid: boolean;
+  validationError?: string;
+  warning?: string;
+  summary: string;
+}
+
+
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -2373,6 +2411,183 @@ export function calcPresumptiveTax(input: PresumptiveTaxInput): PresumptiveTaxOu
     auditTriggerReason,
     fiveYearLockoutTriggered,
     recommendation,
+  };
+}
+
+// ─── POSITION SIZE & RISK-REWARD ENGINE ───────────────────────
+/**
+ * Intraday Risk-Reward & Position Size Calculator
+ *
+ * Computes exact position size capped by:
+ * 1. Maximum rupee risk allowed (capital * riskPercent)
+ * 2. Available capital limit (including optional intraday leverage)
+ * 3. Floor integer rounding (never rounds up past the risk cap)
+ * 4. Inverts long/short targets cleanly based on entry vs stop loss
+ */
+export function calcPositionSize(input: PositionSizeInput): PositionSizeOutput {
+  const {
+    capital,
+    riskPercent = 1,
+    entryPrice,
+    stopLossPrice,
+    riskRewardRatio = 2,
+    tradeDirection: inputDirection = "auto",
+    leverageMultiplier = 1,
+  } = input;
+
+  const safeCapital = capital || 0;
+  const safeEntry = entryPrice || 0;
+  const safeStop = stopLossPrice || 0;
+  const safeRiskPct = Math.max(0, riskPercent || 0);
+  const safeRR = Math.max(0.1, riskRewardRatio || 2);
+  const safeLeverage = Math.max(1, leverageMultiplier || 1);
+
+  // Validation checks
+  if (safeCapital <= 0) {
+    return {
+      capital: 0,
+      riskPercent: safeRiskPct,
+      maxRiskAmount: 0,
+      entryPrice: safeEntry,
+      stopLossPrice: safeStop,
+      riskRewardRatio: safeRR,
+      tradeDirection: "long",
+      riskPerShare: 0,
+      rawQuantityByRisk: 0,
+      maxAffordableQuantity: 0,
+      quantity: 0,
+      positionValue: 0,
+      actualRiskAmount: 0,
+      actualRiskPercent: 0,
+      targetPrice: 0,
+      potentialProfit: 0,
+      capitalUtilizationPercent: 0,
+      isCappedByCapital: false,
+      isValid: false,
+      validationError: "Total trading capital must be greater than zero.",
+      summary: "Invalid capital input. Please enter a valid capital amount.",
+    };
+  }
+
+  if (safeEntry <= 0 || safeStop <= 0) {
+    return {
+      capital: safeCapital,
+      riskPercent: safeRiskPct,
+      maxRiskAmount: (safeCapital * safeRiskPct) / 100,
+      entryPrice: safeEntry,
+      stopLossPrice: safeStop,
+      riskRewardRatio: safeRR,
+      tradeDirection: "long",
+      riskPerShare: 0,
+      rawQuantityByRisk: 0,
+      maxAffordableQuantity: 0,
+      quantity: 0,
+      positionValue: 0,
+      actualRiskAmount: 0,
+      actualRiskPercent: 0,
+      targetPrice: 0,
+      potentialProfit: 0,
+      capitalUtilizationPercent: 0,
+      isCappedByCapital: false,
+      isValid: false,
+      validationError: "Entry price and Stop-loss price must both be greater than zero.",
+      summary: "Please enter positive entry and stop-loss prices.",
+    };
+  }
+
+  const priceDiff = Math.abs(safeEntry - safeStop);
+  if (priceDiff < 0.001) {
+    return {
+      capital: safeCapital,
+      riskPercent: safeRiskPct,
+      maxRiskAmount: (safeCapital * safeRiskPct) / 100,
+      entryPrice: safeEntry,
+      stopLossPrice: safeStop,
+      riskRewardRatio: safeRR,
+      tradeDirection: "long",
+      riskPerShare: 0,
+      rawQuantityByRisk: 0,
+      maxAffordableQuantity: Math.floor((safeCapital * safeLeverage) / safeEntry),
+      quantity: 0,
+      positionValue: 0,
+      actualRiskAmount: 0,
+      actualRiskPercent: 0,
+      targetPrice: safeEntry,
+      potentialProfit: 0,
+      capitalUtilizationPercent: 0,
+      isCappedByCapital: false,
+      isValid: false,
+      validationError: "Stop-loss price cannot be equal to entry price (zero risk per share).",
+      summary: "Stop-loss must differ from entry price to determine risk per share.",
+    };
+  }
+
+  // Determine Direction
+  let tradeDirection: "long" | "short" = "long";
+  if (inputDirection === "short") {
+    tradeDirection = "short";
+  } else if (inputDirection === "long") {
+    tradeDirection = "long";
+  } else {
+    // Auto-detect based on prices
+    tradeDirection = safeEntry < safeStop ? "short" : "long";
+  }
+
+  const riskPerShare = round2(priceDiff);
+  const maxRiskAmount = round2(safeCapital * (safeRiskPct / 100));
+  const rawQuantityByRisk = maxRiskAmount / riskPerShare;
+
+  const effectiveCapital = safeCapital * safeLeverage;
+  const maxAffordableQuantity = Math.floor(effectiveCapital / safeEntry);
+
+  // Position quantity strictly rounded down (floor) to whole integer
+  const quantity = Math.max(0, Math.floor(Math.min(rawQuantityByRisk, maxAffordableQuantity)));
+  const isCappedByCapital = rawQuantityByRisk > maxAffordableQuantity;
+
+  const positionValue = round2(quantity * safeEntry);
+  const actualRiskAmount = round2(quantity * riskPerShare);
+  const actualRiskPercent = safeCapital > 0 ? round2((actualRiskAmount / safeCapital) * 100) : 0;
+
+  // Target price calculation
+  const targetDistance = round2(safeRR * riskPerShare);
+  const targetPrice = tradeDirection === "long"
+    ? round2(safeEntry + targetDistance)
+    : round2(Math.max(0, safeEntry - targetDistance));
+
+  const potentialProfit = round2(quantity * targetDistance);
+  const capitalUtilizationPercent = safeCapital > 0 ? round2((positionValue / safeCapital) * 100) : 0;
+
+  let warning: string | undefined = undefined;
+  if (isCappedByCapital) {
+    warning = `Position size capped at ${quantity} shares by available capital limit (${safeLeverage > 1 ? `${safeLeverage}x leverage` : "cash"}). Risk cap would allow ${Math.floor(rawQuantityByRisk)} shares.`;
+  } else if (riskPerShare / safeEntry < 0.005) {
+    warning = `Extremely tight stop loss (${round2((riskPerShare / safeEntry) * 100)}% of price). High likelihood of noise execution.`;
+  }
+
+  const summary = `Buy ${quantity} shares @ ₹${safeEntry}. Target: ₹${targetPrice} (+₹${potentialProfit.toLocaleString("en-IN")}), Stop-Loss: ₹${safeStop} (-₹${actualRiskAmount.toLocaleString("en-IN")}). Risk-Reward 1 : ${safeRR}.`;
+
+  return {
+    capital: safeCapital,
+    riskPercent: safeRiskPct,
+    maxRiskAmount,
+    entryPrice: safeEntry,
+    stopLossPrice: safeStop,
+    riskRewardRatio: safeRR,
+    tradeDirection,
+    riskPerShare,
+    rawQuantityByRisk: round2(rawQuantityByRisk),
+    maxAffordableQuantity,
+    quantity,
+    positionValue,
+    actualRiskAmount,
+    actualRiskPercent,
+    targetPrice,
+    potentialProfit,
+    capitalUtilizationPercent,
+    isCappedByCapital,
+    isValid: true,
+    warning,
+    summary,
   };
 }
 
