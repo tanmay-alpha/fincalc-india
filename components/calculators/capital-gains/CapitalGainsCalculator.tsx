@@ -338,6 +338,26 @@ export default function CapitalGainsCalculator() {
             <p className="leading-relaxed">{result.explanation}</p>
           </div>
 
+          {/* Section 54 / 54EC Reinvestment Exemption Banner for Real Estate LTCG */}
+          {inputs.assetClass === "real_estate" && result.gainType === "LTCG" && (
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800 flex items-center justify-between gap-3">
+              <div>
+                <div className="text-xs font-bold text-blue-900 dark:text-blue-200 flex items-center gap-1.5">
+                  <span>🏡</span> Save 100% Tax via Section 54 / 54EC
+                </div>
+                <p className="text-[11px] text-blue-700/80 dark:text-blue-300/80 mt-0.5">
+                  Reinvest in a residential house or capital gains bonds to bring ₹{result.totalTaxPayable.toLocaleString("en-IN")} tax down to ₹0.
+                </p>
+              </div>
+              <a
+                href="/section-54-exemption"
+                className="shrink-0 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors"
+              >
+                Plan Exemption →
+              </a>
+            </div>
+          )}
+
           {/* Chart Card */}
           <div className="surface-card p-6">
             <h3 className="text-base font-semibold text-foreground mb-1">

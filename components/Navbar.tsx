@@ -37,6 +37,7 @@ const navLinks = [
   { href: "/hra-exemption", label: "HRA", icon: Building2 },
   { href: "/presumptive-tax", label: "44AD/ADA", icon: FileText },
   { href: "/position-size", label: "Position Size", icon: TrendingUp },
+  { href: "/section-54-exemption", label: "Sec 54", icon: Building2 },
 ];
 
 

@@ -177,6 +177,17 @@ const calculators: CalculatorCard[] = [
     badge: "Active Traders",
   },
   {
+    id: "section-54-exemption",
+    name: "Section 54 / 54EC Exemption",
+    shortName: "Sec 54/54EC",
+    icon: Building2,
+    description: "Plan capital gains tax exemption on real estate sale by reinvesting in a residential property (Sec 54) or 54EC bonds.",
+    bestFor: "Property sellers saving LTCG tax",
+    includes: "Sec 54 vs 54EC comparison, ₹10Cr/₹50L caps",
+    href: "/section-54-exemption",
+    badge: "Save 100% Tax",
+  },
+  {
     id: "fd",
     name: "FD Calculator",
     shortName: "FD",

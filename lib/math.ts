@@ -313,6 +313,57 @@ export interface PositionSizeOutput {
   summary: string;
 }
 
+// ─── SECTION 54 / 54EC CAPITAL GAINS EXEMPTION PLANNER ────────
+
+export type Section54Type = "section_54_property" | "section_54ec_bonds" | "compare_both";
+export type Section54PropertyMode = "purchase" | "construction";
+
+export interface Section54ExemptionInput {
+  capitalGainsAmount?: number;
+  capitalGainsInput?: CapitalGainsInput;
+  sectionType: Section54Type;
+  propertyInvestmentAmount?: number;
+  propertyMode?: Section54PropertyMode;
+  propertyTimelineMonths?: number; // months relative to sale date (-12 to 36)
+  bondsInvestmentAmount?: number;
+  bondsTimelineMonths?: number; // months from sale date (0 to 6)
+  taxRatePercent?: number; // default 12.5 (plus 4% cess = 13%)
+}
+
+export interface Section54SingleExemptionResult {
+  section: "54" | "54EC";
+  investmentAmount: number;
+  statutoryCap: number;
+  isValidTimeline: boolean;
+  timelineMessage: string;
+  exemptionAllowed: number;
+  taxableGainsRemaining: number;
+  taxBeforeExemption: number;
+  taxAfterExemption: number;
+  taxSaved: number;
+  effectiveTaxRate: number;
+  lockInPeriod: string;
+  conditions: string[];
+}
+
+export interface Section54ExemptionOutput {
+  initialLtcgGains: number;
+  taxRatePercent: number;
+  cessPercent: number;
+  effectiveTaxRateBeforeExemption: number;
+  taxBeforeExemption: number;
+  selectedSection: Section54Type;
+  activeResult: Section54SingleExemptionResult;
+  comparison?: {
+    section54: Section54SingleExemptionResult;
+    section54ec: Section54SingleExemptionResult;
+    taxDifference: number;
+    recommendation: string;
+  };
+  summary: string;
+}
+
+
 
 
 
@@ -2590,6 +2641,199 @@ export function calcPositionSize(input: PositionSizeInput): PositionSizeOutput {
     summary,
   };
 }
+
+// ─── SECTION 54 & 54EC CAPITAL GAINS EXEMPTION PLANNER ────────
+/**
+ * Capital Gains Exemption Planner (Section 54 & Section 54EC)
+ *
+ * Can chain directly from `calcCapitalGains` Real Estate LTCG output or accept direct numbers.
+ *
+ * Section 54 (Residential House):
+ * - Exemption = min(LTCG, eligible investment)
+ * - Purchase window: 1 year before transfer (-12m) to 2 years after transfer (+24m)
+ * - Construction window: within 3 years after transfer (+36m)
+ * - Statutory cap: ₹10 Crore
+ * - Lock-in: 3 years on newly acquired property
+ *
+ * Section 54EC (Specified Capital Gains Bonds: REC, NHAI, PFC, IRFC):
+ * - Exemption = min(LTCG, investment amount, ₹50 Lakh)
+ * - Timeline: within 6 months from date of transfer
+ * - Lock-in: 5 years (fixed interest taxable annually)
+ */
+export function calcSection54Exemption(input: Section54ExemptionInput): Section54ExemptionOutput {
+  const {
+    capitalGainsAmount,
+    capitalGainsInput,
+    sectionType = "section_54_property",
+    propertyInvestmentAmount = 0,
+    propertyMode = "purchase",
+    propertyTimelineMonths = 6,
+    bondsInvestmentAmount = 0,
+    bondsTimelineMonths = 3,
+    taxRatePercent = 12.5,
+  } = input;
+
+  // Resolve LTCG amount (from upstream calcCapitalGains if provided, else direct input)
+  let initialLtcgGains = 0;
+  if (capitalGainsInput) {
+    const upstreamResult = calcCapitalGains(capitalGainsInput);
+    if (!upstreamResult.isLoss && upstreamResult.gainType === "LTCG") {
+      initialLtcgGains = upstreamResult.taxableGain || upstreamResult.rawCapitalGain;
+    } else {
+      initialLtcgGains = 0;
+    }
+  } else {
+    initialLtcgGains = Math.max(0, capitalGainsAmount || 0);
+  }
+
+  const baseRate = taxRatePercent || 12.5;
+  const cessPercent = 4;
+  const effectiveTaxRateBeforeExemption = round2(baseRate * (1 + cessPercent / 100)); // 13%
+  const taxBeforeExemption = Math.round((initialLtcgGains * effectiveTaxRateBeforeExemption) / 100);
+
+  // Helper to compute Section 54 (Residential Property)
+  function computeSection54(): Section54SingleExemptionResult {
+    const invAmount = Math.max(0, propertyInvestmentAmount || 0);
+    const statutoryCap = 100000000; // ₹10 Crore
+
+    let isValidTimeline = false;
+    let timelineMessage = "";
+
+    if (propertyMode === "purchase") {
+      isValidTimeline = propertyTimelineMonths >= -12 && propertyTimelineMonths <= 24;
+      timelineMessage = isValidTimeline
+        ? `Valid purchase timeline (${propertyTimelineMonths} months relative to sale date. Prescribed window: 1 year before to 2 years after sale).`
+        : `Invalid purchase timeline (${propertyTimelineMonths} months). Section 54 requires property purchase between 1 year before and 2 years after transfer date.`;
+    } else {
+      isValidTimeline = propertyTimelineMonths >= 0 && propertyTimelineMonths <= 36;
+      timelineMessage = isValidTimeline
+        ? `Valid construction timeline (${propertyTimelineMonths} months from sale date. Prescribed window: within 3 years after sale).`
+        : `Invalid construction timeline (${propertyTimelineMonths} months). Section 54 requires construction completion within 3 years from transfer date.`;
+    }
+
+    let exemptionAllowed = 0;
+    if (isValidTimeline && initialLtcgGains > 0 && invAmount > 0) {
+      exemptionAllowed = Math.min(initialLtcgGains, Math.min(invAmount, statutoryCap));
+    }
+
+    const taxableGainsRemaining = Math.max(0, initialLtcgGains - exemptionAllowed);
+    const taxAfterExemption = Math.round((taxableGainsRemaining * effectiveTaxRateBeforeExemption) / 100);
+    const taxSaved = taxBeforeExemption - taxAfterExemption;
+    const effectiveTaxRate = initialLtcgGains > 0 ? round2((taxAfterExemption / initialLtcgGains) * 100) : 0;
+
+    return {
+      section: "54",
+      investmentAmount: invAmount,
+      statutoryCap,
+      isValidTimeline,
+      timelineMessage,
+      exemptionAllowed: Math.round(exemptionAllowed),
+      taxableGainsRemaining: Math.round(taxableGainsRemaining),
+      taxBeforeExemption,
+      taxAfterExemption,
+      taxSaved,
+      effectiveTaxRate,
+      lockInPeriod: "3 Years (from date of purchase/construction)",
+      conditions: [
+        "Reinvestment must be in a residential house property situated in India.",
+        "Unutilized capital gains before ITR filing due date must be deposited into a Capital Gains Account Scheme (CGAS).",
+        "If the new house is sold within 3 years of purchase/construction, the exemption is revoked and taxed.",
+        "Maximum statutory exemption limit is ₹10 Crore (Finance Act 2023).",
+      ],
+    };
+  }
+
+  // Helper to compute Section 54EC (Bonds: REC, NHAI, PFC, IRFC)
+  function computeSection54EC(): Section54SingleExemptionResult {
+    const invAmount = Math.max(0, bondsInvestmentAmount || 0);
+    const statutoryCap = 5000000; // ₹50 Lakhs per financial year
+
+    const isValidTimeline = bondsTimelineMonths >= 0 && bondsTimelineMonths <= 6;
+    const timelineMessage = isValidTimeline
+      ? `Valid investment timeline (${bondsTimelineMonths} months from transfer date. Prescribed window: within 6 months of sale).`
+      : `Invalid timeline (${bondsTimelineMonths} months). Section 54EC requires bond investment within strictly 6 months from the date of property transfer.`;
+
+    let exemptionAllowed = 0;
+    if (isValidTimeline && initialLtcgGains > 0 && invAmount > 0) {
+      exemptionAllowed = Math.min(initialLtcgGains, Math.min(invAmount, statutoryCap));
+    }
+
+    const taxableGainsRemaining = Math.max(0, initialLtcgGains - exemptionAllowed);
+    const taxAfterExemption = Math.round((taxableGainsRemaining * effectiveTaxRateBeforeExemption) / 100);
+    const taxSaved = taxBeforeExemption - taxAfterExemption;
+    const effectiveTaxRate = initialLtcgGains > 0 ? round2((taxAfterExemption / initialLtcgGains) * 100) : 0;
+
+    return {
+      section: "54EC",
+      investmentAmount: invAmount,
+      statutoryCap,
+      isValidTimeline,
+      timelineMessage,
+      exemptionAllowed: Math.round(exemptionAllowed),
+      taxableGainsRemaining: Math.round(taxableGainsRemaining),
+      taxBeforeExemption,
+      taxAfterExemption,
+      taxSaved,
+      effectiveTaxRate,
+      lockInPeriod: "5 Years (mandatory lock-in; cannot pledge/transfer)",
+      conditions: [
+        "Invest in eligible 54EC bonds issued by NHAI, REC, PFC, or IRFC.",
+        "Maximum statutory investment cap is ₹50 Lakhs per investor in a financial year.",
+        "Must be invested within 6 months from the date of property transfer.",
+        "Bonds have a 5-year lock-in period at ~5.25% p.a. interest (interest is taxable annually).",
+      ],
+    };
+  }
+
+  const s54Result = computeSection54();
+  const s54ecResult = computeSection54EC();
+
+  const activeResult = sectionType === "section_54ec_bonds" ? s54ecResult : s54Result;
+
+  let comparison: Section54ExemptionOutput["comparison"] | undefined = undefined;
+  if (sectionType === "compare_both") {
+    const taxDiff = Math.abs(s54Result.taxAfterExemption - s54ecResult.taxAfterExemption);
+    let rec = "";
+    if (s54Result.taxAfterExemption < s54ecResult.taxAfterExemption) {
+      rec = `Section 54 (Residential Property) saves ₹${taxDiff.toLocaleString("en-IN")} more in taxes because it covers gains beyond the ₹50 Lakh statutory cap of Section 54EC bonds.`;
+    } else if (s54ecResult.taxAfterExemption < s54Result.taxAfterExemption) {
+      rec = `Section 54EC Bonds save ₹${taxDiff.toLocaleString("en-IN")} more in taxes given your current investment amounts.`;
+    } else {
+      rec = `Both Section 54 and Section 54EC provide equal tax savings of ₹${s54Result.taxSaved.toLocaleString("en-IN")}. Section 54EC offers zero real estate hassle with a 5-year bond lock-in.`;
+    }
+
+    comparison = {
+      section54: s54Result,
+      section54ec: s54ecResult,
+      taxDifference: taxDiff,
+      recommendation: rec,
+    };
+  }
+
+  let summary = "";
+  if (initialLtcgGains === 0) {
+    summary = "No Long-Term Capital Gains entered. Tax payable and exemption required are ₹0.";
+  } else if (activeResult.exemptionAllowed >= initialLtcgGains) {
+    summary = `100% Tax Exemption Achieved! Full ₹${initialLtcgGains.toLocaleString("en-IN")} LTCG is exempt. Total tax payable is ₹0 (saved ₹${taxBeforeExemption.toLocaleString("en-IN")}).`;
+  } else if (activeResult.exemptionAllowed > 0) {
+    summary = `Partial Exemption of ₹${activeResult.exemptionAllowed.toLocaleString("en-IN")} applied. Remaining taxable gains: ₹${activeResult.taxableGainsRemaining.toLocaleString("en-IN")}. Tax payable: ₹${activeResult.taxAfterExemption.toLocaleString("en-IN")}.`;
+  } else {
+    summary = `No exemption allowed (${activeResult.isValidTimeline ? "reinvestment amount is ₹0" : "investment outside prescribed timeline window"}). Total tax payable: ₹${taxBeforeExemption.toLocaleString("en-IN")}.`;
+  }
+
+  return {
+    initialLtcgGains: Math.round(initialLtcgGains),
+    taxRatePercent: baseRate,
+    cessPercent,
+    effectiveTaxRateBeforeExemption,
+    taxBeforeExemption,
+    selectedSection: sectionType,
+    activeResult,
+    comparison,
+    summary,
+  };
+}
+
 
 
 

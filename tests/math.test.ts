@@ -24,6 +24,7 @@ import {
   calcHRAExemption,
   calcPresumptiveTax,
   calcPositionSize,
+  calcSection54Exemption,
 } from '../lib/math'
 
 // ─── SIP ──────────────────────────────────────────────────────
@@ -1908,6 +1909,179 @@ describe('calcPositionSize', () => {
     expect(maxRisk.maxRiskAmount).toBe(10000)
     expect(maxRisk.quantity).toBe(1000) // 10000 / 5 = 2000 capped at 100000/100 = 1000
     expect(maxRisk.positionValue).toBe(100000)
+  })
+})
+
+// ─── SECTION 54 & 54EC EXEMPTIONS ─────────────────────────────
+
+describe('calcSection54Exemption', () => {
+  it('1. Full capital gains reinvested under Section 54 — exemption equals full gains, resulting tax is ₹0', () => {
+    // Gains: 50,00,000, Reinvested in property: 50,00,000 within 6 months
+    const result = calcSection54Exemption({
+      capitalGainsAmount: 5000000,
+      sectionType: 'section_54_property',
+      propertyInvestmentAmount: 5000000,
+      propertyMode: 'purchase',
+      propertyTimelineMonths: 6,
+    })
+    expect(result.initialLtcgGains).toBe(5000000)
+    expect(result.activeResult.exemptionAllowed).toBe(5000000)
+    expect(result.activeResult.taxableGainsRemaining).toBe(0)
+    expect(result.activeResult.taxAfterExemption).toBe(0)
+    expect(result.activeResult.taxSaved).toBe(result.taxBeforeExemption)
+  })
+
+  it('2. Partial reinvestment under Section 54 — exemption capped at reinvested amount, remaining gains taxed', () => {
+    // Gains: 50,00,000, Reinvested: 30,00,000. Remaining taxable: 20,00,000.
+    // Tax at 13% (12.5% + 4% cess) = 2,60,000.
+    const result = calcSection54Exemption({
+      capitalGainsAmount: 5000000,
+      sectionType: 'section_54_property',
+      propertyInvestmentAmount: 3000000,
+      propertyMode: 'purchase',
+      propertyTimelineMonths: 12,
+    })
+    expect(result.activeResult.exemptionAllowed).toBe(3000000)
+    expect(result.activeResult.taxableGainsRemaining).toBe(2000000)
+    expect(result.activeResult.taxAfterExemption).toBe(260000)
+    expect(result.activeResult.taxSaved).toBe(390000) // 30L * 13%
+  })
+
+  it('3. Section 54EC reinvestment at ₹50 lakh cap — exemption capped at ₹50L, excess taxable', () => {
+    // Gains: 80,00,000, Bond Investment: 60,00,000 (attempted).
+    // Section 54EC statutory cap is 50,00,000. Remaining taxable: 30,00,000.
+    // Tax at 13% = 3,90,000.
+    const result = calcSection54Exemption({
+      capitalGainsAmount: 8000000,
+      sectionType: 'section_54ec_bonds',
+      bondsInvestmentAmount: 6000000,
+      bondsTimelineMonths: 4,
+    })
+    expect(result.activeResult.exemptionAllowed).toBe(5000000)
+    expect(result.activeResult.taxableGainsRemaining).toBe(3000000)
+    expect(result.activeResult.taxAfterExemption).toBe(390000)
+  })
+
+  it('4. Section 54EC investment attempted beyond 6-month window — exemption denied and flagged clearly', () => {
+    // Attempted at 7 months (prescribed window: within 6 months)
+    const result = calcSection54Exemption({
+      capitalGainsAmount: 5000000,
+      sectionType: 'section_54ec_bonds',
+      bondsInvestmentAmount: 5000000,
+      bondsTimelineMonths: 7,
+    })
+    expect(result.activeResult.isValidTimeline).toBe(false)
+    expect(result.activeResult.exemptionAllowed).toBe(0)
+    expect(result.activeResult.taxableGainsRemaining).toBe(5000000)
+    expect(result.activeResult.taxAfterExemption).toBe(result.taxBeforeExemption)
+    expect(result.activeResult.timelineMessage).toContain('Invalid timeline')
+  })
+
+  it('5. Section 54 purchase completed within "1 year before sale" window — correctly counted as valid', () => {
+    // Purchased 6 months prior to transfer (-6 months)
+    const result = calcSection54Exemption({
+      capitalGainsAmount: 4000000,
+      sectionType: 'section_54_property',
+      propertyInvestmentAmount: 4000000,
+      propertyMode: 'purchase',
+      propertyTimelineMonths: -6,
+    })
+    expect(result.activeResult.isValidTimeline).toBe(true)
+    expect(result.activeResult.exemptionAllowed).toBe(4000000)
+    expect(result.activeResult.taxAfterExemption).toBe(0)
+  })
+
+  it('6. Section 54 construction case using 3-year window — correctly distinguished from 2-year purchase window', () => {
+    // Construction completed at 30 months (+2.5 years) -> Valid for construction (up to 36m)
+    const constructionResult = calcSection54Exemption({
+      capitalGainsAmount: 6000000,
+      sectionType: 'section_54_property',
+      propertyInvestmentAmount: 6000000,
+      propertyMode: 'construction',
+      propertyTimelineMonths: 30,
+    })
+    expect(constructionResult.activeResult.isValidTimeline).toBe(true)
+    expect(constructionResult.activeResult.exemptionAllowed).toBe(6000000)
+
+    // Purchase attempted at 30 months -> Invalid for purchase (only up to 24m)
+    const purchaseResult = calcSection54Exemption({
+      capitalGainsAmount: 6000000,
+      sectionType: 'section_54_property',
+      propertyInvestmentAmount: 6000000,
+      propertyMode: 'purchase',
+      propertyTimelineMonths: 30,
+    })
+    expect(purchaseResult.activeResult.isValidTimeline).toBe(false)
+    expect(purchaseResult.activeResult.exemptionAllowed).toBe(0)
+  })
+
+  it('7. Reinvestment amount exceeding total capital gains — exemption caps at gains amount, no negative tax', () => {
+    // LTCG: 40,00,000. Invested: 80,00,000 in property.
+    const result = calcSection54Exemption({
+      capitalGainsAmount: 4000000,
+      sectionType: 'section_54_property',
+      propertyInvestmentAmount: 8000000,
+      propertyMode: 'purchase',
+      propertyTimelineMonths: 6,
+    })
+    expect(result.activeResult.exemptionAllowed).toBe(4000000)
+    expect(result.activeResult.taxableGainsRemaining).toBe(0)
+    expect(result.activeResult.taxAfterExemption).toBe(0)
+  })
+
+  it('8. Side-by-side Section 54 vs 54EC comparison — both computed independently and accurately', () => {
+    // LTCG: 1,00,00,000 (1 Crore).
+    // Section 54: Invest 1 Cr in house -> Exemption 1 Cr, Tax = 0
+    // Section 54EC: Invest 50L in bonds -> Exemption 50L, Taxable 50L, Tax = 6.5L
+    const result = calcSection54Exemption({
+      capitalGainsAmount: 10000000,
+      sectionType: 'compare_both',
+      propertyInvestmentAmount: 10000000,
+      propertyMode: 'purchase',
+      propertyTimelineMonths: 6,
+      bondsInvestmentAmount: 5000000,
+      bondsTimelineMonths: 3,
+    })
+    expect(result.comparison).toBeDefined()
+    expect(result.comparison?.section54.exemptionAllowed).toBe(10000000)
+    expect(result.comparison?.section54.taxAfterExemption).toBe(0)
+    expect(result.comparison?.section54ec.exemptionAllowed).toBe(5000000)
+    expect(result.comparison?.section54ec.taxAfterExemption).toBe(650000)
+    expect(result.comparison?.taxDifference).toBe(650000)
+  })
+
+  it('9. Zero capital gains input — both sections correctly output ₹0 exemption needed, no errors', () => {
+    const result = calcSection54Exemption({
+      capitalGainsAmount: 0,
+      sectionType: 'compare_both',
+      propertyInvestmentAmount: 5000000,
+      bondsInvestmentAmount: 5000000,
+    })
+    expect(result.initialLtcgGains).toBe(0)
+    expect(result.taxBeforeExemption).toBe(0)
+    expect(result.activeResult.exemptionAllowed).toBe(0)
+    expect(result.activeResult.taxAfterExemption).toBe(0)
+  })
+
+  it('10. Chained correctly from existing Capital Gains Calculator output — real estate LTCG flows through accurately', () => {
+    // Chain from calcCapitalGains with real_estate LTCG:
+    // Buy 40L in 2016, sell 1.2Cr in 2024 (holding 96 months > 24m) -> LTCG gain = 80L
+    const result = calcSection54Exemption({
+      capitalGainsInput: {
+        assetClass: 'real_estate',
+        purchasePrice: 4000000,
+        salePrice: 12000000,
+        holdingMonths: 96,
+        isPurchasedBeforeCutoff: false,
+      },
+      sectionType: 'section_54_property',
+      propertyInvestmentAmount: 8000000,
+      propertyMode: 'purchase',
+      propertyTimelineMonths: 6,
+    })
+    expect(result.initialLtcgGains).toBe(8000000) // 1.2Cr - 40L
+    expect(result.activeResult.exemptionAllowed).toBe(8000000)
+    expect(result.activeResult.taxAfterExemption).toBe(0)
   })
 })
 
