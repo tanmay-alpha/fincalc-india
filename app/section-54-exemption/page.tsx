@@ -6,13 +6,13 @@ import RelatedCalculators from "@/components/shared/RelatedCalculators";
 import CalculatorDisclaimer from "@/components/ui/CalculatorDisclaimer";
 
 export const metadata: Metadata = {
-  title: "Section 54 & 54EC Capital Gains Exemption Planner FY 2025-26",
+  title: "Section 54 & 54EC Capital Gains Exemption Planner — Tax Year 2026-27",
   description:
-    "Calculate tax exemption on real estate LTCG under Section 54 (Residential house reinvestment) and Section 54EC (REC/NHAI bonds up to ₹50L). Compare side-by-side with timeline rules.",
+    "Calculate tax exemption on real estate LTCG under Section 54 (Residential house reinvestment) and Section 54EC (REC/NHAI bonds up to ₹50L) for Tax Year 2026-27.",
   openGraph: {
-    title: "Section 54 & 54EC Capital Gains Exemption Planner — FinCalc India",
+    title: "Section 54 & 54EC Capital Gains Exemption Planner — Tax Year 2026-27 — FinCalc India",
     description:
-      "Plan real estate capital gains tax savings, compare residential property vs 54EC bonds, and check statutory reinvestment timelines.",
+      "Plan real estate capital gains tax savings, compare residential property vs 54EC bonds under Tax Year 2026-27 rules.",
   },
 };
 
@@ -31,7 +31,7 @@ export default function Section54ExemptionPage() {
           <div className="flex items-center gap-3 mb-1.5">
             <span className="text-3xl" aria-hidden="true">🏡</span>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
-              Section 54 & 54EC Capital Gains Exemption Planner
+              Section 54 & 54EC Exemption Planner — Tax Year 2026-27
             </h1>
           </div>
           <p className="text-muted-foreground text-sm mt-1 max-w-2xl">

@@ -3,7 +3,7 @@ export default function CapitalGainsInfo() {
     <div className="mt-12 space-y-8 border-t border-slate-200 dark:border-slate-800 pt-8">
       <section>
         <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-3">
-          Capital Gains Tax Rules (Post-Budget 2024 / FY 2025-26)
+          Capital Gains Tax Rules (Tax Year 2026-27)
         </h2>
         <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
           The Union Budget presented on 23 July 2024 substantially revamped India&rsquo;s Capital Gains Tax regime to simplify holding periods and tax rates across asset classes.

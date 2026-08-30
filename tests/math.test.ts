@@ -188,25 +188,53 @@ describe('calcLumpsum', () => {
   })
 })
 
-// ─── TAX — FY 2025-26 ─────────────────────────────────────────
+// ─── TAX — TAX YEAR 2026-27 (INCOME TAX ACT, 2025) ──────────
 
-describe('calcTax — FY 2025-26 New Regime', () => {
-  it('income ≤ ₹12L is effectively tax-free (full 87A rebate)', () => {
-    // Taxable income = 12L - 75K std ded = 11.25L ≤ 12L → full rebate
+describe('calcTax — Tax Year 2026-27 New Regime', () => {
+  it('1. Total income of ₹12,75,000 with standard deduction — final tax payable is ₹0 under new regime', () => {
+    // 12.75L gross - 75K std ded = 12.00L taxable.
+    // Slab tax on 12L = 0-4L (0) + 4-8L (20k) + 8-12L (40k) = ₹60,000.
+    // Section 157 (formerly 87A) rebate = ₹60,000. Net tax = ₹0.
     const result = calcTax({
-      grossIncome: 1200000,
+      grossIncome: 1275000,
       regime: 'new',
       deduction80C: 0,
       deduction80D: 0,
       hraExemption: 0,
       otherDeductions: 0,
     })
+    expect(result.taxYear).toContain('Tax Year 2026-27')
+    expect(result.taxableIncome).toBe(1200000)
+    expect(result.slabTaxBeforeRebate).toBe(60000)
+    expect(result.rebateAmount).toBe(60000)
+    expect(result.rebateSection).toContain('Section 157 (formerly 87A)')
     expect(result.totalTax).toBe(0)
-    expect(result.taxableIncome).toBe(1125000) // 12L - 75K
     expect(result.cess).toBe(0)
   })
 
-  it('income above ₹12L taxable (>12.75L gross) attracts tax', () => {
+  it('2. Total income of ₹10,00,000 salary + ₹2,00,000 equity LTCG — rebate reduces tax ONLY on ₹10L slab portion, and LTCG tax is charged in full', () => {
+    // Salary: 10L - 75K std ded = 9.25L taxable slab income.
+    // Slab tax: 4L @ 5% (20k) + 1.25L @ 10% (12.5k) = ₹32,500.
+    // Section 157 rebate wipes out slab tax: ₹32,500. Net slab tax = ₹0.
+    // Equity LTCG: 2,00,000. Exemption: 1,25,000. Taxable LTCG = 75,000.
+    // LTCG Tax @ 12.5% = ₹9,375. (Rebate does NOT wipe this out).
+    // Cess @ 4% on ₹9,375 = ₹375.
+    // Total Tax Payable = 9,375 + 375 = ₹9,750.
+    const result = calcTax({
+      grossIncome: 1000000,
+      equityLtcg: 200000,
+      regime: 'new',
+    })
+    expect(result.taxableIncome).toBe(925000)
+    expect(result.slabTaxBeforeRebate).toBe(32500)
+    expect(result.rebateAmount).toBe(32500)
+    expect(result.specialRateTax).toBe(9375)
+    expect(result.equityLtcgTax).toBe(9375)
+    expect(result.cess).toBe(375)
+    expect(result.totalTax).toBe(9750)
+  })
+
+  it('3. Income above ₹12L taxable (>12.75L gross) attracts normal tax without rebate', () => {
     // Gross 15L - 75K std ded = 14.25L taxable → above 12L rebate threshold
     const result = calcTax({
       grossIncome: 1500000,
@@ -217,10 +245,11 @@ describe('calcTax — FY 2025-26 New Regime', () => {
       otherDeductions: 0,
     })
     expect(result.taxableIncome).toBe(1425000) // 15L - 75K
+    expect(result.rebateAmount).toBe(0)
     expect(result.totalTax).toBeGreaterThan(0)
   })
 
-  it('cess is 4% of (tax + surcharge)', () => {
+  it('4. Cess is 4% of (tax + surcharge)', () => {
     const result = calcTax({
       grossIncome: 2000000,
       regime: 'new',
@@ -233,9 +262,9 @@ describe('calcTax — FY 2025-26 New Regime', () => {
     expect(result.cess).toBeCloseTo(taxPlusSurcharge * 0.04, 0)
   })
 
-  it('slab breakdown covers all slabs', () => {
+  it('5. Slab breakdown covers all slabs under Tax Year 2026-27', () => {
     const result = calcTax({
-      grossIncome: 3000000, // 30L → taxable 28.25L
+      grossIncome: 3000000, // 30L → taxable 29.25L
       regime: 'new',
       deduction80C: 0,
       deduction80D: 0,
@@ -245,7 +274,7 @@ describe('calcTax — FY 2025-26 New Regime', () => {
     expect(result.slabBreakdown.length).toBeGreaterThan(3)
   })
 
-  it('provides both-regime comparison', () => {
+  it('6. Provides both-regime comparison with savings reason', () => {
     const result = calcTax({
       grossIncome: 1500000,
       regime: 'new',
@@ -257,9 +286,10 @@ describe('calcTax — FY 2025-26 New Regime', () => {
     expect(result.comparison.oldRegimeTax).toBeGreaterThanOrEqual(0)
     expect(result.comparison.newRegimeTax).toBeGreaterThanOrEqual(0)
     expect(['old', 'new']).toContain(result.comparison.recommendation)
+    expect(result.comparison.reason).toContain('Tax Year 2026-27')
   })
 
-  it('old regime with max 80C deduction reduces tax', () => {
+  it('7. Old regime with max 80C deduction reduces tax', () => {
     const withoutDeduction = calcTax({
       grossIncome: 1500000, regime: 'old',
       deduction80C: 0, deduction80D: 0, hraExemption: 0, otherDeductions: 0,
@@ -271,7 +301,7 @@ describe('calcTax — FY 2025-26 New Regime', () => {
     expect(withDeduction.totalTax).toBeLessThan(withoutDeduction.totalTax)
   })
 
-  it('monthlyTakeHome is (grossIncome - totalTax) / 12', () => {
+  it('8. Monthly take-home is correctly computed as (totalEffectiveGross - totalTax) / 12', () => {
     const result = calcTax({
       grossIncome: 1500000,
       regime: 'new',
@@ -931,13 +961,14 @@ describe('calcFIRE', () => {
 // ─── PART B — FEATURE 1: CAPITAL GAINS TAX (POST-BUDGET 2024) ───
 
 describe('Feature 1: Capital Gains Tax Calculator (calcCapitalGains)', () => {
-  it('1. Equity LTCG exactly at the ₹1,25,000 exemption threshold produces ₹0 tax', () => {
+  it('1. Equity LTCG exactly at the ₹1,25,000 exemption threshold produces ₹0 tax under Tax Year 2026-27', () => {
     const result = calcCapitalGains({
       assetClass: 'equity',
       holdingMonths: 18,
       purchasePrice: 500000,
       salePrice: 625000, // Exactly ₹1,25,000 gain
     })
+    expect(result.taxYear).toContain('Tax Year 2026-27')
     expect(result.gainType).toBe('LTCG')
     expect(result.rawCapitalGain).toBe(125000)
     expect(result.exemptionAllowed).toBe(125000)
@@ -1100,8 +1131,9 @@ describe('Feature 1: Capital Gains Tax Calculator (calcCapitalGains)', () => {
 // ─── PART B — FEATURE 2: F&O BROKERAGE & BREAK-EVEN CALCULATOR ───
 
 describe('Feature 2: F&O Brokerage & Break-Even Calculator (calcFnOBreakeven)', () => {
-  it('1. STT is applied strictly to the sell leg (options: premium; futures: turnover)', () => {
-    // Options: Buy 100 qty @ 100, Sell 100 qty @ 150
+  it('1. STT is applied strictly to the sell leg (Tax Year 2026-27: Options flat 0.15%; Futures 0.05%)', () => {
+    // Options: Buy 100 qty @ 100, Sell 100 qty @ 150 -> Sell turnover = 15,000.
+    // Tax Year 2026-27 STT @ 0.15% = 22.5
     const opt = calcFnOBreakeven({
       instrument: 'options',
       buyPrice: 100,
@@ -1109,10 +1141,21 @@ describe('Feature 2: F&O Brokerage & Break-Even Calculator (calcFnOBreakeven)', 
       quantity: 100,
       brokeragePerOrder: 20,
     })
-    // Sell turnover = 15,000. STT @ 0.1% = 15
-    expect(opt.charges.stt).toBe(15)
+    expect(opt.charges.stt).toBe(22.5)
 
-    // Futures: Buy 100 qty @ 1000, Sell 100 qty @ 1050
+    // Pre-April 2026 historical option trade: STT @ 0.10% = 15
+    const optPre = calcFnOBreakeven({
+      instrument: 'options',
+      buyPrice: 100,
+      sellPrice: 150,
+      quantity: 100,
+      brokeragePerOrder: 20,
+      taxYear: 'pre_april_2026',
+    })
+    expect(optPre.charges.stt).toBe(15)
+
+    // Futures: Buy 100 qty @ 1000, Sell 100 qty @ 1050 -> Sell turnover = 105,000.
+    // Tax Year 2026-27 STT @ 0.05% = 52.50
     const fut = calcFnOBreakeven({
       instrument: 'futures',
       buyPrice: 1000,
@@ -1120,8 +1163,18 @@ describe('Feature 2: F&O Brokerage & Break-Even Calculator (calcFnOBreakeven)', 
       quantity: 100,
       brokeragePerOrder: 20,
     })
-    // Sell turnover = 105,000. STT @ 0.02% = 21
-    expect(fut.charges.stt).toBe(21)
+    expect(fut.charges.stt).toBe(52.5)
+
+    // Pre-April 2026 historical futures trade: STT @ 0.02% = 21
+    const futPre = calcFnOBreakeven({
+      instrument: 'futures',
+      buyPrice: 1000,
+      sellPrice: 1050,
+      quantity: 100,
+      brokeragePerOrder: 20,
+      taxYear: 'pre_april_2026',
+    })
+    expect(futPre.charges.stt).toBe(21)
   })
 
   it('2. GST is computed only on (brokerage + exchange charges + SEBI fee), never on STT or stamp duty', () => {
@@ -1150,7 +1203,7 @@ describe('Feature 2: F&O Brokerage & Break-Even Calculator (calcFnOBreakeven)', 
     expect(result.charges.stampDuty).toBe(0.9)
   })
 
-  it('4. Options vs Futures STT calculation bases are correctly differentiated', () => {
+  it('4. Options vs Futures STT calculation bases are correctly differentiated under Tax Year 2026-27', () => {
     const optionsResult = calcFnOBreakeven({
       instrument: 'options',
       buyPrice: 100,
@@ -1163,10 +1216,10 @@ describe('Feature 2: F&O Brokerage & Break-Even Calculator (calcFnOBreakeven)', 
       sellPrice: 100,
       quantity: 1000,
     })
-    // Options STT = 100,000 * 0.1% = 100
-    expect(optionsResult.charges.stt).toBe(100)
-    // Futures STT = 100,000 * 0.02% = 20
-    expect(futuresResult.charges.stt).toBe(20)
+    // Options STT = 100,000 * 0.15% = 150
+    expect(optionsResult.charges.stt).toBe(150)
+    // Futures STT = 100,000 * 0.05% = 50
+    expect(futuresResult.charges.stt).toBe(50)
   })
 
   it('5. Break-even point matches exact calculation for a known trade', () => {

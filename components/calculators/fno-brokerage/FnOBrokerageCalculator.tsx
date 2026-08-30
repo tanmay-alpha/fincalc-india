@@ -9,7 +9,7 @@ import InsightCard from "@/components/ui/InsightCard";
 import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcFnOBreakeven } from "@/lib/math";
-import type { FnOInstrument } from "@/lib/math";
+import type { FnOInstrument, FnOTaxYear } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
 import { clsx } from "clsx";
@@ -22,6 +22,7 @@ const FnOBrokerageChart = dynamic(
 
 interface FnOInputsState {
   instrument: FnOInstrument;
+  taxYear: FnOTaxYear;
   buyPrice: number;
   sellPrice: number;
   quantity: number;
@@ -30,6 +31,7 @@ interface FnOInputsState {
 
 const DEFAULT_INPUTS: FnOInputsState = {
   instrument: "options",
+  taxYear: "tax_year_2026_27",
   buyPrice: 150,
   sellPrice: 210,
   quantity: 100, // 2 lots of Nifty (50 per lot)
@@ -59,6 +61,44 @@ export default function FnOBrokerageCalculator() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Form Column */}
         <div className="lg:col-span-6 space-y-6">
+          {/* Tax Year & Regulatory Version Toggle */}
+          <div className="surface-card p-4 rounded-xl border border-primary/20 bg-primary/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary text-primary-foreground">
+                Tax Year 2026-27
+              </span>
+              <p className="text-xs text-muted-foreground mt-1">
+                STT: {inputs.instrument === "options" ? "0.15% flat" : "0.05% turnover"}
+              </p>
+            </div>
+            <div className="flex rounded-lg border border-border bg-background p-0.5 text-xs">
+              <button
+                type="button"
+                onClick={() => setInputs(p => ({ ...p, taxYear: "tax_year_2026_27" }))}
+                className={clsx(
+                  "px-3 py-1.5 rounded-md font-medium transition-all",
+                  inputs.taxYear === "tax_year_2026_27"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Tax Year 2026-27
+              </button>
+              <button
+                type="button"
+                onClick={() => setInputs(p => ({ ...p, taxYear: "pre_april_2026" }))}
+                className={clsx(
+                  "px-3 py-1.5 rounded-md font-medium transition-all",
+                  inputs.taxYear === "pre_april_2026"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Pre-April 2026
+              </button>
+            </div>
+          </div>
+
           {/* Instrument Toggle */}
           <div className="surface-card p-5 space-y-3">
             <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -83,7 +123,7 @@ export default function FnOBrokerageCalculator() {
                     : "border-border text-muted-foreground hover:border-primary/40 hover:bg-accent/40"
                 )}
               >
-                🎯 Options Trading (STT on Sell Premium)
+                🎯 Options ({inputs.taxYear === "tax_year_2026_27" ? "0.15% STT" : "0.10% STT"})
               </button>
 
               <button
@@ -104,7 +144,7 @@ export default function FnOBrokerageCalculator() {
                     : "border-border text-muted-foreground hover:border-primary/40 hover:bg-accent/40"
                 )}
               >
-                ⚡ Futures Trading (STT on Total Turnover)
+                ⚡ Futures ({inputs.taxYear === "tax_year_2026_27" ? "0.05% STT" : "0.02% STT"})
               </button>
             </div>
           </div>

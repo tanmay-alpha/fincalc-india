@@ -6,11 +6,11 @@ import RelatedCalculators from "@/components/shared/RelatedCalculators";
 import CalculatorDisclaimer from "@/components/ui/CalculatorDisclaimer";
 
 export const metadata: Metadata = {
-  title: 'Income Tax Calculator FY 2025-26',
-  description: 'Calculate and compare Income Tax under Old vs New Tax Regime for FY 2025-26 (AY 2026-27). Detailed slab breakdown, standard deduction, 87A rebate, and tax-saving recommendations.',
+  title: 'Income Tax Calculator — Tax Year 2026-27 (FY 2026-27)',
+  description: 'Calculate and compare Income Tax under Old vs New Tax Regime for Tax Year 2026-27 (Income Tax Act, 2025). Detailed slab breakdown, ₹75k standard deduction, Section 157 rebate, and tax-saving recommendations.',
   openGraph: {
-    title: 'Income Tax Calculator FY 2025-26 — FinCalc India',
-    description: 'Free Old vs New tax regime comparison for FY 2025-26. Find the regime that saves you the most tax.',
+    title: 'Income Tax Calculator — Tax Year 2026-27 — FinCalc India',
+    description: 'Free Old vs New tax regime comparison for Tax Year 2026-27 (FY 2026-27). Find the regime that saves you the most tax.',
   }
 }
 
@@ -25,10 +25,10 @@ export default function TaxPage() {
           ]} />
           <div className="flex items-center gap-3 mb-1.5">
             <span className="text-3xl">🧾</span>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">Income Tax Calculator (FY 2025-26)</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">Income Tax Calculator — Tax Year 2026-27 <span className="text-sm font-normal text-muted-foreground">(FY 2026-27)</span></h1>
           </div>
           <p className="text-muted-foreground text-sm mt-1 max-w-2xl">
-            Compare Old vs New tax regime under current Indian tax slabs. Find which regime saves you more tax with deductions.
+            Compare Old vs New tax regime under Tax Year 2026-27 slabs (Income Tax Act, 2025). Includes ₹75,000 standard deduction and Section 157 (formerly 87A) rebate up to ₹12L.
           </p>
         </div>
         <TaxCalculator />

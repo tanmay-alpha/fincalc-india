@@ -12,15 +12,15 @@ export default function FnOBrokerageInfo() {
 
       <section>
         <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-3">
-          Detailed Regulatory Fee Structure (FY 2025-26)
+          Detailed Regulatory Fee Structure (Tax Year 2026-27)
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 text-sm">
             <p className="font-semibold text-slate-900 dark:text-white mb-1">1. Securities Transaction Tax (STT)</p>
-            <p className="text-xs text-slate-500 mb-2">Govt of India (Budget 2024 revised)</p>
+            <p className="text-xs text-slate-500 mb-2">Effective 1 April 2026 (Tax Year 2026-27)</p>
             <ul className="text-xs space-y-1 text-slate-600 dark:text-slate-400">
-              <li>• <strong>Options:</strong> 0.1% on the sell-side premium value.</li>
-              <li>• <strong>Futures:</strong> 0.02% on the total sell-side turnover.</li>
+              <li>• <strong>Options:</strong> 0.15% flat on sell premium (raised from 0.10%).</li>
+              <li>• <strong>Futures:</strong> 0.05% on sell turnover (raised from 0.02%).</li>
             </ul>
           </div>
 

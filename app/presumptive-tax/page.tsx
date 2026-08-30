@@ -6,13 +6,13 @@ import RelatedCalculators from "@/components/shared/RelatedCalculators";
 import CalculatorDisclaimer from "@/components/ui/CalculatorDisclaimer";
 
 export const metadata: Metadata = {
-  title: "Presumptive Tax Calculator (Section 44AD & 44ADA) FY 2025-26",
+  title: "Presumptive Tax Calculator (Section 44AD & 44ADA) — Tax Year 2026-27",
   description:
-    "Calculate presumptive income and tax for Professionals (44ADA - 50% rate, ₹75L limit) and Businesses (44AD - 6%/8% rate, ₹3Cr limit). Compare with actual profit and audit triggers.",
+    "Calculate presumptive income and tax for Professionals (44ADA - 50% rate, ₹75L limit) and Businesses (44AD - 6%/8% rate, ₹3Cr limit) under Tax Year 2026-27 slabs. Compare with actual profit and audit triggers.",
   openGraph: {
-    title: "Presumptive Tax Calculator (Section 44AD & 44ADA) — FinCalc India",
+    title: "Presumptive Tax Calculator (Section 44AD & 44ADA) — Tax Year 2026-27 — FinCalc India",
     description:
-      "Compute deemed profits, slab-rate taxes, and evaluate tax audit triggers for Section 44AD and 44ADA.",
+      "Compute deemed profits, slab-rate taxes, and evaluate tax audit triggers for Section 44AD and 44ADA under Tax Year 2026-27 rules.",
   },
 };
 
@@ -30,11 +30,11 @@ export default function PresumptiveTaxPage() {
           <div className="flex items-center gap-3 mb-1.5">
             <span className="text-3xl" aria-hidden="true">💼</span>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
-              Presumptive Taxation Calculator (Section 44AD & 44ADA)
+              Presumptive Taxation Calculator — Tax Year 2026-27
             </h1>
           </div>
           <p className="text-muted-foreground text-sm mt-1 max-w-2xl">
-            Estimate deemed profits and tax for professionals (Section 44ADA) and businesses (Section 44AD) with enhanced digital turnover limits (₹75L / ₹3Cr) and audit trigger analysis.
+            Estimate deemed profits and tax for professionals (Section 44ADA) and businesses (Section 44AD) with enhanced digital turnover limits (₹75L / ₹3Cr) under Tax Year 2026-27 slabs.
           </p>
         </div>
 

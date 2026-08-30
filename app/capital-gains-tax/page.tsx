@@ -6,13 +6,13 @@ import RelatedCalculators from "@/components/shared/RelatedCalculators";
 import CalculatorDisclaimer from "@/components/ui/CalculatorDisclaimer";
 
 export const metadata: Metadata = {
-  title: "Capital Gains Tax Calculator FY 2025-26",
+  title: "Capital Gains Tax Calculator — Tax Year 2026-27",
   description:
-    "Calculate STCG and LTCG tax on Equity, Debt Mutual Funds, Real Estate, and Gold under post-Budget 2024 rules (12.5% LTCG, ₹1.25L exemption, real estate grandfathering).",
+    "Calculate STCG and LTCG tax on Equity, Debt Mutual Funds, Real Estate, and Gold under Tax Year 2026-27 rules (12.5% LTCG, ₹1.25L exemption, real estate grandfathering).",
   openGraph: {
-    title: "Capital Gains Tax Calculator FY 2025-26 — FinCalc India",
+    title: "Capital Gains Tax Calculator — Tax Year 2026-27 — FinCalc India",
     description:
-      "Calculate Capital Gains Tax on shares, property, and gold with new 12.5% LTCG and grandfathering rules.",
+      "Calculate Capital Gains Tax on shares, property, and gold with 12.5% LTCG, 20% STCG, and grandfathering rules.",
   },
 };
 
@@ -30,11 +30,11 @@ export default function CapitalGainsTaxPage() {
           <div className="flex items-center gap-3 mb-1.5">
             <span className="text-3xl" aria-hidden="true">🏛️</span>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
-              Capital Gains Tax Calculator (FY 2025-26)
+              Capital Gains Tax Calculator — Tax Year 2026-27
             </h1>
           </div>
           <p className="text-muted-foreground text-sm mt-1 max-w-2xl">
-            Calculate LTCG and STCG on Equity, Real Estate, Debt MF, and Gold with post-Budget 2024 tax slabs, ₹1.25 Lakh exemption, and property grandfathering comparison.
+            Calculate LTCG and STCG on Equity, Real Estate, Debt MF, and Gold with Tax Year 2026-27 rules, ₹1.25 Lakh exemption, and property grandfathering comparison.
           </p>
         </div>
 

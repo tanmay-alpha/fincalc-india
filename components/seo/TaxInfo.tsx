@@ -23,7 +23,7 @@ export default function TaxInfo() {
       <section>
         <h2 className="text-lg font-bold
           text-slate-900 dark:text-white mb-3">
-          Tax Slabs FY 2025-26 / AY 2026-27
+          Tax Slabs — Tax Year 2026-27 (FY 2026-27)
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2
           gap-4">
@@ -145,9 +145,9 @@ export default function TaxInfo() {
           </div>
           <p className="text-xs text-slate-500
             dark:text-slate-400 mt-3">
-            * FY 2025-26: New Regime makes income up to ₹12L
-            effectively tax-free (full 87A rebate). Old Regime
-            saves more only with high deductions (₹3L+).
+            * Tax Year 2026-27 (FY 2026-27): New Regime makes income up to ₹12L
+            effectively tax-free (Section 157 rebate up to ₹60,000). Old Regime
+            saves more only with high itemized deductions (₹3.5L+).
           </p>
         </div>
       </section>
@@ -164,8 +164,8 @@ export default function TaxInfo() {
               a: 'New Regime is better if your deductions are less than ₹3.75 lakh (for ₹15L income). If you have HRA, home loan interest, and full 80C investments, Old Regime often saves more. Use this calculator to compare.'
             },
             {
-              q: 'What is Rebate 87A?',
-              a: 'Under the New Regime, if your taxable income is ₹7 lakh or below, you pay zero tax due to Section 87A rebate. This effectively makes income up to ₹7.75 lakh (with standard deduction) tax-free.'
+              q: 'What is Rebate under Section 157 (formerly 87A)?',
+              a: 'Under the New Regime for Tax Year 2026-27 (Income Tax Act, 2025), if your taxable income is ₹12 lakh or below, you pay zero slab tax due to Section 157 rebate (up to ₹60,000). With the ₹75,000 standard deduction, income up to ₹12.75 lakh is effectively tax-free on slab income.'
             },
             {
               q: 'Can I switch between Old and New regime every year?',
@@ -200,8 +200,8 @@ export default function TaxInfo() {
         dark:text-slate-500 italic border-t
         border-slate-100 dark:border-slate-800 pt-4">
         ⚠️ Disclaimer: Tax calculations are estimates
-        based on FY 2025-26 / AY 2026-27 slabs (Union Budget 2025). This tool does not
-        account for all deductions, rebates, or
+        based on Tax Year 2026-27 slabs under the Income Tax Act, 2025. This tool does not
+        account for all personal deductions, special rebates, or
         surcharges that may apply. Consult a chartered
         accountant or tax professional for advice
         specific to your situation.

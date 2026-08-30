@@ -134,6 +134,46 @@ export interface LumpsumOutput {
   growthData: LumpsumGrowthPoint[];
 }
 
+import {
+  CURRENT_TAX_YEAR,
+  PREVIOUS_FY_LABEL,
+  TAX_YEAR_NOTE,
+  PENDING_SECTIONS_NOTE,
+  NEW_REGIME_SLABS_2026_27,
+  OLD_REGIME_SLABS_2026_27,
+  STANDARD_DEDUCTION_NEW_REGIME,
+  STANDARD_DEDUCTION_OLD_REGIME,
+  REBATE_SECTION_157,
+  HEALTH_AND_EDUCATION_CESS_RATE,
+  CAPITAL_GAINS_RATES,
+  STT_RATES_F_AND_O,
+  TRANSACTION_CHARGES,
+  PRESUMPTIVE_TAX_CONSTANTS,
+  HRA_CONSTANTS,
+  SECTION_54_CONSTANTS,
+  MAX_INPUT_LIMITS,
+} from "@/lib/constants/tax-year-2026-27";
+
+export {
+  CURRENT_TAX_YEAR,
+  PREVIOUS_FY_LABEL,
+  TAX_YEAR_NOTE,
+  PENDING_SECTIONS_NOTE,
+  NEW_REGIME_SLABS_2026_27,
+  OLD_REGIME_SLABS_2026_27,
+  STANDARD_DEDUCTION_NEW_REGIME,
+  STANDARD_DEDUCTION_OLD_REGIME,
+  REBATE_SECTION_157,
+  HEALTH_AND_EDUCATION_CESS_RATE,
+  CAPITAL_GAINS_RATES,
+  STT_RATES_F_AND_O,
+  TRANSACTION_CHARGES,
+  PRESUMPTIVE_TAX_CONSTANTS,
+  HRA_CONSTANTS,
+  SECTION_54_CONSTANTS,
+  MAX_INPUT_LIMITS,
+};
+
 // ─── TAX ──────────────────────────────────────────────────────
 
 export type TaxRegime = "old" | "new";
@@ -141,10 +181,12 @@ export type TaxRegime = "old" | "new";
 export interface TaxInput {
   grossIncome: number;
   regime: TaxRegime;
-  deduction80C: number;
-  deduction80D: number;
-  hraExemption: number;
-  otherDeductions: number;
+  deduction80C?: number;
+  deduction80D?: number;
+  hraExemption?: number;
+  otherDeductions?: number;
+  equityLtcg?: number; // Section 112A special rate (12.5% above ₹1.25L)
+  equityStcg?: number; // Section 111A special rate (20%)
 }
 
 export interface TaxSlabRow {
@@ -163,10 +205,17 @@ export interface TaxComparison {
 }
 
 export interface TaxOutput {
+  taxYear: string;
   grossIncome: number;
   totalDeductions: number;
   taxableIncome: number;
   taxBeforeCess: number;
+  slabTaxBeforeRebate: number;
+  rebateAmount: number;
+  rebateSection: string;
+  specialRateTax: number;
+  equityLtcgTax: number;
+  equityStcgTax: number;
   surcharge: number;
   cess: number;
   totalTax: number;
@@ -603,30 +652,23 @@ interface InternalSlab {
 }
 
 /**
- * FY 2025-26 / AY 2026-27 New Regime Slabs
- * (Union Budget 2025 — default regime for individuals)
- * Nil tax up to ₹4L; 87A rebate makes income ≤ ₹12L effectively tax-free.
+ * Tax Year 2026-27 New Regime Slabs (Income Tax Act, 2025)
+ * Nil tax up to ₹4L; Section 157 (formerly 87A) rebate makes taxable income ≤ ₹12L effectively tax-free.
  */
-const NEW_REGIME_SLABS: InternalSlab[] = [
-  { limit: 400000,   rate: 0,    label: "0 – 4L" },
-  { limit: 800000,   rate: 0.05, label: "4L – 8L" },
-  { limit: 1200000,  rate: 0.10, label: "8L – 12L" },
-  { limit: 1600000,  rate: 0.15, label: "12L – 16L" },
-  { limit: 2000000,  rate: 0.20, label: "16L – 20L" },
-  { limit: 2400000,  rate: 0.25, label: "20L – 24L" },
-  { limit: Infinity,  rate: 0.30, label: "24L+" },
-];
+const NEW_REGIME_SLABS: InternalSlab[] = NEW_REGIME_SLABS_2026_27.map((s) => ({
+  limit: s.max,
+  rate: s.rate,
+  label: s.max === Infinity ? "24L+" : `${s.min / 100000}L – ${s.max / 100000}L`,
+}));
 
 /**
- * FY 2025-26 Old Regime Slabs (unchanged)
- * Individuals can optionally choose this if deductions are significant.
+ * Tax Year 2026-27 Old Regime Slabs (Optional)
  */
-const OLD_REGIME_SLABS: InternalSlab[] = [
-  { limit: 250000,   rate: 0,    label: "0 – 2.5L" },
-  { limit: 500000,   rate: 0.05, label: "2.5L – 5L" },
-  { limit: 1000000,  rate: 0.20, label: "5L – 10L" },
-  { limit: Infinity,  rate: 0.30, label: "10L+" },
-];
+const OLD_REGIME_SLABS: InternalSlab[] = OLD_REGIME_SLABS_2026_27.map((s) => ({
+  limit: s.max,
+  rate: s.rate,
+  label: s.max === Infinity ? "10L+" : `${s.min / 100000}L – ${s.max / 100000}L`,
+}));
 
 function internalSlabCalc(
   income: number,
@@ -655,11 +697,11 @@ function internalSlabCalc(
   return { rawTax, breakdown };
 }
 
-function internalSurcharge(taxBeforeRebate: number, grossIncome: number): number {
-  if (grossIncome > 5_00_00_000) return taxBeforeRebate * 0.37;
-  if (grossIncome > 2_00_00_000) return taxBeforeRebate * 0.25;
-  if (grossIncome > 1_00_00_000) return taxBeforeRebate * 0.15;
-  if (grossIncome > 50_00_000) return taxBeforeRebate * 0.10;
+function internalSurcharge(taxBeforeCess: number, totalIncome: number): number {
+  if (totalIncome > 5_00_00_000) return taxBeforeCess * 0.37;
+  if (totalIncome > 2_00_00_000) return taxBeforeCess * 0.25;
+  if (totalIncome > 1_00_00_000) return taxBeforeCess * 0.15;
+  if (totalIncome > 50_00_000) return taxBeforeCess * 0.10;
   return 0;
 }
 
@@ -667,95 +709,142 @@ function computeRegimeTax(
   grossIncome: number,
   regime: TaxRegime,
   input: TaxInput
-): { totalTax: number; taxableIncome: number; totalDeductions: number; surcharge: number; cess: number; breakdown: TaxSlabRow[] } {
+): {
+  totalTax: number;
+  taxableIncome: number;
+  totalDeductions: number;
+  slabTaxBeforeRebate: number;
+  rebateAmount: number;
+  rebateSection: string;
+  specialRateTax: number;
+  equityLtcgTax: number;
+  equityStcgTax: number;
+  taxBeforeCess: number;
+  surcharge: number;
+  cess: number;
+  breakdown: TaxSlabRow[];
+} {
   let totalDeductions: number;
   let taxableIncome: number;
 
   if (regime === "new") {
-    // New regime: only standard deduction of ₹75,000
-    const stdDed = 75000;
+    // New regime: standard deduction of ₹75,000 for salaried
+    const stdDed = STANDARD_DEDUCTION_NEW_REGIME;
     totalDeductions = stdDed;
     taxableIncome = Math.max(0, grossIncome - stdDed);
   } else {
     // Old regime: standard deduction ₹50,000 + 80C + 80D + HRA + others
-    const stdDed = 50000;
+    const stdDed = STANDARD_DEDUCTION_OLD_REGIME;
     const capped80C = Math.min(input.deduction80C ?? 0, 150000);
-    const capped80D = Math.min(input.deduction80D, 100000);
-    totalDeductions = stdDed + capped80C + capped80D + input.hraExemption + input.otherDeductions;
+    const capped80D = Math.min(input.deduction80D ?? 0, 100000);
+    totalDeductions = stdDed + capped80C + capped80D + (input.hraExemption ?? 0) + (input.otherDeductions ?? 0);
     taxableIncome = Math.max(0, grossIncome - totalDeductions);
   }
 
   const slabs = regime === "new" ? NEW_REGIME_SLABS : OLD_REGIME_SLABS;
   const { rawTax, breakdown } = internalSlabCalc(taxableIncome, slabs);
 
-  // Rebate u/s 87A
-  // FY 2025-26: New regime rebate raised — income ≤ ₹12L gets full rebate (zero tax)
-  // Old regime: unchanged (taxable income ≤ ₹5L, max rebate ₹12,500)
-  let rebate = 0;
-  if (regime === "new" && taxableIncome <= 1200000) {
-    rebate = rawTax; // full rebate — effectively zero tax up to ₹12L taxable
-  } else if (regime === "old" && taxableIncome <= 500000) {
-    rebate = Math.min(rawTax, 12500);
+  // Section 157 (formerly 87A) Rebate:
+  // Tax Year 2026-27: New regime taxable income ≤ ₹12L gets full slab rebate (up to ₹60,000).
+  // Old regime: taxable income ≤ ₹5L, max rebate ₹12,500.
+  // CRITICAL: Rebate applies ONLY to normal slab tax, NOT special-rate capital gains (Sec 112A / 111A).
+  let rebateAmount = 0;
+  if (regime === "new" && taxableIncome <= REBATE_SECTION_157.newRegimeIncomeLimit) {
+    rebateAmount = Math.min(rawTax, REBATE_SECTION_157.newRegimeMaxRebate);
+  } else if (regime === "old" && taxableIncome <= REBATE_SECTION_157.oldRegimeIncomeLimit) {
+    rebateAmount = Math.min(rawTax, REBATE_SECTION_157.oldRegimeMaxRebate);
   }
 
-  const taxAfterRebate = Math.max(0, rawTax - rebate);
+  const slabTaxAfterRebate = Math.max(0, rawTax - rebateAmount);
 
-  // Surcharge: 10% for 50L–1Cr, 15% for 1Cr+
-  const surcharge = internalSurcharge(taxAfterRebate, grossIncome);
+  // Special rate capital gains tax (Section 112A LTCG @ 12.5% above ₹1.25L, Section 111A STCG @ 20%)
+  const equityLtcg = Math.max(0, input.equityLtcg ?? 0);
+  const equityStcg = Math.max(0, input.equityStcg ?? 0);
+
+  const equityLtcgTaxable = Math.max(0, equityLtcg - CAPITAL_GAINS_RATES.equityLTCG.exemptionThreshold);
+  const equityLtcgTax = Math.round(equityLtcgTaxable * CAPITAL_GAINS_RATES.equityLTCG.rate);
+  const equityStcgTax = Math.round(equityStcg * CAPITAL_GAINS_RATES.equitySTCG.rate);
+  const specialRateTax = equityLtcgTax + equityStcgTax;
+
+  const taxBeforeSurchargeAndCess = slabTaxAfterRebate + specialRateTax;
+  const totalCombinedIncome = grossIncome + equityLtcg + equityStcg;
+
+  // Surcharge on high income (>₹50L)
+  const surcharge = internalSurcharge(taxBeforeSurchargeAndCess, totalCombinedIncome);
 
   // Health & Education Cess: 4%
-  const cess = (taxAfterRebate + surcharge) * 0.04;
-  const totalTax = taxAfterRebate + surcharge + cess;
+  const cess = (taxBeforeSurchargeAndCess + surcharge) * HEALTH_AND_EDUCATION_CESS_RATE;
+  const totalTax = taxBeforeSurchargeAndCess + surcharge + cess;
 
-  return { totalTax, taxableIncome, totalDeductions, surcharge, cess, breakdown };
+  return {
+    totalTax: Math.round(totalTax),
+    taxableIncome: Math.round(taxableIncome),
+    totalDeductions: Math.round(totalDeductions),
+    slabTaxBeforeRebate: Math.round(rawTax),
+    rebateAmount: Math.round(rebateAmount),
+    rebateSection: REBATE_SECTION_157.sectionName,
+    specialRateTax: Math.round(specialRateTax),
+    equityLtcgTax: Math.round(equityLtcgTax),
+    equityStcgTax: Math.round(equityStcgTax),
+    taxBeforeCess: Math.round(taxBeforeSurchargeAndCess),
+    surcharge: Math.round(surcharge),
+    cess: Math.round(cess),
+    breakdown,
+  };
 }
 
 /**
- * Income Tax Calculator — FY 2025-26 / AY 2026-27
+ * Income Tax Calculator — Tax Year 2026-27 (Income Tax Act, 2025)
  *
- * Supports both Old & New regimes with FY 2025-26 slabs.
- * New Regime: 0–4L nil, 4–8L 5%, 8–12L 10%, 12–16L 15%,
- *             16–20L 20%, 20–24L 25%, 24L+ 30%.
- *             Standard deduction ₹75,000. Rebate u/s 87A for
- *             taxable income ≤ ₹12L (effectively zero tax).
- * Old Regime: unchanged slabs. Max rebate ₹12,500 for taxable ≤ ₹5L.
- * Includes surcharge (>₹50L) and 4% health + education cess.
+ * Supports New Regime (default) and Old Regime.
+ * New Regime Slabs: 0–4L nil, 4–8L 5%, 8–12L 10%, 12–16L 15%,
+ *                   16–20L 20%, 20–24L 25%, 24L+ 30%.
+ * Standard deduction: ₹75,000.
+ * Rebate under Section 157 (formerly 87A) for taxable income ≤ ₹12L (wiping out up to ₹60,000 slab tax).
+ * Special rate equity LTCG (12.5% above ₹1.25L) & STCG (20%) are isolated from rebate.
  */
 export function calcTax(input: TaxInput): TaxOutput {
   const { grossIncome, regime } = input;
 
   const current = computeRegimeTax(grossIncome, regime, input);
 
-  // Always compute both for comparison
+  // Compute both regimes for comparison
   const oldResult = computeRegimeTax(grossIncome, "old", input);
   const newResult = computeRegimeTax(grossIncome, "new", input);
 
   const savings = Math.abs(oldResult.totalTax - newResult.totalTax);
   const recommendation: TaxRegime = oldResult.totalTax <= newResult.totalTax ? "old" : "new";
   const reason = recommendation === "new"
-    ? `New regime saves ₹${Math.round(savings).toLocaleString("en-IN")} with simplified slabs`
-    : `Old regime saves ₹${Math.round(savings).toLocaleString("en-IN")} due to deduction benefits`;
+    ? `New regime saves ₹${Math.round(savings).toLocaleString("en-IN")} under Tax Year 2026-27 slabs`
+    : `Old regime saves ₹${Math.round(savings).toLocaleString("en-IN")} due to itemized deductions`;
 
-  const netAnnual = grossIncome - current.totalTax;
-  const effectiveRate = grossIncome > 0
-    ? (current.totalTax / grossIncome) * 100
+  const totalEffectiveGross = grossIncome + (input.equityLtcg ?? 0) + (input.equityStcg ?? 0);
+  const netAnnual = totalEffectiveGross - current.totalTax;
+  const effectiveRate = totalEffectiveGross > 0
+    ? (current.totalTax / totalEffectiveGross) * 100
     : 0;
-  const taxBeforeCess = Math.max(0, current.totalTax - current.surcharge - current.cess);
 
   return {
+    taxYear: CURRENT_TAX_YEAR,
     grossIncome: Math.round(grossIncome),
-    totalDeductions: Math.round(current.totalDeductions),
-    taxableIncome: Math.round(current.taxableIncome),
-    taxBeforeCess: Math.round(taxBeforeCess),
-    surcharge: Math.round(current.surcharge),
-    cess: Math.round(current.cess),
-    totalTax: Math.round(current.totalTax),
+    totalDeductions: current.totalDeductions,
+    taxableIncome: current.taxableIncome,
+    taxBeforeCess: current.taxBeforeCess,
+    slabTaxBeforeRebate: current.slabTaxBeforeRebate,
+    rebateAmount: current.rebateAmount,
+    rebateSection: current.rebateSection,
+    specialRateTax: current.specialRateTax,
+    equityLtcgTax: current.equityLtcgTax,
+    equityStcgTax: current.equityStcgTax,
+    surcharge: current.surcharge,
+    cess: current.cess,
+    totalTax: current.totalTax,
     effectiveRate: Math.round(effectiveRate * 100) / 100,
     monthlyTakeHome: Math.round(netAnnual / 12),
     slabBreakdown: current.breakdown,
     comparison: {
-      oldRegimeTax: Math.round(oldResult.totalTax),
-      newRegimeTax: Math.round(newResult.totalTax),
+      oldRegimeTax: oldResult.totalTax,
+      newRegimeTax: newResult.totalTax,
       savings: Math.round(savings),
       recommendation,
       reason,
@@ -1528,6 +1617,7 @@ export interface CapitalGainsInput {
 }
 
 export interface CapitalGainsOutput {
+  taxYear: string;
   assetClass: AssetClass;
   gainType: "LTCG" | "STCG" | "LOSS";
   holdingMonths: number;
@@ -1623,25 +1713,25 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
     totalTaxPayable = 0;
     explanation = `Capital Loss of ₹${Math.abs(Math.round(rawCapitalGain)).toLocaleString("en-IN")}. No tax is payable. This loss can be set off or carried forward for up to 8 financial years.`;
   } else if (assetClass === "debt_mf") {
-    // Post-April 2023: All debt mutual funds taxed at investor slab rate
+    // All debt mutual funds taxed at investor slab rate
     gainType = "STCG";
     taxRatePercent = safeSlab;
     totalTaxPayable = (taxableGain * safeSlab) / 100;
-    explanation = `Debt Mutual Fund gains are taxed at your income tax slab rate (${safeSlab}%) regardless of holding duration (Finance Act post-April 2023).`;
+    explanation = `Debt Mutual Fund gains are taxed at your income tax slab rate (${safeSlab}%) regardless of holding duration (Tax Year 2026-27).`;
   } else if (assetClass === "equity") {
     if (isLtcg) {
-      // LTCG: 12.5% with ₹1.25L exemption
+      // LTCG: 12.5% with ₹1.25L exemption (Tax Year 2026-27)
       taxRatePercent = 12.5;
       const remainingExemption = Math.max(0, 125000 - safePriorExemption);
       exemptionAllowed = Math.min(taxableGain, remainingExemption);
       const taxablePortion = Math.max(0, taxableGain - exemptionAllowed);
       totalTaxPayable = (taxablePortion * 12.5) / 100;
-      explanation = `Listed Equity LTCG (>12 months) is taxed at 12.5% under Budget 2024. Exemption of ₹${Math.round(exemptionAllowed).toLocaleString("en-IN")} applied (out of ₹1.25L limit).`;
+      explanation = `Tax Year 2026-27: Listed Equity LTCG (>12 months) is taxed at 12.5%. Statutory exemption of ₹${Math.round(exemptionAllowed).toLocaleString("en-IN")} applied (out of ₹1.25L limit).`;
     } else {
       // STCG: 20%
       taxRatePercent = 20;
       totalTaxPayable = (taxableGain * 20) / 100;
-      explanation = `Listed Equity STCG (≤12 months) is taxed at a flat 20% rate (revised in Budget July 2024).`;
+      explanation = `Tax Year 2026-27: Listed Equity STCG (≤12 months) is taxed at a flat 20% rate.`;
     }
   } else if (assetClass === "real_estate") {
     if (isLtcg) {
@@ -1680,7 +1770,7 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
         // Purchased on or after 23 July 2024: Flat 12.5% without indexation only
         taxRatePercent = 12.5;
         totalTaxPayable = unindexedTax;
-        explanation = `Property purchased on/after 23 July 2024: Taxed at 12.5% LTCG (>24 months) without indexation benefit (Budget 2024).`;
+        explanation = `Property purchased on/after 23 July 2024: Taxed at 12.5% LTCG (>24 months) without indexation benefit (Tax Year 2026-27).`;
       }
     } else {
       // STCG: Slab rate
@@ -1692,7 +1782,7 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
     if (isLtcg) {
       taxRatePercent = 12.5;
       totalTaxPayable = (taxableGain * 12.5) / 100;
-      explanation = `Physical Gold & Gold ETF LTCG (>24 months) is taxed at 12.5% without indexation (Budget 2024).`;
+      explanation = `Physical Gold & Gold ETF LTCG (>24 months) is taxed at 12.5% without indexation (Tax Year 2026-27).`;
     } else {
       taxRatePercent = safeSlab;
       totalTaxPayable = (taxableGain * safeSlab) / 100;
@@ -1706,6 +1796,7 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
       : 0;
 
   return {
+    taxYear: CURRENT_TAX_YEAR,
     assetClass,
     gainType,
     holdingMonths,
@@ -1728,6 +1819,7 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
 // ─── PART B — FEATURE 2: F&O BROKERAGE & BREAK-EVEN CALCULATOR ──
 
 export type FnOInstrument = "futures" | "options";
+export type FnOTaxYear = "tax_year_2026_27" | "pre_april_2026";
 
 export interface FnOBreakevenInput {
   instrument: FnOInstrument;
@@ -1735,7 +1827,8 @@ export interface FnOBreakevenInput {
   sellPrice: number;
   quantity: number; // total shares / units (lots * lotSize)
   brokeragePerOrder?: number; // default ₹20 per executed order
-  sttRatePercent?: number; // Options: 0.1% on sell premium; Futures: 0.02% on sell turnover
+  taxYear?: FnOTaxYear; // default: "tax_year_2026_27" (STT: Futures 0.05%, Options 0.15%)
+  sttRatePercent?: number; // Options: 0.15% flat (Tax Year 2026-27) or custom; Futures: 0.05%
   exchangeChargeRatePercent?: number; // Options: ~0.05% on premium; Futures: ~0.003% on turnover
   sebiTurnoverFeePercent?: number; // 0.0001% (₹10 per Crore)
   gstRatePercent?: number; // 18% on (brokerage + exchange charges + sebi fee)
@@ -1744,6 +1837,8 @@ export interface FnOBreakevenInput {
 
 export interface FnOBreakevenOutput {
   instrument: FnOInstrument;
+  taxYear: FnOTaxYear;
+  taxYearLabel: string;
   buyPrice: number;
   sellPrice: number;
   quantity: number;
@@ -1751,6 +1846,7 @@ export interface FnOBreakevenOutput {
   sellTurnover: number;
   totalTurnover: number;
   grossPnl: number;
+  sttRatePercentUsed: number;
   charges: {
     brokerage: number;
     stt: number;
@@ -1778,6 +1874,7 @@ export function calcFnOBreakeven(input: FnOBreakevenInput): FnOBreakevenOutput {
     quantity,
     brokeragePerOrder = 20,
     gstRatePercent = 18,
+    taxYear = "tax_year_2026_27",
   } = input;
 
   const safeBuy = Math.max(0, buyPrice || 0);
@@ -1790,8 +1887,12 @@ export function calcFnOBreakeven(input: FnOBreakevenInput): FnOBreakevenOutput {
   const totalTurnover = round2(buyTurnover + sellTurnover);
   const grossPnl = round2(sellTurnover - buyTurnover);
 
-  // Default rates based on SEBI & Indian Exchange rules (Budget 2024 / FY25-26)
-  const defaultSttRate = instrument === "options" ? 0.1 : 0.02; // options on sell premium; futures on sell turnover
+  // STT Rates: Tax Year 2026-27 (effective 1 April 2026: Futures 0.05%, Options 0.15% flat) vs Pre-April 2026
+  const isTaxYear2026_27 = taxYear === "tax_year_2026_27";
+  const defaultSttRate = isTaxYear2026_27
+    ? (instrument === "options" ? 0.15 : 0.05)
+    : (instrument === "options" ? 0.10 : 0.02);
+
   const defaultExchangeRate = instrument === "options" ? 0.05 : 0.0032;
   const defaultSebiRate = 0.0001; // ₹10 per crore
   const defaultStampDuty = instrument === "options" ? 0.003 : 0.002;
@@ -1830,6 +1931,8 @@ export function calcFnOBreakeven(input: FnOBreakevenInput): FnOBreakevenOutput {
 
   return {
     instrument,
+    taxYear,
+    taxYearLabel: isTaxYear2026_27 ? "Tax Year 2026-27 (Current)" : "Pre-April 2026 (Historical)",
     buyPrice: safeBuy,
     sellPrice: safeSell,
     quantity: safeQty,
@@ -1837,6 +1940,7 @@ export function calcFnOBreakeven(input: FnOBreakevenInput): FnOBreakevenOutput {
     sellTurnover,
     totalTurnover,
     grossPnl,
+    sttRatePercentUsed: sttRate,
     charges: {
       brokerage,
       stt,
