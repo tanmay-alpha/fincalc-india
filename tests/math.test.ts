@@ -25,6 +25,21 @@ import {
   calcPresumptiveTax,
   calcPositionSize,
   calcSection54Exemption,
+  calcDCF,
+  calcWACC,
+  calcDuPont,
+  calcXIRR,
+  calcTWRR,
+  calcRiskRatios,
+  calcBlackScholes,
+  calcMarginRequired,
+  calcCarTCO,
+  calcBalanceTransfer,
+  calcMarginalRelief,
+  calcLRSTCS,
+  calcUSStockReturn,
+  calcNRIDepositReturns,
+  calcNPS,
 } from '../lib/math'
 
 // ─── SIP ──────────────────────────────────────────────────────
@@ -2135,6 +2150,1440 @@ describe('calcSection54Exemption', () => {
     expect(result.initialLtcgGains).toBe(8000000) // 1.2Cr - 40L
     expect(result.activeResult.exemptionAllowed).toBe(8000000)
     expect(result.activeResult.taxAfterExemption).toBe(0)
+  })
+})
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GROUP 1: CFA & INVESTMENT ANALYTICS UNIT TESTS (60 TESTS)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// ─── 1. DCF Valuation ──────────────────────────────────────────
+describe('calcDCF', () => {
+  it('1. Standard 5-year FCF projection with g < r computes positive EV and equity value', () => {
+    const res = calcDCF({
+      fcfProjections: [1000000, 1150000, 1320000, 1520000, 1750000],
+      terminalGrowthRate: 4,
+      discountRate: 11,
+      sharesOutstanding: 100000,
+      netDebt: 2000000,
+    })
+    expect(res.isValid).toBe(true)
+    expect(res.presentValueExplicitFcf).toBeGreaterThan(0)
+    expect(res.terminalValue).toBeGreaterThan(0)
+    expect(res.enterpriseValue).toBeGreaterThan(res.presentValueExplicitFcf)
+    expect(res.equityValue).toBe(res.enterpriseValue - 2000000)
+    expect(res.intrinsicValuePerShare).toBeGreaterThan(0)
+    expect(res.yearlyBreakdown.length).toBe(5)
+  })
+
+  it('2. Terminal growth rate ≥ discount rate (g ≥ r) triggers Gordon Growth breakdown error', () => {
+    const res = calcDCF({
+      fcfProjections: [1000000, 1200000],
+      terminalGrowthRate: 12,
+      discountRate: 10,
+    })
+    expect(res.isValid).toBe(false)
+    expect(res.errorMessage).toContain('strictly less than the discount rate')
+    expect(res.enterpriseValue).toBe(0)
+  })
+
+  it('3. Zero-growth perpetuity (g = 0) evaluates clean terminal value FCF/r', () => {
+    const res = calcDCF({
+      fcfProjections: [1000000],
+      terminalGrowthRate: 0,
+      discountRate: 10,
+      sharesOutstanding: 10000,
+    })
+    expect(res.isValid).toBe(true)
+    expect(res.terminalValue).toBe(10000000) // 10L / 0.10 = 1 Cr
+    expect(res.intrinsicValuePerShare).toBeGreaterThan(0)
+  })
+
+  it('4. Negative FCF in early projection years handled without breaking NPV sum', () => {
+    const res = calcDCF({
+      fcfProjections: [-500000, -200000, 1000000, 2000000],
+      terminalGrowthRate: 3,
+      discountRate: 12,
+      sharesOutstanding: 50000,
+    })
+    expect(res.isValid).toBe(true)
+    expect(res.yearlyBreakdown[0].presentValue).toBeLessThan(0)
+    expect(res.yearlyBreakdown[3].presentValue).toBeGreaterThan(0)
+    expect(res.enterpriseValue).toBeGreaterThan(0)
+  })
+
+  it('5. Single-year projection vs 10-year projection both calculate accurately', () => {
+    const singleYear = calcDCF({
+      fcfProjections: [1000000],
+      terminalGrowthRate: 4,
+      discountRate: 10,
+    })
+    const tenYears = calcDCF({
+      fcfProjections: [1000000, 1100000, 1200000, 1300000, 1400000, 1500000, 1600000, 1700000, 1800000, 1900000],
+      terminalGrowthRate: 4,
+      discountRate: 10,
+    })
+    expect(singleYear.yearlyBreakdown.length).toBe(1)
+    expect(tenYears.yearlyBreakdown.length).toBe(10)
+    expect(tenYears.enterpriseValue).toBeGreaterThan(singleYear.enterpriseValue)
+  })
+
+  it('6. Discount rate ≤ 0% rejected defensively', () => {
+    const res = calcDCF({
+      fcfProjections: [1000000],
+      terminalGrowthRate: 3,
+      discountRate: 0,
+    })
+    expect(res.isValid).toBe(false)
+    expect(res.errorMessage).toContain('strictly greater than 0%')
+  })
+
+  it('7. Negative net debt (net cash company) increases Equity Value above EV', () => {
+    const res = calcDCF({
+      fcfProjections: [1000000, 1100000],
+      terminalGrowthRate: 3,
+      discountRate: 10,
+      netDebt: -5000000, // Net cash of ₹50 Lakhs
+    })
+    expect(res.equityValue).toBe(res.enterpriseValue + 5000000)
+  })
+
+  it('8. High net debt correctly subtracts from EV', () => {
+    const res = calcDCF({
+      fcfProjections: [1000000, 1100000],
+      terminalGrowthRate: 3,
+      discountRate: 10,
+      netDebt: 5000000,
+    })
+    expect(res.equityValue).toBe(res.enterpriseValue - 5000000)
+  })
+
+  it('9. Intrinsic share price scales inversely with shares outstanding', () => {
+    const resSmall = calcDCF({
+      fcfProjections: [1000000],
+      terminalGrowthRate: 3,
+      discountRate: 10,
+      sharesOutstanding: 100000,
+    })
+    const resLarge = calcDCF({
+      fcfProjections: [1000000],
+      terminalGrowthRate: 3,
+      discountRate: 10,
+      sharesOutstanding: 200000,
+    })
+    expect(Math.round(resSmall.intrinsicValuePerShare)).toBe(Math.round(resLarge.intrinsicValuePerShare * 2))
+  })
+
+  it('10. Generates non-empty sensitivity matrix around discount and growth rates', () => {
+    const res = calcDCF({
+      fcfProjections: [1000000, 1200000, 1400000],
+      terminalGrowthRate: 4,
+      discountRate: 11,
+    })
+    expect(res.sensitivityMatrix.length).toBeGreaterThanOrEqual(3)
+    expect(res.sensitivityMatrix[0].length).toBeGreaterThanOrEqual(3)
+  })
+})
+
+// ─── 2. WACC Calculator ────────────────────────────────────────
+describe('calcWACC', () => {
+  it('1. 100% Equity / 0% Debt case yields WACC equal to Cost of Equity', () => {
+    const res = calcWACC({
+      equityValue: 10000000,
+      debtValue: 0,
+      costOfEquity: 15,
+      costOfDebt: 9,
+      taxRate: 25,
+    })
+    expect(res.weightOfEquity).toBe(100)
+    expect(res.weightOfDebt).toBe(0)
+    expect(res.wacc).toBe(15)
+  })
+
+  it('2. 0% Equity / 100% Debt case yields WACC equal to after-tax Cost of Debt', () => {
+    const res = calcWACC({
+      equityValue: 0,
+      debtValue: 10000000,
+      costOfEquity: 15,
+      costOfDebt: 10,
+      taxRate: 25,
+    })
+    expect(res.weightOfEquity).toBe(0)
+    expect(res.weightOfDebt).toBe(100)
+    expect(res.wacc).toBe(7.5) // 10 * (1 - 0.25) = 7.5%
+  })
+
+  it('3. CAPM mode correctly derives cost of equity from risk-free rate, beta, and market return', () => {
+    // Ke = 7 + 1.2 * (15 - 7) = 7 + 9.6 = 16.6%
+    const res = calcWACC({
+      equityValue: 6000000,
+      debtValue: 4000000,
+      costOfEquityMode: 'capm',
+      riskFreeRate: 7,
+      beta: 1.2,
+      marketReturn: 15,
+      costOfDebt: 8,
+      taxRate: 25,
+    })
+    expect(res.costOfEquity).toBe(16.6)
+    expect(res.afterTaxCostOfDebt).toBe(6) // 8 * 0.75
+    // WACC = 0.6 * 16.6 + 0.4 * 6 = 9.96 + 2.4 = 12.36%
+    expect(res.wacc).toBe(12.36)
+  })
+
+  it('4. Tax shield correctly reduces after-tax cost of debt', () => {
+    const res = calcWACC({
+      equityValue: 5000000,
+      debtValue: 5000000,
+      costOfEquity: 12,
+      costOfDebt: 10,
+      taxRate: 30,
+    })
+    expect(res.preTaxCostOfDebt).toBe(10)
+    expect(res.afterTaxCostOfDebt).toBe(7)
+    expect(res.taxShieldBenefit).toBe(3)
+  })
+
+  it('5. 0% tax rate produces no tax shield benefit (after-tax Kd = pre-tax Kd)', () => {
+    const res = calcWACC({
+      equityValue: 5000000,
+      debtValue: 5000000,
+      costOfEquity: 12,
+      costOfDebt: 8,
+      taxRate: 0,
+    })
+    expect(res.afterTaxCostOfDebt).toBe(8)
+    expect(res.taxShieldBenefit).toBe(0)
+    expect(res.wacc).toBe(10) // 0.5*12 + 0.5*8 = 10
+  })
+
+  it('6. Zero capital structure value handled defensively', () => {
+    const res = calcWACC({
+      equityValue: 0,
+      debtValue: 0,
+      costOfEquity: 12,
+      costOfDebt: 8,
+      taxRate: 25,
+    })
+    expect(res.wacc).toBe(0)
+    expect(res.totalValue).toBe(0)
+  })
+
+  it('7. 50/50 capital structure accurately weights components', () => {
+    const res = calcWACC({
+      equityValue: 50000000,
+      debtValue: 50000000,
+      costOfEquity: 14,
+      costOfDebt: 10,
+      taxRate: 20,
+    })
+    expect(res.weightOfEquity).toBe(50)
+    expect(res.weightOfDebt).toBe(50)
+    expect(res.wacc).toBe(11) // 0.5*14 + 0.5*8 = 11
+  })
+
+  it('8. High beta (>2.0) increases WACC in CAPM mode', () => {
+    const resBase = calcWACC({
+      equityValue: 1000000,
+      debtValue: 500000,
+      costOfEquityMode: 'capm',
+      riskFreeRate: 7,
+      beta: 1.0,
+      marketReturn: 15,
+      costOfDebt: 8,
+      taxRate: 25,
+    })
+    const resHighBeta = calcWACC({
+      equityValue: 1000000,
+      debtValue: 500000,
+      costOfEquityMode: 'capm',
+      riskFreeRate: 7,
+      beta: 2.0,
+      marketReturn: 15,
+      costOfDebt: 8,
+      taxRate: 25,
+    })
+    expect(resHighBeta.wacc).toBeGreaterThan(resBase.wacc)
+  })
+
+  it('9. Low beta (<0.5) decreases WACC in CAPM mode', () => {
+    const resBase = calcWACC({
+      equityValue: 1000000,
+      debtValue: 500000,
+      costOfEquityMode: 'capm',
+      riskFreeRate: 7,
+      beta: 1.0,
+      marketReturn: 15,
+      costOfDebt: 8,
+      taxRate: 25,
+    })
+    const resLowBeta = calcWACC({
+      equityValue: 1000000,
+      debtValue: 500000,
+      costOfEquityMode: 'capm',
+      riskFreeRate: 7,
+      beta: 0.4,
+      marketReturn: 15,
+      costOfDebt: 8,
+      taxRate: 25,
+    })
+    expect(resLowBeta.wacc).toBeLessThan(resBase.wacc)
+  })
+
+  it('10. Capital structure weights sum to exactly 100%', () => {
+    const res = calcWACC({
+      equityValue: 7300000,
+      debtValue: 2700000,
+      costOfEquity: 14,
+      costOfDebt: 9,
+      taxRate: 25,
+    })
+    expect(res.weightOfEquity + res.weightOfDebt).toBe(100)
+    expect(res.capitalStructureBreakdown.length).toBe(2)
+  })
+})
+
+// ─── 3. DuPont Analysis ────────────────────────────────────────
+describe('calcDuPont', () => {
+  it('1. 3-step components multiply back to match reported ROE', () => {
+    const res = calcDuPont({
+      netIncome: 1500000,
+      revenue: 10000000,
+      totalAssets: 8000000,
+      shareholdersEquity: 5000000,
+    })
+    expect(res.reportedRoe).toBe(30) // 1.5M / 5M = 30%
+    expect(res.threeStep.netProfitMargin).toBe(15) // 1.5M / 10M
+    expect(res.threeStep.assetTurnover).toBe(1.25) // 10M / 8M
+    expect(res.threeStep.financialLeverage).toBe(1.6) // 8M / 5M
+    // 15 * 1.25 * 1.6 = 30
+    expect(res.threeStep.decomposedRoe).toBe(30)
+  })
+
+  it('2. 5-step components multiply back to match reported ROE', () => {
+    const res = calcDuPont({
+      netIncome: 1500000,
+      revenue: 10000000,
+      totalAssets: 8000000,
+      shareholdersEquity: 5000000,
+      ebt: 2000000,
+      ebit: 2500000,
+    })
+    expect(res.isFiveStepAvailable).toBe(true)
+    expect(res.fiveStep?.taxBurden).toBe(0.75) // 1.5M / 2.0M
+    expect(res.fiveStep?.interestBurden).toBe(0.8) // 2.0M / 2.5M
+    expect(res.fiveStep?.operatingMargin).toBe(25) // 2.5M / 10M
+    expect(res.fiveStep?.decomposedRoe).toBe(30)
+  })
+
+  it('3. 3-step and 5-step produce the exact same final ROE number', () => {
+    const res = calcDuPont({
+      netIncome: 1200000,
+      revenue: 15000000,
+      totalAssets: 10000000,
+      shareholdersEquity: 6000000,
+      ebt: 1600000,
+      ebit: 2000000,
+    })
+    expect(res.threeStep.decomposedRoe).toBe(res.reportedRoe)
+    expect(res.fiveStep?.decomposedRoe).toBe(res.reportedRoe)
+  })
+
+  it('4. Zero equity rejected with clear message', () => {
+    const res = calcDuPont({
+      netIncome: 1000000,
+      revenue: 5000000,
+      totalAssets: 4000000,
+      shareholdersEquity: 0,
+    })
+    expect(res.reportedRoe).toBe(0)
+    expect(res.summary).toContain('Invalid equity value')
+  })
+
+  it('5. Negative net income (loss-making company) handled cleanly without throwing', () => {
+    const res = calcDuPont({
+      netIncome: -500000,
+      revenue: 5000000,
+      totalAssets: 4000000,
+      shareholdersEquity: 2000000,
+    })
+    expect(res.reportedRoe).toBe(-25)
+    expect(res.threeStep.netProfitMargin).toBe(-10)
+    expect(res.threeStep.decomposedRoe).toBe(-25)
+  })
+
+  it('6. High financial leverage identifies leverage as primary driver', () => {
+    const res = calcDuPont({
+      netIncome: 200000,
+      revenue: 5000000,
+      totalAssets: 6000000,
+      shareholdersEquity: 1000000, // 6x leverage
+    })
+    expect(res.primaryDriver).toBe('leverage')
+    expect(res.driverAnalysis).toContain('High Financial Leverage')
+  })
+
+  it('7. High asset turnover identifies efficiency as primary driver', () => {
+    const res = calcDuPont({
+      netIncome: 300000,
+      revenue: 10000000,
+      totalAssets: 4000000, // 2.5x turnover
+      shareholdersEquity: 2000000, // 2x leverage (< 2.5)
+    })
+    expect(res.primaryDriver).toBe('efficiency')
+    expect(res.driverAnalysis).toContain('High Asset Turnover')
+  })
+
+  it('8. High net margin identifies profitability as primary driver', () => {
+    const res = calcDuPont({
+      netIncome: 3000000,
+      revenue: 10000000, // 30% margin
+      totalAssets: 10000000, // 1x turnover
+      shareholdersEquity: 8000000, // 1.25x leverage
+    })
+    expect(res.primaryDriver).toBe('profitability')
+    expect(res.driverAnalysis).toContain('Net Profit Margin')
+  })
+
+  it('9. Zero revenue handled without division by zero', () => {
+    const res = calcDuPont({
+      netIncome: 0,
+      revenue: 0,
+      totalAssets: 1000000,
+      shareholdersEquity: 1000000,
+    })
+    expect(res.threeStep.netProfitMargin).toBe(0)
+    expect(res.threeStep.assetTurnover).toBe(0)
+  })
+
+  it('10. Extreme HNI numbers scale cleanly', () => {
+    const res = calcDuPont({
+      netIncome: 5000000000,
+      revenue: 25000000000,
+      totalAssets: 40000000000,
+      shareholdersEquity: 20000000000,
+    })
+    expect(res.reportedRoe).toBe(25)
+    expect(res.threeStep.decomposedRoe).toBe(25)
+  })
+})
+
+// ─── 4. XIRR & TWRR Analyzer ───────────────────────────────────
+describe('calcXIRR and calcTWRR', () => {
+  it('1. Single lump sum outflow + single redemption matches CAGR formula exactly', () => {
+    const res = calcXIRR([
+      { date: '2020-01-01', amount: -100000 },
+      { date: '2023-01-01', amount: 200000 },
+    ])
+    expect(res.isValid).toBe(true)
+    expect(res.cagr).toBeDefined()
+    expect(Math.round(res.xirr)).toBe(Math.round(res.cagr!))
+    expect(res.xirr).toBeGreaterThan(25) // doubling in 3 years is ~26% CAGR
+  })
+
+  it('2. Irregular multi-date cashflows (monthly SIP-like pattern) converge accurately', () => {
+    const res = calcXIRR([
+      { date: '2023-01-01', amount: -10000 },
+      { date: '2023-02-01', amount: -10000 },
+      { date: '2023-03-01', amount: -10000 },
+      { date: '2023-04-01', amount: -10000 },
+      { date: '2023-05-01', amount: -10000 },
+      { date: '2023-12-31', amount: 55000 },
+    ])
+    expect(res.isValid).toBe(true)
+    expect(res.xirr).toBeGreaterThan(0)
+    expect(res.totalInvested).toBe(50000)
+    expect(res.totalWithdrawn).toBe(55000)
+  })
+
+  it('3. All-negative cash flows array returns isValid: false', () => {
+    const res = calcXIRR([
+      { date: '2023-01-01', amount: -10000 },
+      { date: '2023-06-01', amount: -20000 },
+    ])
+    expect(res.isValid).toBe(false)
+    expect(res.errorMessage).toContain('outflow')
+  })
+
+  it('4. All-positive cash flows array returns isValid: false', () => {
+    const res = calcXIRR([
+      { date: '2023-01-01', amount: 10000 },
+      { date: '2023-06-01', amount: 20000 },
+    ])
+    expect(res.isValid).toBe(false)
+    expect(res.errorMessage).toContain('outflow')
+  })
+
+  it('5. Less than 2 cash flows returns error', () => {
+    const res = calcXIRR([{ date: '2023-01-01', amount: -10000 }])
+    expect(res.isValid).toBe(false)
+  })
+
+  it('6. High return scenario (100%+ gain) converges', () => {
+    const res = calcXIRR([
+      { date: '2022-01-01', amount: -100000 },
+      { date: '2023-01-01', amount: 300000 },
+    ])
+    expect(res.isValid).toBe(true)
+    expect(res.xirr).toBeGreaterThan(190)
+  })
+
+  it('7. Negative return scenario converges to negative XIRR', () => {
+    const res = calcXIRR([
+      { date: '2022-01-01', amount: -100000 },
+      { date: '2023-01-01', amount: 80000 },
+    ])
+    expect(res.isValid).toBe(true)
+    expect(res.xirr).toBeLessThan(0)
+  })
+
+  it('8. TWRR accurately multiplies sub-period holding returns', () => {
+    const res = calcTWRR([
+      { startValue: 100000, endValue: 110000, netCashflow: 0 }, // +10%
+      { startValue: 110000, endValue: 121000, netCashflow: 0 }, // +10%
+    ])
+    // (1 + 0.1) * (1 + 0.1) - 1 = +21%
+    expect(res.twrr).toBe(21)
+    expect(res.periods.length).toBe(2)
+  })
+
+  it('9. TWRR correctly isolates investment performance from cashflow timing', () => {
+    // Period 1: $100 -> $120 (+20%). Then deposit $80. Start of period 2 = $200.
+    // Period 2: $200 -> $180 (-10%).
+    const res = calcTWRR([
+      { startValue: 100, endValue: 120, netCashflow: 0 },
+      { startValue: 200, endValue: 180, netCashflow: 0 },
+    ])
+    // TWRR = 1.20 * 0.90 - 1 = 1.08 - 1 = +8%
+    expect(res.twrr).toBe(8)
+  })
+
+  it('10. Empty TWRR periods handled gracefully', () => {
+    const res = calcTWRR([])
+    expect(res.twrr).toBe(0)
+  })
+})
+
+// ─── 5. Portfolio Risk & Return Ratios ──────────────────────────
+describe('calcRiskRatios', () => {
+  it('1. Sortino ratio uses only downside deviation below risk-free rate', () => {
+    const returns = [3, 4, 5, 2, 6, 1, 4, 5, 3, 4, 5, 2] // all positive monthly returns
+    const res = calcRiskRatios({
+      returns,
+      periodFrequency: 'monthly',
+      riskFreeRate: 6.0, // 0.5% per month
+    })
+    expect(res.sharpeRatio).toBeGreaterThan(0)
+    expect(res.sortinoRatio).toBeGreaterThan(0)
+    expect(res.downsideDeviationAnnualized).toBeLessThanOrEqual(res.totalVolatilityAnnualized)
+  })
+
+  it('2. When returns have upside skew, Sortino is significantly higher than Sharpe', () => {
+    // Strong positive months with mild drawdown
+    const returns = [10, 15, -1, 12, 8, -2, 14, 11, -1, 9, 13, -1]
+    const res = calcRiskRatios({
+      returns,
+      periodFrequency: 'monthly',
+      riskFreeRate: 6.0,
+    })
+    expect(res.sortinoRatio).toBeGreaterThan(res.sharpeRatio)
+  })
+
+  it('3. Zero volatility (all periodic returns identical) does not divide by zero', () => {
+    const returns = [2, 2, 2, 2, 2, 2]
+    const res = calcRiskRatios({
+      returns,
+      periodFrequency: 'monthly',
+      riskFreeRate: 6.0,
+    })
+    expect(Number.isFinite(res.sharpeRatio)).toBe(true)
+    expect(Number.isFinite(res.sortinoRatio)).toBe(true)
+  })
+
+  it('4. Negative excess return (underperforming risk-free) produces negative Sharpe', () => {
+    const returns = [0.1, 0.2, 0.1, 0.2, 0.1, 0.2] // annualized return = ~1.8% < 6.5% Rf
+    const res = calcRiskRatios({
+      returns,
+      periodFrequency: 'monthly',
+      riskFreeRate: 6.5,
+    })
+    expect(res.sharpeRatio).toBeLessThan(0)
+  })
+
+  it('5. Treynor ratio with beta provided calculates accurately', () => {
+    const returns = [2, 3, -1, 4, 1, 2, 3, -1, 2, 3, 1, 2]
+    const res = calcRiskRatios({
+      returns,
+      periodFrequency: 'monthly',
+      riskFreeRate: 6.0,
+      portfolioBeta: 1.2,
+    })
+    expect(res.treynorRatio).toBeDefined()
+    expect(Number.isFinite(res.treynorRatio!)).toBe(true)
+  })
+
+  it('6. Treynor ratio with beta = 0 handled gracefully without divide-by-zero blowup', () => {
+    const returns = [2, 3, 1, 2]
+    const res = calcRiskRatios({
+      returns,
+      periodFrequency: 'monthly',
+      riskFreeRate: 6.0,
+      portfolioBeta: 0,
+    })
+    expect(res.treynorRatio).toBeUndefined()
+  })
+
+  it('7. Max drawdown correctly identifies peak-to-trough drop', () => {
+    const returns = [10, -20, 5, 10]
+    const res = calcRiskRatios({ returns })
+    expect(res.maxDrawdown).toBeGreaterThan(15)
+  })
+
+  it('8. Win rate (% positive periods) computed accurately', () => {
+    const returns = [5, -2, 3, -1] // 2 positive out of 4 = 50%
+    const res = calcRiskRatios({ returns })
+    expect(res.positivePeriodsPercent).toBe(50)
+  })
+
+  it('9. Daily frequency applies 252 annualization factor', () => {
+    const returns = [0.1, 0.2, -0.05, 0.15, 0.1]
+    const resDaily = calcRiskRatios({ returns, periodFrequency: 'daily', riskFreeRate: 6 })
+    const resMonthly = calcRiskRatios({ returns, periodFrequency: 'monthly', riskFreeRate: 6 })
+    expect(resDaily.meanReturnAnnualized).toBeGreaterThan(resMonthly.meanReturnAnnualized)
+  })
+
+  it('10. Single period return array returns informative fallback', () => {
+    const res = calcRiskRatios({ returns: [5] })
+    expect(res.sharpeRatio).toBe(0)
+    expect(res.summary).toContain('at least 2 return periods')
+  })
+})
+
+// ─── 6. Black-Scholes Option Pricing & Greeks ──────────────────
+describe('calcBlackScholes', () => {
+  it('1. Deeply in-the-money call Delta approaches 1.0', () => {
+    const res = calcBlackScholes({
+      spotPrice: 28000,
+      strikePrice: 20000,
+      timeToExpiryDays: 30,
+      volatilityPercent: 15,
+      riskFreeRatePercent: 6.5,
+    })
+    expect(res.callGreeks.delta).toBeGreaterThan(0.95)
+    expect(res.callPrice).toBeGreaterThan(7900)
+  })
+
+  it('2. Deeply out-of-the-money call Delta approaches 0.0', () => {
+    const res = calcBlackScholes({
+      spotPrice: 20000,
+      strikePrice: 28000,
+      timeToExpiryDays: 30,
+      volatilityPercent: 15,
+      riskFreeRatePercent: 6.5,
+    })
+    expect(res.callGreeks.delta).toBeLessThan(0.05)
+    expect(res.callPrice).toBeLessThan(50)
+  })
+
+  it('3. Deeply in-the-money put Delta approaches -1.0', () => {
+    const res = calcBlackScholes({
+      spotPrice: 20000,
+      strikePrice: 28000,
+      timeToExpiryDays: 30,
+      volatilityPercent: 15,
+      riskFreeRatePercent: 6.5,
+    })
+    expect(res.putGreeks.delta).toBeLessThan(-0.95)
+  })
+
+  it('4. Put-Call Parity holds within floating point tolerance', () => {
+    const res = calcBlackScholes({
+      spotPrice: 24000,
+      strikePrice: 24000,
+      timeToExpiryDays: 45,
+      volatilityPercent: 18,
+      riskFreeRatePercent: 7.0,
+      dividendYieldPercent: 1.0,
+    })
+    expect(res.putCallParityCheck.holds).toBe(true)
+    expect(res.putCallParityCheck.difference).toBeLessThan(0.01)
+  })
+
+  it('5. Zero time-to-expiry (T = 0) converges to intrinsic value without NaN', () => {
+    const res = calcBlackScholes({
+      spotPrice: 24500,
+      strikePrice: 24000,
+      timeToExpiryDays: 0,
+      volatilityPercent: 20,
+      riskFreeRatePercent: 6.5,
+    })
+    expect(res.callPrice).toBe(500)
+    expect(res.putPrice).toBe(0)
+    expect(res.callGreeks.delta).toBe(1)
+  })
+
+  it('6. High implied volatility (200%) calculates valid non-NaN prices', () => {
+    const res = calcBlackScholes({
+      spotPrice: 100,
+      strikePrice: 100,
+      timeToExpiryDays: 30,
+      volatilityPercent: 200,
+      riskFreeRatePercent: 6.5,
+    })
+    expect(Number.isFinite(res.callPrice)).toBe(true)
+    expect(Number.isFinite(res.putPrice)).toBe(true)
+    expect(res.callPrice).toBeGreaterThan(0)
+  })
+
+  it('7. Gamma is identical for both Call and Put options at the same strike', () => {
+    const res = calcBlackScholes({
+      spotPrice: 24000,
+      strikePrice: 24200,
+      timeToExpiryDays: 20,
+      volatilityPercent: 16,
+      riskFreeRatePercent: 6.8,
+    })
+    expect(res.callGreeks.gamma).toBe(res.putGreeks.gamma)
+    expect(res.callGreeks.gamma).toBeGreaterThan(0)
+  })
+
+  it('8. Theta is negative for long options (time decay erosion)', () => {
+    const res = calcBlackScholes({
+      spotPrice: 24000,
+      strikePrice: 24000,
+      timeToExpiryDays: 30,
+      volatilityPercent: 18,
+      riskFreeRatePercent: 6.8,
+    })
+    expect(res.callGreeks.theta).toBeLessThan(0)
+    expect(res.putGreeks.theta).toBeLessThan(0)
+  })
+
+  it('9. Vega is strictly positive and identical for Call and Put', () => {
+    const res = calcBlackScholes({
+      spotPrice: 24000,
+      strikePrice: 24000,
+      timeToExpiryDays: 30,
+      volatilityPercent: 18,
+      riskFreeRatePercent: 6.8,
+    })
+    expect(res.callGreeks.vega).toBeGreaterThan(0)
+    expect(res.callGreeks.vega).toBe(res.putGreeks.vega)
+  })
+
+  it('10. At-the-money Call Delta is close to 0.5', () => {
+    const res = calcBlackScholes({
+      spotPrice: 24000,
+      strikePrice: 24000,
+      timeToExpiryDays: 15,
+      volatilityPercent: 14,
+      riskFreeRatePercent: 0,
+      dividendYieldPercent: 0,
+    })
+    expect(Math.abs(res.callGreeks.delta - 0.5)).toBeLessThan(0.05)
+  })
+})
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GROUP 2: TRADING & MARGIN UNIT TESTS (10 TESTS)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+describe('calcMarginRequired', () => {
+  it('1. Margin scales linearly with quantity (2 lots requires exactly 2x margin)', () => {
+    const oneLot = calcMarginRequired({ instrumentCategory: 'nifty_futures', lotSize: 50, numberOfLots: 1, price: 24000 })
+    const twoLots = calcMarginRequired({ instrumentCategory: 'nifty_futures', lotSize: 50, numberOfLots: 2, price: 24000 })
+    expect(twoLots.totalContractValue).toBe(oneLot.totalContractValue * 2)
+    expect(twoLots.totalMarginRequired).toBe(oneLot.totalMarginRequired * 2)
+  })
+
+  it('2. MTF interest correctly accrues over holding days', () => {
+    const res = calcMarginRequired({
+      instrumentCategory: 'tier1_equity',
+      lotSize: 100,
+      numberOfLots: 1,
+      price: 1000,
+      isMtfHolding: true,
+      mtfHoldingDays: 365,
+      mtfAnnualInterestRate: 12.0,
+    })
+    expect(res.isMtfHolding).toBe(true)
+    expect(res.mtfBorrowedAmount).toBe(res.totalContractValue - res.totalMarginRequired)
+    expect(res.mtfInterestCost).toBe(Math.round(res.mtfBorrowedAmount * 0.12))
+    expect(res.totalCapitalNeeded).toBe(res.totalMarginRequired + res.mtfInterestCost)
+  })
+
+  it('3. Non-MTF trade has zero MTF interest cost', () => {
+    const res = calcMarginRequired({ instrumentCategory: 'nifty_futures', lotSize: 50, numberOfLots: 1, price: 24000, isMtfHolding: false })
+    expect(res.mtfInterestCost).toBe(0)
+    expect(res.totalCapitalNeeded).toBe(res.totalMarginRequired)
+  })
+
+  it('4. Unknown instrument category falls back to custom/conservative default', () => {
+    // @ts-expect-error test fallback
+    const res = calcMarginRequired({ instrumentCategory: 'crypto_perpetual', lotSize: 10, numberOfLots: 1, price: 100 })
+    expect(res.instrumentCategory).toBe('custom')
+    expect(res.totalMarginRequired).toBeGreaterThan(0)
+  })
+
+  it('5. Nifty futures applies 10.5% SPAN + 2% Exposure = 12.5% margin (~8.0x leverage)', () => {
+    const res = calcMarginRequired({ instrumentCategory: 'nifty_futures', lotSize: 50, numberOfLots: 1, price: 20000 })
+    // Contract: 50 * 20000 = 10,00,000. Margin: 12.5% = 1,25,000. Leverage = 8.0x
+    expect(res.totalContractValue).toBe(1000000)
+    expect(res.totalMarginRequired).toBe(125000)
+    expect(res.effectiveLeverage).toBe(8.0)
+  })
+
+  it('6. Bank Nifty futures applies 12.5% SPAN + 2.5% Exposure = 15.0% margin', () => {
+    const res = calcMarginRequired({ instrumentCategory: 'banknifty_futures', lotSize: 15, numberOfLots: 1, price: 50000 })
+    // Contract: 15 * 50,000 = 7,50,000. Margin = 15% = 1,12,500
+    expect(res.totalMarginRequired).toBe(112500)
+    expect(res.effectiveLeverage).toBe(6.67)
+  })
+
+  it('7. Intraday MIS equity applies 20% margin cap (5.0x leverage)', () => {
+    const res = calcMarginRequired({ instrumentCategory: 'intraday_equity', lotSize: 100, numberOfLots: 1, price: 500 })
+    expect(res.totalMarginRequired).toBe(10000) // 20% of 50k
+    expect(res.effectiveLeverage).toBe(5.0)
+  })
+
+  it('8. Zero price yields ₹0 margin without error', () => {
+    const res = calcMarginRequired({ instrumentCategory: 'nifty_futures', lotSize: 50, numberOfLots: 1, price: 0 })
+    expect(res.totalContractValue).toBe(0)
+    expect(res.totalMarginRequired).toBe(0)
+    expect(res.effectiveLeverage).toBe(0)
+  })
+
+  it('9. Custom SPAN and exposure percentages override defaults correctly', () => {
+    const res = calcMarginRequired({
+      instrumentCategory: 'custom',
+      lotSize: 100,
+      numberOfLots: 1,
+      price: 1000,
+      customSpanPercent: 25,
+      customExposurePercent: 5,
+    })
+    expect(res.spanMarginPercent).toBe(25)
+    expect(res.exposureMarginPercent).toBe(5)
+    expect(res.totalMarginRequired).toBe(30000) // 30% of 100k
+  })
+
+  it('10. Disclaimer text is returned accurately', () => {
+    const res = calcMarginRequired({ instrumentCategory: 'nifty_futures', lotSize: 50, numberOfLots: 1, price: 24000 })
+    expect(res.disclaimer).toContain('Tax Year 2026-27')
+  })
+})
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GROUP 3: LOANS UNIT TESTS (20 TESTS)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+describe('calcCarTCO', () => {
+  it('1. Zero-loan (100% cash purchase) case still correctly sums fuel, insurance, and maintenance', () => {
+    const res = calcCarTCO({
+      carOnRoadPrice: 1000000,
+      downPayment: 1000000,
+      ownershipTenureYears: 5,
+      annualKmDriven: 10000,
+      fuelMileageKmpl: 15,
+      fuelPricePerLitre: 100,
+      annualInsuranceCost: 25000,
+      annualMaintenanceCost: 10000,
+      annualDepreciationPercent: 15,
+    })
+    expect(res.loanPrincipal).toBe(0)
+    expect(res.totalEmiPaid).toBe(0)
+    expect(res.totalLoanInterest).toBe(0)
+    expect(res.totalRunningCost).toBeGreaterThan(0)
+    expect(res.netTotalCostOfOwnership).toBeGreaterThan(0)
+  })
+
+  it('2. Depreciation never brings resale value below zero', () => {
+    const res = calcCarTCO({
+      carOnRoadPrice: 500000,
+      downPayment: 100000,
+      ownershipTenureYears: 20,
+      annualKmDriven: 15000,
+      fuelMileageKmpl: 12,
+      fuelPricePerLitre: 100,
+      annualInsuranceCost: 20000,
+      annualMaintenanceCost: 15000,
+      annualDepreciationPercent: 25,
+    })
+    expect(res.estimatedResaleValue).toBeGreaterThanOrEqual(0)
+  })
+
+  it('3. Ownership period longer than loan tenure stops counting EMI once loan is paid off', () => {
+    const res = calcCarTCO({
+      carOnRoadPrice: 1500000,
+      downPayment: 300000,
+      loanInterestRate: 9.0,
+      loanTenureYears: 3, // 3-year loan
+      ownershipTenureYears: 7, // 7-year ownership
+      annualKmDriven: 12000,
+      fuelMileageKmpl: 15,
+      fuelPricePerLitre: 100,
+      annualInsuranceCost: 30000,
+      annualMaintenanceCost: 15000,
+    })
+    expect(res.totalEmiPaid).toBe(res.monthlyEmi * 36) // strictly 36 months, not 84
+  })
+
+  it('4. Extreme depreciation (50%/yr) does not produce negative resale value', () => {
+    const res = calcCarTCO({
+      carOnRoadPrice: 1000000,
+      downPayment: 200000,
+      ownershipTenureYears: 5,
+      annualKmDriven: 10000,
+      fuelMileageKmpl: 15,
+      fuelPricePerLitre: 100,
+      annualInsuranceCost: 20000,
+      annualMaintenanceCost: 10000,
+      annualDepreciationPercent: 50,
+    })
+    expect(res.estimatedResaleValue).toBeGreaterThanOrEqual(0)
+  })
+
+  it('5. Cost per km scales with annual driving distance', () => {
+    const lowKm = calcCarTCO({
+      carOnRoadPrice: 1000000,
+      downPayment: 1000000,
+      ownershipTenureYears: 5,
+      annualKmDriven: 5000,
+      fuelMileageKmpl: 15,
+      fuelPricePerLitre: 100,
+      annualInsuranceCost: 20000,
+      annualMaintenanceCost: 10000,
+    })
+    const highKm = calcCarTCO({
+      carOnRoadPrice: 1000000,
+      downPayment: 1000000,
+      ownershipTenureYears: 5,
+      annualKmDriven: 25000,
+      fuelMileageKmpl: 15,
+      fuelPricePerLitre: 100,
+      annualInsuranceCost: 20000,
+      annualMaintenanceCost: 10000,
+    })
+    expect(highKm.totalFuelCost).toBeGreaterThan(lowKm.totalFuelCost)
+  })
+
+  it('6. Higher fuel mileage lowers total running cost', () => {
+    const lowMileage = calcCarTCO({
+      carOnRoadPrice: 1000000,
+      downPayment: 500000,
+      ownershipTenureYears: 5,
+      annualKmDriven: 15000,
+      fuelMileageKmpl: 10,
+      fuelPricePerLitre: 100,
+      annualInsuranceCost: 25000,
+      annualMaintenanceCost: 10000,
+    })
+    const highMileage = calcCarTCO({
+      carOnRoadPrice: 1000000,
+      downPayment: 500000,
+      ownershipTenureYears: 5,
+      annualKmDriven: 15000,
+      fuelMileageKmpl: 20,
+      fuelPricePerLitre: 100,
+      annualInsuranceCost: 25000,
+      annualMaintenanceCost: 10000,
+    })
+    expect(highMileage.totalFuelCost).toBe(lowMileage.totalFuelCost / 2)
+  })
+
+  it('7. Resale value decreases with ownership tenure', () => {
+    const yr3 = calcCarTCO({ carOnRoadPrice: 1000000, downPayment: 500000, ownershipTenureYears: 3, annualKmDriven: 10000, fuelMileageKmpl: 15, fuelPricePerLitre: 100, annualInsuranceCost: 20000, annualMaintenanceCost: 10000 })
+    const yr7 = calcCarTCO({ carOnRoadPrice: 1000000, downPayment: 500000, ownershipTenureYears: 7, annualKmDriven: 10000, fuelMileageKmpl: 15, fuelPricePerLitre: 100, annualInsuranceCost: 20000, annualMaintenanceCost: 10000 })
+    expect(yr3.estimatedResaleValue).toBeGreaterThan(yr7.estimatedResaleValue)
+  })
+
+  it('8. Effective monthly cost divides net TCO evenly across all ownership months', () => {
+    const res = calcCarTCO({ carOnRoadPrice: 1200000, downPayment: 300000, ownershipTenureYears: 5, annualKmDriven: 10000, fuelMileageKmpl: 15, fuelPricePerLitre: 100, annualInsuranceCost: 25000, annualMaintenanceCost: 12000 })
+    expect(res.effectiveMonthlyCost).toBe(Math.round(res.netTotalCostOfOwnership / 60))
+  })
+
+  it('9. Gross outflow is always strictly greater than net TCO when resale value is positive', () => {
+    const res = calcCarTCO({ carOnRoadPrice: 1000000, downPayment: 200000, ownershipTenureYears: 5, annualKmDriven: 12000, fuelMileageKmpl: 15, fuelPricePerLitre: 100, annualInsuranceCost: 30000, annualMaintenanceCost: 10000 })
+    expect(res.grossOutflow).toBeGreaterThan(res.netTotalCostOfOwnership)
+  })
+
+  it('10. Yearly breakdown table contains correct number of years', () => {
+    const res = calcCarTCO({ carOnRoadPrice: 1000000, downPayment: 200000, ownershipTenureYears: 6, annualKmDriven: 10000, fuelMileageKmpl: 15, fuelPricePerLitre: 100, annualInsuranceCost: 20000, annualMaintenanceCost: 10000 })
+    expect(res.yearlyBreakdown.length).toBe(6)
+  })
+})
+
+describe('calcBalanceTransfer', () => {
+  it('1. New rate higher than old rate is clearly flagged as NOT beneficial', () => {
+    const res = calcBalanceTransfer({
+      currentOutstandingPrincipal: 4000000,
+      currentInterestRate: 8.5,
+      currentRemainingTenureMonths: 180,
+      newInterestRate: 9.5,
+    })
+    expect(res.isBeneficial).toBe(false)
+    expect(res.netBenefit).toBeLessThan(0)
+    expect(res.recommendation).toContain('NOT recommended')
+  })
+
+  it('2. Switching costs exceeding total interest saved produces negative net benefit', () => {
+    const res = calcBalanceTransfer({
+      currentOutstandingPrincipal: 1000000,
+      currentInterestRate: 9.0,
+      currentRemainingTenureMonths: 12, // only 12 months left
+      newInterestRate: 8.9, // tiny 0.1% rate cut
+      processingFeeValue: 2.0, // heavy 2% fee = 20k
+      otherSwitchingCharges: 15000,
+    })
+    expect(res.isBeneficial).toBe(false)
+    expect(res.netBenefit).toBeLessThan(0)
+  })
+
+  it('3. Very short remaining tenure (e.g. 6 months) produces negative net benefit', () => {
+    const res = calcBalanceTransfer({
+      currentOutstandingPrincipal: 500000,
+      currentInterestRate: 9.5,
+      currentRemainingTenureMonths: 6,
+      newInterestRate: 8.5,
+      otherSwitchingCharges: 10000,
+    })
+    expect(res.isBeneficial).toBe(false)
+  })
+
+  it('4. Zero switching charges calculates pure interest savings', () => {
+    const res = calcBalanceTransfer({
+      currentOutstandingPrincipal: 5000000,
+      currentInterestRate: 9.5,
+      currentRemainingTenureMonths: 240,
+      newInterestRate: 8.5,
+      processingFeeValue: 0,
+      otherSwitchingCharges: 0,
+    })
+    expect(res.totalSwitchingCosts).toBe(0)
+    expect(res.netBenefit).toBe(res.grossInterestSavings)
+    expect(res.isBeneficial).toBe(true)
+  })
+
+  it('5. Percentage-based processing fee calculates accurately on outstanding principal', () => {
+    const res = calcBalanceTransfer({
+      currentOutstandingPrincipal: 6000000,
+      currentInterestRate: 9.5,
+      currentRemainingTenureMonths: 180,
+      newInterestRate: 8.5,
+      processingFeeType: 'percentage',
+      processingFeeValue: 0.5, // 0.5% of 60L = 30,000
+      otherSwitchingCharges: 10000,
+    })
+    expect(res.totalSwitchingCosts).toBe(40000)
+  })
+
+  it('6. Flat processing fee calculates accurately', () => {
+    const res = calcBalanceTransfer({
+      currentOutstandingPrincipal: 6000000,
+      currentInterestRate: 9.5,
+      currentRemainingTenureMonths: 180,
+      newInterestRate: 8.5,
+      processingFeeType: 'flat',
+      processingFeeValue: 10000,
+      otherSwitchingCharges: 5000,
+    })
+    expect(res.totalSwitchingCosts).toBe(15000)
+  })
+
+  it('7. Breakeven months calculation matches total switching fees divided by monthly EMI savings', () => {
+    const res = calcBalanceTransfer({
+      currentOutstandingPrincipal: 5000000,
+      currentInterestRate: 9.5,
+      currentRemainingTenureMonths: 240,
+      newInterestRate: 8.5,
+      processingFeeValue: 0.5,
+      otherSwitchingCharges: 10000,
+    })
+    expect(res.breakevenMonths).toBe(Math.ceil(res.totalSwitchingCosts / res.monthlyEmiSavings))
+  })
+
+  it('8. Lower interest rate with same tenure reduces both monthly EMI and total interest', () => {
+    const res = calcBalanceTransfer({
+      currentOutstandingPrincipal: 4000000,
+      currentInterestRate: 9.25,
+      currentRemainingTenureMonths: 180,
+      newInterestRate: 8.35,
+    })
+    expect(res.newMonthlyEmi).toBeLessThan(res.currentMonthlyEmi)
+    expect(res.newTotalInterest).toBeLessThan(res.currentTotalInterestRemaining)
+    expect(res.grossInterestSavings).toBeGreaterThan(0)
+  })
+
+  it('9. Zero principal returns ₹0 without crashing', () => {
+    const res = calcBalanceTransfer({
+      currentOutstandingPrincipal: 0,
+      currentInterestRate: 9.0,
+      currentRemainingTenureMonths: 120,
+      newInterestRate: 8.0,
+    })
+    expect(res.netBenefit).toBeLessThanOrEqual(0)
+  })
+
+  it('10. Clear recommendation returned for highly beneficial case', () => {
+    const res = calcBalanceTransfer({
+      currentOutstandingPrincipal: 7500000,
+      currentInterestRate: 9.8,
+      currentRemainingTenureMonths: 240,
+      newInterestRate: 8.4,
+    })
+    expect(res.isBeneficial).toBe(true)
+    expect(res.recommendation).toContain('Highly recommended')
+  })
+})
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GROUP 4: TAX & GLOBAL UNIT TESTS (40 TESTS)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+describe('calcMarginalRelief', () => {
+  it('1. Income ₹50,00,001 receives marginal relief so taxpayer does not pay more extra tax than extra income', () => {
+    const res = calcMarginalRelief({ grossTotalIncome: 5000001, regime: 'new' })
+    expect(res.applicableSurchargeRatePercent).toBe(10)
+    expect(res.hasMarginalRelief).toBe(true)
+    expect(res.marginalReliefAmount).toBeGreaterThan(0)
+  })
+
+  it('2. Income ₹1,00,00,001 receives marginal relief at 15% threshold', () => {
+    const res = calcMarginalRelief({ grossTotalIncome: 10000001, regime: 'new' })
+    expect(res.applicableSurchargeRatePercent).toBe(15)
+    expect(res.hasMarginalRelief).toBe(true)
+    expect(res.marginalReliefAmount).toBeGreaterThan(0)
+  })
+
+  it('3. Income ₹2,00,00,001 receives marginal relief at 25% threshold', () => {
+    const res = calcMarginalRelief({ grossTotalIncome: 20000001, regime: 'new' })
+    expect(res.applicableSurchargeRatePercent).toBe(25)
+    expect(res.hasMarginalRelief).toBe(true)
+    expect(res.marginalReliefAmount).toBeGreaterThan(0)
+  })
+
+  it('4. Income ₹5,00,00,001 in Old Regime evaluates 37% surcharge marginal relief', () => {
+    const res = calcMarginalRelief({ grossTotalIncome: 50000001, regime: 'old' })
+    expect(res.applicableSurchargeRatePercent).toBe(37)
+    expect(res.hasMarginalRelief).toBe(true)
+  })
+
+  it('5. Income well above threshold (₹70 Lakh) has 0 marginal relief and full 10% surcharge applies', () => {
+    const res = calcMarginalRelief({ grossTotalIncome: 7000000, regime: 'new' })
+    expect(res.applicableSurchargeRatePercent).toBe(10)
+    expect(res.hasMarginalRelief).toBe(false)
+    expect(res.marginalReliefAmount).toBe(0)
+  })
+
+  it('6. Income exactly at threshold (₹50 Lakh) has 0% surcharge and 0 marginal relief', () => {
+    const res = calcMarginalRelief({ grossTotalIncome: 5000000, regime: 'new' })
+    expect(res.applicableSurchargeRatePercent).toBe(0)
+    expect(res.hasMarginalRelief).toBe(false)
+  })
+
+  it('7. Surcharge capped at 25% for income above ₹5 Crore in New Regime', () => {
+    const res = calcMarginalRelief({ grossTotalIncome: 80000000, regime: 'new' })
+    expect(res.applicableSurchargeRatePercent).toBe(25)
+  })
+
+  it('8. Old Regime allows up to 37% surcharge for income above ₹5 Crore', () => {
+    const res = calcMarginalRelief({ grossTotalIncome: 80000000, regime: 'old' })
+    expect(res.applicableSurchargeRatePercent).toBe(37)
+  })
+
+  it('9. Health & Education Cess (4%) applies on base tax + net surcharge', () => {
+    const res = calcMarginalRelief({ grossTotalIncome: 6000000, regime: 'new' })
+    expect(res.healthAndEducationCess).toBe(Math.round((res.baseTax + res.netSurcharge) * 0.04))
+    expect(res.totalTaxPayable).toBe(res.baseTax + res.netSurcharge + res.healthAndEducationCess)
+  })
+
+  it('10. Effective tax rate is strictly below 45%', () => {
+    const res = calcMarginalRelief({ grossTotalIncome: 100000000, regime: 'new' })
+    expect(res.effectiveTaxRatePercent).toBeLessThan(45)
+  })
+})
+
+describe('calcLRSTCS', () => {
+  it('1. Exactly at ₹7 Lakh threshold for general investment yields ₹0 TCS', () => {
+    const res = calcLRSTCS({ category: 'general_investment', remittanceAmountInr: 700000 })
+    expect(res.totalTcsDeducted).toBe(0)
+    expect(res.totalOutflowInr).toBe(700000)
+  })
+
+  it('2. General investment amount split across threshold applies 20% only to portion above ₹7L', () => {
+    // 10L: 7L @ 0%, 3L @ 20% = ₹60,000 TCS
+    const res = calcLRSTCS({ category: 'general_investment', remittanceAmountInr: 1000000 })
+    expect(res.tier1Tcs).toBe(0)
+    expect(res.tier2Tcs).toBe(60000)
+    expect(res.totalTcsDeducted).toBe(60000)
+    expect(res.totalOutflowInr).toBe(1060000)
+  })
+
+  it('3. Overseas tour package applies 2-tier structure (5% up to ₹7L + 20% above ₹7L)', () => {
+    // 12L: 7L @ 5% (35,000) + 5L @ 20% (1,00,000) = ₹1,35,000 TCS
+    const res = calcLRSTCS({ category: 'overseas_tour_package', remittanceAmountInr: 1200000 })
+    expect(res.tier1Tcs).toBe(35000)
+    expect(res.tier2Tcs).toBe(100000)
+    expect(res.totalTcsDeducted).toBe(135000)
+    expect(res.totalOutflowInr).toBe(1335000)
+  })
+
+  it('4. Overseas tour package within ₹7 Lakh applies flat 5% TCS', () => {
+    const res = calcLRSTCS({ category: 'overseas_tour_package', remittanceAmountInr: 500000 })
+    expect(res.totalTcsDeducted).toBe(25000) // 5% of 5L
+  })
+
+  it('5. Education remittance via loan applies 0.5% only on amount above ₹7 Lakh', () => {
+    // 20L loan: 7L @ 0%, 13L @ 0.5% = ₹6,500 TCS
+    const res = calcLRSTCS({ category: 'education_loan', remittanceAmountInr: 2000000 })
+    expect(res.totalTcsDeducted).toBe(6500)
+  })
+
+  it('6. Education self-funded applies 5% only on amount above ₹7 Lakh', () => {
+    // 15L: 7L @ 0%, 8L @ 5% = ₹40,000 TCS
+    const res = calcLRSTCS({ category: 'education_self', remittanceAmountInr: 1500000 })
+    expect(res.totalTcsDeducted).toBe(40000)
+  })
+
+  it('7. Medical remittance applies 5% only on amount above ₹7 Lakh', () => {
+    const res = calcLRSTCS({ category: 'medical_treatment', remittanceAmountInr: 1000000 })
+    expect(res.totalTcsDeducted).toBe(15000) // 5% of 3L
+  })
+
+  it('8. Missing PAN applies higher 20% TCS across all slabs', () => {
+    const res = calcLRSTCS({ category: 'general_investment', remittanceAmountInr: 500000, panAvailable: false })
+    expect(res.totalTcsDeducted).toBe(100000) // 20% of 5L
+  })
+
+  it('9. TCS is flagged as 100% claimable credit in annual ITR', () => {
+    const res = calcLRSTCS({ category: 'general_investment', remittanceAmountInr: 1000000 })
+    expect(res.isTcsCreditClaimable).toBe(true)
+    expect(res.tcsCreditNote).toContain('Form 26AS')
+  })
+
+  it('10. Zero remittance amount produces ₹0 TCS and ₹0 outflow', () => {
+    const res = calcLRSTCS({ category: 'general_investment', remittanceAmountInr: 0 })
+    expect(res.totalTcsDeducted).toBe(0)
+    expect(res.totalOutflowInr).toBe(0)
+  })
+})
+
+describe('calcUSStockReturn', () => {
+  it('1. Currency depreciation (INR weaker at sale, 84 -> 88) adds to INR returns', () => {
+    const res = calcUSStockReturn({
+      investmentAmountInr: 840000, // $10,000
+      purchaseUsdInrRate: 84,
+      saleUsdInrRate: 88,
+      capitalGainUsd: 0,
+      dividendIncomeUsd: 0,
+      holdingMonths: 12,
+    })
+    expect(res.currencyGainLossInr).toBe(40000) // $10,000 * 4 INR/USD
+    expect(res.netProceedsInr).toBe(880000)
+  })
+
+  it('2. Currency appreciation (INR stronger, 88 -> 84) reduces INR returns', () => {
+    const res = calcUSStockReturn({
+      investmentAmountInr: 880000,
+      purchaseUsdInrRate: 88,
+      saleUsdInrRate: 84,
+      capitalGainUsd: 0,
+      dividendIncomeUsd: 0,
+      holdingMonths: 12,
+    })
+    expect(res.currencyGainLossInr).toBe(-40000)
+    expect(res.netProceedsInr).toBe(840000)
+  })
+
+  it('3. US 25% dividend withholding tax is credited against Indian tax via Section 90 FTC', () => {
+    const res = calcUSStockReturn({
+      investmentAmountInr: 100000,
+      purchaseUsdInrRate: 85,
+      saleUsdInrRate: 85,
+      capitalGainUsd: 0,
+      dividendIncomeUsd: 100, // $100 * 85 = ₹8,500
+      holdingMonths: 12,
+      usDividendWithholdingTaxPercent: 25, // ₹2,125
+      userTaxBracketPercent: 30, // Indian tax: ₹2,550
+    })
+    expect(res.usWithholdingTaxInr).toBe(2125)
+    expect(res.foreignTaxCreditInr).toBe(2125) // 100% credited
+    expect(res.indianDividendTaxNet).toBe(425) // 2550 - 2125 = 425
+  })
+
+  it('4. Zero currency movement isolates pure stock return', () => {
+    const res = calcUSStockReturn({
+      investmentAmountInr: 850000, // $10,000
+      purchaseUsdInrRate: 85,
+      saleUsdInrRate: 85,
+      capitalGainUsd: 2000, // $2,000 gain
+      dividendIncomeUsd: 0,
+      holdingMonths: 24, // LTCG 12.5%
+    })
+    expect(res.currencyGainLossInr).toBe(0)
+    expect(res.stockCapitalGainInr).toBe(170000) // $2k * 85
+    expect(res.indianCapitalGainsTax).toBe(Math.round(170000 * 0.125))
+  })
+
+  it('5. Long-term holding (≥24 months) applies 12.5% LTCG rate', () => {
+    const res = calcUSStockReturn({ investmentAmountInr: 500000, purchaseUsdInrRate: 85, saleUsdInrRate: 85, capitalGainUsd: 1000, holdingMonths: 24 })
+    expect(res.isLongTerm).toBe(true)
+    expect(res.applicableCapitalGainsRatePercent).toBe(12.5)
+  })
+
+  it('6. Short-term holding (<24 months) applies slab tax rate', () => {
+    const res = calcUSStockReturn({ investmentAmountInr: 500000, purchaseUsdInrRate: 85, saleUsdInrRate: 85, capitalGainUsd: 1000, holdingMonths: 12, userTaxBracketPercent: 30 })
+    expect(res.isLongTerm).toBe(false)
+    expect(res.applicableCapitalGainsRatePercent).toBe(30)
+  })
+
+  it('7. Negative capital gain in USD reduces total proceeds without negative tax', () => {
+    const res = calcUSStockReturn({ investmentAmountInr: 500000, purchaseUsdInrRate: 85, saleUsdInrRate: 85, capitalGainUsd: -500, holdingMonths: 12 })
+    expect(res.indianCapitalGainsTax).toBe(0)
+    expect(res.netProceedsInr).toBeLessThan(500000)
+  })
+
+  it('8. Zero dividend income handled cleanly', () => {
+    const res = calcUSStockReturn({ investmentAmountInr: 500000, purchaseUsdInrRate: 85, saleUsdInrRate: 85, capitalGainUsd: 500, dividendIncomeUsd: 0, holdingMonths: 12 })
+    expect(res.grossDividendInr).toBe(0)
+    expect(res.usWithholdingTaxInr).toBe(0)
+  })
+
+  it('9. Gross proceeds in USD converts accurately to INR at sale rate', () => {
+    const res = calcUSStockReturn({ investmentAmountInr: 800000, purchaseUsdInrRate: 80, saleUsdInrRate: 90, capitalGainUsd: 1000, holdingMonths: 12 })
+    // Initial: $10,000. Capital Gain: $1,000. Total: $11,000. In INR @ 90 = ₹9,90,000
+    expect(res.grossProceedsInr).toBe(990000)
+  })
+
+  it('10. Annualized CAGR return calculated over exact holding duration', () => {
+    const res = calcUSStockReturn({ investmentAmountInr: 100000, purchaseUsdInrRate: 80, saleUsdInrRate: 80, capitalGainUsd: 250, holdingMonths: 24 })
+    expect(res.annualizedReturnCagr).toBeGreaterThan(0)
+  })
+})
+
+describe('calcNRIDepositReturns', () => {
+  it('1. NRE deposit is 100% tax-free with ₹0 tax deducted', () => {
+    const res = calcNRIDepositReturns({ depositAmount: 1000000, tenureMonths: 36, nreInterestRatePercent: 7.1, nroInterestRatePercent: 7.3, fcnrInterestRatePercent: 5.5 })
+    expect(res.nreResult.taxDeducted).toBe(0)
+    expect(res.nreResult.isTaxFreeInIndia).toBe(true)
+    expect(res.nreResult.effectivePostTaxInterest).toBe(res.nreResult.interestEarnedPreTax)
+  })
+
+  it('2. FCNR deposit is 100% tax-free with ₹0 tax deducted', () => {
+    const res = calcNRIDepositReturns({ depositAmount: 1000000, tenureMonths: 36, nreInterestRatePercent: 7.1, nroInterestRatePercent: 7.3, fcnrInterestRatePercent: 5.5 })
+    expect(res.fcnrResult.taxDeducted).toBe(0)
+    expect(res.fcnrResult.isTaxFreeInIndia).toBe(true)
+  })
+
+  it('3. NRO deposit correctly has 31.2% TDS deducted from pre-tax interest', () => {
+    const res = calcNRIDepositReturns({ depositAmount: 1000000, tenureMonths: 12, nreInterestRatePercent: 7.0, nroInterestRatePercent: 7.0, fcnrInterestRatePercent: 5.0, nroTdsRatePercent: 31.2, compoundingFrequency: 'annual' })
+    // Pre-tax interest: 70,000. TDS: 31.2% of 70k = 21,840. Net interest: 48,160.
+    expect(res.nroResult.interestEarnedPreTax).toBe(70000)
+    expect(res.nroResult.taxDeducted).toBe(21840)
+    expect(res.nroResult.effectivePostTaxInterest).toBe(48160)
+  })
+
+  it('4. DTAA-reduced NRO TDS rate (15%) correctly reduces TDS from default', () => {
+    const res = calcNRIDepositReturns({ depositAmount: 1000000, tenureMonths: 12, nreInterestRatePercent: 7.0, nroInterestRatePercent: 7.0, fcnrInterestRatePercent: 5.0, nroTdsRatePercent: 15.0, compoundingFrequency: 'annual' })
+    expect(res.nroResult.taxDeducted).toBe(10500) // 15% of 70k
+  })
+
+  it('5. NRE and FCNR are flagged as fully repatriable, NRO flagged with limits', () => {
+    const res = calcNRIDepositReturns({ depositAmount: 1000000, tenureMonths: 36, nreInterestRatePercent: 7.1, nroInterestRatePercent: 7.3, fcnrInterestRatePercent: 5.5 })
+    expect(res.nreResult.isFullyRepatriable).toBe(true)
+    expect(res.fcnrResult.isFullyRepatriable).toBe(true)
+    expect(res.nroResult.isFullyRepatriable).toBe(false)
+  })
+
+  it('6. Quarterly compounding generates higher maturity than simple annual interest', () => {
+    const quarterly = calcNRIDepositReturns({ depositAmount: 1000000, tenureMonths: 36, nreInterestRatePercent: 7.0, nroInterestRatePercent: 7.0, fcnrInterestRatePercent: 5.0, compoundingFrequency: 'quarterly' })
+    const annual = calcNRIDepositReturns({ depositAmount: 1000000, tenureMonths: 36, nreInterestRatePercent: 7.0, nroInterestRatePercent: 7.0, fcnrInterestRatePercent: 5.0, compoundingFrequency: 'annual' })
+    expect(quarterly.nreResult.maturityAmount).toBeGreaterThan(annual.nreResult.maturityAmount)
+  })
+
+  it('7. FCNR currency note correctly highlights foreign currency protection', () => {
+    const res = calcNRIDepositReturns({ depositAmount: 1000000, tenureMonths: 36, nreInterestRatePercent: 7.1, nroInterestRatePercent: 7.3, fcnrInterestRatePercent: 5.5 })
+    expect(res.fcnrResult.notes).toContain('eliminates INR currency depreciation')
+  })
+
+  it('8. Zero tenure handled without division by zero', () => {
+    const res = calcNRIDepositReturns({ depositAmount: 1000000, tenureMonths: 0, nreInterestRatePercent: 7.1, nroInterestRatePercent: 7.3, fcnrInterestRatePercent: 5.5 })
+    expect(res.nreResult.maturityAmount).toBeGreaterThanOrEqual(1000000)
+  })
+
+  it('9. Side-by-side comparison array contains all 3 deposit types', () => {
+    const res = calcNRIDepositReturns({ depositAmount: 1000000, tenureMonths: 36, nreInterestRatePercent: 7.1, nroInterestRatePercent: 7.3, fcnrInterestRatePercent: 5.5 })
+    expect(res.sideBySideComparison.length).toBe(3)
+  })
+
+  it('10. Best option recommendation chooses highest post-tax yield', () => {
+    const res = calcNRIDepositReturns({ depositAmount: 1000000, tenureMonths: 36, nreInterestRatePercent: 7.5, nroInterestRatePercent: 7.5, fcnrInterestRatePercent: 5.5 })
+    expect(res.bestOption).toContain('NRE Fixed Deposit offers the highest post-tax return')
+  })
+})
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GROUP 5: RETIREMENT UNIT TESTS (10 TESTS)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+describe('calcNPS', () => {
+  it('1. Allocation percentages that do not sum to 100% are rejected with error message', () => {
+    const res = calcNPS({ currentAge: 30, monthlyContribution: 10000, equityAllocationPercent: 50, corporateDebtAllocationPercent: 30, govtBondsAllocationPercent: 10 }) // 90%
+    expect(res.isValid).toBe(false)
+    expect(res.errorMessage).toContain('must sum to exactly 100%')
+  })
+
+  it('2. 60/40 lump-sum / annuity split applied correctly regardless of corpus size', () => {
+    const res = calcNPS({ currentAge: 30, retirementAge: 60, monthlyContribution: 10000, equityAllocationPercent: 50, corporateDebtAllocationPercent: 30, govtBondsAllocationPercent: 20 })
+    expect(res.isValid).toBe(true)
+    expect(res.lumpSumTaxFreeAmount).toBe(Math.round(res.totalAccumulatedCorpus * 0.60))
+    expect(res.annuityPurchasedAmount).toBe(Math.round(res.totalAccumulatedCorpus * 0.40))
+  })
+
+  it('3. Section 80CCD(1B) extra ₹50,000 tax deduction is capped at actual contribution', () => {
+    const smallContribution = calcNPS({ currentAge: 30, monthlyContribution: 2000, equityAllocationPercent: 50, corporateDebtAllocationPercent: 30, govtBondsAllocationPercent: 20, taxBracketPercent: 30 }) // ₹24,000/yr
+    const largeContribution = calcNPS({ currentAge: 30, monthlyContribution: 10000, equityAllocationPercent: 50, corporateDebtAllocationPercent: 30, govtBondsAllocationPercent: 20, taxBracketPercent: 30 }) // ₹1,20,000/yr
+    expect(smallContribution.annualTaxSavedUnder80CCD).toBe(Math.round(24000 * 0.30)) // 7,200
+    expect(largeContribution.annualTaxSavedUnder80CCD).toBe(Math.round(50000 * 0.30)) // 15,000 capped
+  })
+
+  it('4. Monthly pension calculated using assumed annuity yield rate', () => {
+    const res = calcNPS({ currentAge: 30, retirementAge: 60, monthlyContribution: 10000, equityAllocationPercent: 50, corporateDebtAllocationPercent: 30, govtBondsAllocationPercent: 20, assumedAnnuityYieldPercent: 6.0 })
+    expect(res.estimatedMonthlyPension).toBe(Math.round((res.annuityPurchasedAmount * 0.06) / 12))
+  })
+
+  it('5. Younger starting age generates massive compounding advantage over older starting age', () => {
+    const age25 = calcNPS({ currentAge: 25, retirementAge: 60, monthlyContribution: 10000, equityAllocationPercent: 50, corporateDebtAllocationPercent: 30, govtBondsAllocationPercent: 20 })
+    const age45 = calcNPS({ currentAge: 45, retirementAge: 60, monthlyContribution: 10000, equityAllocationPercent: 50, corporateDebtAllocationPercent: 30, govtBondsAllocationPercent: 20 })
+    expect(age25.totalAccumulatedCorpus).toBeGreaterThan(age45.totalAccumulatedCorpus * 3)
+  })
+
+  it('6. Blended return matches weighted sum of asset classes', () => {
+    const res = calcNPS({ currentAge: 30, monthlyContribution: 10000, equityAllocationPercent: 50, corporateDebtAllocationPercent: 30, govtBondsAllocationPercent: 20, expectedEquityReturnPercent: 12, expectedCorpDebtReturnPercent: 9, expectedGovtBondReturnPercent: 7 })
+    // 0.5 * 12 + 0.3 * 9 + 0.2 * 7 = 6 + 2.7 + 1.4 = 10.1%
+    expect(res.blendedExpectedReturnPercent).toBe(10.1)
+  })
+
+  it('7. 100% Equity allocation yields pure equity return', () => {
+    const res = calcNPS({ currentAge: 30, monthlyContribution: 10000, equityAllocationPercent: 100, corporateDebtAllocationPercent: 0, govtBondsAllocationPercent: 0, expectedEquityReturnPercent: 14.0 })
+    expect(res.blendedExpectedReturnPercent).toBe(14.0)
+  })
+
+  it('8. Retirement age equal to current age is adjusted defensively', () => {
+    const res = calcNPS({ currentAge: 60, retirementAge: 60, monthlyContribution: 10000, equityAllocationPercent: 50, corporateDebtAllocationPercent: 30, govtBondsAllocationPercent: 20 })
+    expect(res.isValid).toBe(true)
+    expect(res.totalYearsInvested).toBeGreaterThanOrEqual(1)
+  })
+
+  it('9. Yearly progression table accurately tracks year-by-year accumulation', () => {
+    const res = calcNPS({ currentAge: 30, retirementAge: 60, monthlyContribution: 10000, equityAllocationPercent: 50, corporateDebtAllocationPercent: 30, govtBondsAllocationPercent: 20 })
+    expect(res.yearlyProgression.length).toBe(30)
+    expect(res.yearlyProgression[29].accumulatedCorpus).toBe(res.totalAccumulatedCorpus)
+  })
+
+  it('10. Lifetime tax savings computed accurately over total investment years', () => {
+    const res = calcNPS({ currentAge: 30, retirementAge: 60, monthlyContribution: 10000, equityAllocationPercent: 50, corporateDebtAllocationPercent: 30, govtBondsAllocationPercent: 20, taxBracketPercent: 30 })
+    expect(res.lifetimeTaxSaved).toBe(res.annualTaxSavedUnder80CCD * 30)
   })
 })
 

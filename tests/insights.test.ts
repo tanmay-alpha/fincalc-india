@@ -22,6 +22,20 @@ import {
   getPresumptiveTaxInsights,
   getPositionSizeInsights,
   getSection54Insights,
+  getDCFInsights,
+  getWACCInsights,
+  getDuPontInsights,
+  getXIRRInsights,
+  getRiskRatiosInsights,
+  getBlackScholesInsights,
+  getMarginRequiredInsights,
+  getCarTCOInsights,
+  getBalanceTransferInsights,
+  getMarginalReliefInsights,
+  getLRSTCSInsights,
+  getUSStockReturnInsights,
+  getNRIDepositInsights,
+  getNPSInsights,
 } from "../lib/insights";
 import {
   calcSIP,
@@ -42,6 +56,20 @@ import {
   calcPresumptiveTax,
   calcPositionSize,
   calcSection54Exemption,
+  calcDCF,
+  calcWACC,
+  calcDuPont,
+  calcXIRR,
+  calcRiskRatios,
+  calcBlackScholes,
+  calcMarginRequired,
+  calcCarTCO,
+  calcBalanceTransfer,
+  calcMarginalRelief,
+  calcLRSTCS,
+  calcUSStockReturn,
+  calcNRIDepositReturns,
+  calcNPS,
 } from "../lib/math";
 
 describe("Insights & Suggestions Engine", () => {
@@ -198,5 +226,171 @@ describe("Insights & Suggestions Engine", () => {
     const insights = getSection54Insights(res);
     expect(insights.length).toBeGreaterThanOrEqual(2);
     expect(insights[0].title).toContain("Tax Saved");
+  });
+
+  it("generates DCF Valuation insights", () => {
+    const res = calcDCF({
+      cashFlowYear1: 10000000,
+      forecastYears: 5,
+      growthRateYears1to5: 15,
+      terminalGrowthRate: 4.5,
+      discountRate: 11.5,
+    });
+    const insights = getDCFInsights(res);
+    expect(insights.length).toBeGreaterThanOrEqual(2);
+    expect(insights[0].title).toContain("Intrinsic Value");
+  });
+
+  it("generates WACC insights", () => {
+    const res = calcWACC({
+      marketValueOfEquity: 70000000,
+      marketValueOfDebt: 30000000,
+      costOfEquity: 14.0,
+      preTaxCostOfDebt: 9.0,
+      taxRate: 25.0,
+    });
+    const insights = getWACCInsights(res);
+    expect(insights.length).toBeGreaterThanOrEqual(2);
+    expect(insights[0].title).toContain("WACC");
+  });
+
+  it("generates DuPont Analysis insights", () => {
+    const res = calcDuPont({
+      netIncome: 15000000,
+      revenue: 100000000,
+      totalAssets: 80000000,
+      totalEquity: 50000000,
+    });
+    const insights = getDuPontInsights(res);
+    expect(insights.length).toBeGreaterThanOrEqual(2);
+    expect(insights[0].title).toContain("Reported ROE");
+  });
+
+  it("generates XIRR insights", () => {
+    const res = calcXIRR([
+      { date: "2023-01-01", amount: -100000 },
+      { date: "2024-01-01", amount: -100000 },
+      { date: "2025-01-01", amount: 250000 },
+    ]);
+    const insights = getXIRRInsights(res);
+    expect(insights.length).toBeGreaterThanOrEqual(2);
+    expect(insights[0].title).toContain("XIRR");
+  });
+
+  it("generates Portfolio Risk Ratios insights", () => {
+    const res = calcRiskRatios({
+      returns: [12, -4, 18, 8, -2, 22, 14, -6, 16, 10],
+      riskFreeRate: 6.5,
+    });
+    const insights = getRiskRatiosInsights(res);
+    expect(insights.length).toBeGreaterThanOrEqual(2);
+    expect(insights[0].title).toContain("Sharpe");
+  });
+
+  it("generates Black-Scholes Greeks insights", () => {
+    const res = calcBlackScholes({
+      spotPrice: 24000,
+      strikePrice: 24000,
+      timeToExpiryDays: 30,
+      volatilityPercent: 15,
+      riskFreeRatePercent: 6.5,
+    });
+    const insights = getBlackScholesInsights(res);
+    expect(insights.length).toBeGreaterThanOrEqual(2);
+    expect(insights[0].title).toContain("Call");
+  });
+
+  it("generates Margin Required insights", () => {
+    const res = calcMarginRequired({
+      instrumentCategory: "nifty_futures",
+      lotSize: 50,
+      numberOfLots: 1,
+      price: 24000,
+    });
+    const insights = getMarginRequiredInsights(res);
+    expect(insights.length).toBeGreaterThanOrEqual(2);
+    expect(insights[0].title).toContain("Total Margin");
+  });
+
+  it("generates Car Loan TCO insights", () => {
+    const res = calcCarTCO({
+      carOnRoadPrice: 1500000,
+      downPayment: 300000,
+      ownershipTenureYears: 5,
+    });
+    const insights = getCarTCOInsights(res);
+    expect(insights.length).toBeGreaterThanOrEqual(2);
+    expect(insights[0].title).toContain("Cost of Ownership");
+  });
+
+  it("generates Home Loan Balance Transfer insights", () => {
+    const res = calcBalanceTransfer({
+      currentOutstandingPrincipal: 5000000,
+      currentInterestRate: 9.5,
+      currentRemainingTenureMonths: 180,
+      newInterestRate: 8.4,
+    });
+    const insights = getBalanceTransferInsights(res);
+    expect(insights.length).toBeGreaterThanOrEqual(2);
+    expect(insights[0].title).toContain("Save");
+  });
+
+  it("generates Marginal Relief insights", () => {
+    const res = calcMarginalRelief({
+      grossTotalIncome: 5050000,
+      regime: "new",
+    });
+    const insights = getMarginalReliefInsights(res);
+    expect(insights.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("generates LRS TCS insights", () => {
+    const res = calcLRSTCS({
+      category: "general_investment",
+      remittanceAmountInr: 1000000,
+    });
+    const insights = getLRSTCSInsights(res);
+    expect(insights.length).toBeGreaterThanOrEqual(2);
+    expect(insights[0].title).toContain("Total TCS");
+  });
+
+  it("generates US Stock Return insights", () => {
+    const res = calcUSStockReturn({
+      investmentAmountInr: 800000,
+      purchaseUsdInrRate: 80,
+      saleUsdInrRate: 88,
+      capitalGainUsd: 2000,
+      holdingMonths: 24,
+    });
+    const insights = getUSStockReturnInsights(res);
+    expect(insights.length).toBeGreaterThanOrEqual(2);
+    expect(insights[0].title).toContain("Net Proceeds");
+  });
+
+  it("generates NRI Deposits insights", () => {
+    const res = calcNRIDepositReturns({
+      depositAmount: 1000000,
+      tenureMonths: 36,
+      nreInterestRatePercent: 7.1,
+      nroInterestRatePercent: 7.3,
+      fcnrInterestRatePercent: 5.5,
+    });
+    const insights = getNRIDepositInsights(res);
+    expect(insights.length).toBeGreaterThanOrEqual(2);
+    expect(insights[0].title).toContain("Best Choice");
+  });
+
+  it("generates NPS Retirement insights", () => {
+    const res = calcNPS({
+      currentAge: 30,
+      retirementAge: 60,
+      monthlyContribution: 10000,
+      equityAllocationPercent: 50,
+      corporateDebtAllocationPercent: 30,
+      govtBondsAllocationPercent: 20,
+    });
+    const insights = getNPSInsights(res);
+    expect(insights.length).toBeGreaterThanOrEqual(2);
+    expect(insights[0].title).toContain("Retirement Corpus");
   });
 });

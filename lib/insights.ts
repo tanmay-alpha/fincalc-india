@@ -17,6 +17,20 @@ import type {
   PresumptiveTaxOutput,
   PositionSizeOutput,
   Section54ExemptionOutput,
+  DcfOutput,
+  WaccOutput,
+  DuPontOutput,
+  XirrOutput,
+  RiskRatiosOutput,
+  BlackScholesOutput,
+  MarginRequiredOutput,
+  CarTCOOutput,
+  BalanceTransferOutput,
+  MarginalReliefOutput,
+  LrsTcsOutput,
+  USStockReturnOutput,
+  NRIDepositOutput,
+  NPSOutput,
 } from "./math";
 import { formatCompact, formatINR, formatPercent } from "./format";
 
@@ -441,6 +455,284 @@ export function getSection54Insights(r: Section54ExemptionOutput): InsightItem[]
       title: `Remaining Taxable LTCG: ${formatINR(r.activeResult.taxableGainsRemaining)}`,
       subtitle: `Net Tax Payable: ${formatINR(r.activeResult.taxAfterExemption)}`,
       type: "info",
+    },
+  ];
+}
+
+// ─── CFA & INVESTMENT ANALYTICS INSIGHTS ───────────────────────
+
+export function getDCFInsights(r: DcfOutput): InsightItem[] {
+  if (!r.isValid) {
+    return [
+      {
+        icon: "⚠️",
+        title: "Invalid DCF Parameters",
+        subtitle: r.errorMessage || "Check discount rate and terminal growth",
+        type: "warning",
+      },
+    ];
+  }
+  return [
+    {
+      icon: "💎",
+      title: `Intrinsic Value: ₹${r.intrinsicValuePerShare.toLocaleString("en-IN")}/share`,
+      subtitle: `Enterprise Value: ${formatINR(r.enterpriseValue)} | Equity Value: ${formatINR(r.equityValue)}`,
+      type: "good",
+    },
+    {
+      icon: "📊",
+      title: `Terminal Value Weight: ${r.terminalValuePercentageOfEV}% of EV`,
+      subtitle: `Discount Rate (WACC): ${r.discountRate}% | Terminal Growth: ${r.terminalGrowthRate}%`,
+      type: "info",
+    },
+  ];
+}
+
+export function getWACCInsights(r: WaccOutput): InsightItem[] {
+  return [
+    {
+      icon: "⚖️",
+      title: `WACC: ${r.wacc}% p.a.`,
+      subtitle: `Equity Weight: ${r.weightOfEquity}% @ ${r.costOfEquity}% | Debt Weight: ${r.weightOfDebt}% @ ${r.afterTaxCostOfDebt}%`,
+      type: "good",
+    },
+    {
+      icon: "🛡️",
+      title: `Tax Shield Benefit: ${r.taxShieldBenefit}%`,
+      subtitle: `Pre-Tax Cost of Debt: ${r.preTaxCostOfDebt}% reduced by ${r.taxRate}% tax rate`,
+      type: "info",
+    },
+  ];
+}
+
+export function getDuPontInsights(r: DuPontOutput): InsightItem[] {
+  return [
+    {
+      icon: "📈",
+      title: `Reported ROE: ${r.reportedRoe}%`,
+      subtitle: `Net Profit Margin (${r.threeStep.netProfitMargin}%) × Asset Turnover (${r.threeStep.assetTurnover}x) × Leverage (${r.threeStep.financialLeverage}x)`,
+      type: "good",
+    },
+    {
+      icon: "🔍",
+      title: `Primary Value Driver: ${r.primaryDriver.toUpperCase()}`,
+      subtitle: r.driverAnalysis,
+      type: "info",
+    },
+  ];
+}
+
+export function getXIRRInsights(r: XirrOutput): InsightItem[] {
+  if (!r.isValid) {
+    return [
+      {
+        icon: "⚠️",
+        title: "XIRR Solver Notice",
+        subtitle: r.errorMessage || "Requires valid positive & negative cash flows",
+        type: "warning",
+      },
+    ];
+  }
+  return [
+    {
+      icon: "🚀",
+      title: `Annualized Return (XIRR): ${r.xirr}% p.a.`,
+      subtitle: `Total Invested: ${formatINR(r.totalInvested)} | Current/Withdrawn: ${formatINR(r.totalWithdrawn)}`,
+      type: "good",
+    },
+    {
+      icon: "📅",
+      title: `Absolute Gain: ${formatINR(r.netGain)} (${r.absoluteGainPercent}%)`,
+      subtitle: `Investment horizon: ${r.durationYears} years (${r.firstDate} to ${r.lastDate})`,
+      type: "info",
+    },
+  ];
+}
+
+export function getRiskRatiosInsights(r: RiskRatiosOutput): InsightItem[] {
+  return [
+    {
+      icon: "🎯",
+      title: `Sharpe: ${r.sharpeRatio} | Sortino: ${r.sortinoRatio}`,
+      subtitle: `Annual Volatility: ${r.totalVolatilityAnnualized}% | Downside Dev: ${r.downsideDeviationAnnualized}%`,
+      type: r.sharpeRatio > 1 ? "good" : "info",
+    },
+    {
+      icon: "🛡️",
+      title: `Max Drawdown: -${r.maxDrawdown}%`,
+      subtitle: `Positive Periods: ${r.positivePeriodsPercent}% across ${r.periodCount} observations`,
+      type: r.maxDrawdown > 25 ? "warning" : "info",
+    },
+  ];
+}
+
+export function getBlackScholesInsights(r: BlackScholesOutput): InsightItem[] {
+  return [
+    {
+      icon: "⚡",
+      title: `Call: ₹${r.callPrice} (Delta ${r.callGreeks.delta}) | Put: ₹${r.putPrice} (Delta ${r.putGreeks.delta})`,
+      subtitle: `Spot: ₹${r.spotPrice} | Strike: ₹${r.strikePrice} | IV: ${r.volatilityPercent}%`,
+      type: "good",
+    },
+    {
+      icon: "📉",
+      title: `Theta: ₹${r.callGreeks.theta}/day | Gamma: ${r.callGreeks.gamma} | Vega: ₹${r.callGreeks.vega}`,
+      subtitle: `Put-Call Parity ${r.putCallParityCheck.holds ? "Verified ✅" : "Warning ⚠️"}`,
+      type: "info",
+    },
+  ];
+}
+
+// ─── TRADING & MARGIN INSIGHTS ─────────────────────────────────
+
+export function getMarginRequiredInsights(r: MarginRequiredOutput): InsightItem[] {
+  return [
+    {
+      icon: "⚡",
+      title: `Total Margin: ${formatINR(r.totalMarginRequired)} (${r.effectiveLeverage}x Leverage)`,
+      subtitle: `Contract Value: ${formatINR(r.totalContractValue)} for ${r.totalQuantity} Qty`,
+      type: "good",
+    },
+    {
+      icon: "🛡️",
+      title: `SPAN Margin: ${formatINR(r.spanMarginRequired)} (${r.spanMarginPercent}%)`,
+      subtitle: `Exposure Margin: ${formatINR(r.exposureMarginRequired)} (${r.exposureMarginPercent}%)`,
+      type: "info",
+    },
+  ];
+}
+
+// ─── LOANS INSIGHTS ────────────────────────────────────────────
+
+export function getCarTCOInsights(r: CarTCOOutput): InsightItem[] {
+  return [
+    {
+      icon: "🚗",
+      title: `Net Total Cost of Ownership: ${formatINR(r.netTotalCostOfOwnership)}`,
+      subtitle: `₹${r.costPerKm}/km or ${formatINR(r.effectiveMonthlyCost)}/month over ${r.ownershipTenureYears} years`,
+      type: "info",
+    },
+    {
+      icon: "📉",
+      title: `Resale Value Recovered: ${formatINR(r.estimatedResaleValue)}`,
+      subtitle: `Total Fuel: ${formatINR(r.totalFuelCost)} | Insurance & Maint: ${formatINR(r.totalInsuranceCost + r.totalMaintenanceCost)}`,
+      type: "good",
+    },
+  ];
+}
+
+export function getBalanceTransferInsights(r: BalanceTransferOutput): InsightItem[] {
+  return [
+    {
+      icon: r.isBeneficial ? "🎉" : "⚠️",
+      title: r.isBeneficial ? `Save ${formatINR(r.netBenefit)} Net` : "Refinancing Not Recommended",
+      subtitle: r.recommendation,
+      type: r.isBeneficial ? "good" : "warning",
+    },
+    {
+      icon: "⏱️",
+      title: r.isBeneficial ? `Breakeven in ${r.breakevenMonths} Months` : `Switching Costs: ${formatINR(r.totalSwitchingCosts)}`,
+      subtitle: `Monthly EMI Drops by ${formatINR(r.monthlyEmiSavings)}/month`,
+      type: "info",
+    },
+  ];
+}
+
+// ─── TAX & GLOBAL INSIGHTS ─────────────────────────────────────
+
+export function getMarginalReliefInsights(r: MarginalReliefOutput): InsightItem[] {
+  return [
+    {
+      icon: r.hasMarginalRelief ? "🎁" : "🏛️",
+      title: r.hasMarginalRelief ? `Marginal Relief Saved: ${formatINR(r.marginalReliefAmount)}` : `Surcharge Applicable: ${r.applicableSurchargeRatePercent}%`,
+      subtitle: r.thresholdComparison,
+      type: r.hasMarginalRelief ? "good" : "info",
+    },
+    {
+      icon: "💳",
+      title: `Total Tax Payable: ${formatINR(r.totalTaxPayable)}`,
+      subtitle: `Effective Tax Rate: ${r.effectiveTaxRatePercent}% (Base Tax: ${formatINR(r.baseTax)} + Surcharge: ${formatINR(r.netSurcharge)})`,
+      type: "info",
+    },
+  ];
+}
+
+export function getLRSTCSInsights(r: LrsTcsOutput): InsightItem[] {
+  return [
+    {
+      icon: "✈️",
+      title: `Total TCS Deducted: ${formatINR(r.totalTcsDeducted)}`,
+      subtitle: `Bank Outflow: ${formatINR(r.totalOutflowInr)} for ${formatINR(r.remittanceAmountInr)} Remittance`,
+      type: "info",
+    },
+    {
+      icon: "📋",
+      title: "100% Tax Credit Claimable in ITR",
+      subtitle: r.tcsCreditNote,
+      type: "good",
+    },
+  ];
+}
+
+export function getUSStockReturnInsights(r: USStockReturnOutput): InsightItem[] {
+  return [
+    {
+      icon: "🇺🇸",
+      title: `Net Proceeds: ${formatINR(r.netProceedsInr)} (${r.annualizedReturnCagr}% CAGR)`,
+      subtitle: `Stock Gain: ${formatINR(r.stockCapitalGainInr)} | Currency Gain: ${formatINR(r.currencyGainLossInr)}`,
+      type: "good",
+    },
+    {
+      icon: "🤝",
+      title: "DTAA Section 90 Foreign Tax Credit",
+      subtitle: r.dtaaCreditSummary,
+      type: "info",
+    },
+  ];
+}
+
+export function getNRIDepositInsights(r: NRIDepositOutput): InsightItem[] {
+  return [
+    {
+      icon: "🏆",
+      title: `Best Choice: ${r.nreResult.depositName.split(" ")[0]}`,
+      subtitle: r.bestOption,
+      type: "good",
+    },
+    {
+      icon: "🏦",
+      title: `NRE (${r.nreResult.effectivePostTaxAnnualYield}% Tax-Free) vs NRO (${r.nroResult.effectivePostTaxAnnualYield}% Post-TDS)`,
+      subtitle: `NRE Maturity: ${formatINR(r.nreResult.maturityAmount)} | NRO Maturity: ${formatINR(r.nroResult.maturityAmount)}`,
+      type: "info",
+    },
+  ];
+}
+
+// ─── RETIREMENT INSIGHTS ───────────────────────────────────────
+
+export function getNPSInsights(r: NPSOutput): InsightItem[] {
+  if (!r.isValid) {
+    return [
+      {
+        icon: "⚠️",
+        title: "Invalid Allocation",
+        subtitle: r.errorMessage || "Asset allocation must sum to 100%",
+        type: "warning",
+      },
+    ];
+  }
+  return [
+    {
+      icon: "👴",
+      title: `Retirement Corpus: ${formatINR(r.totalAccumulatedCorpus)} at Age ${r.retirementAge}`,
+      subtitle: `60% Tax-Free Lump Sum: ${formatINR(r.lumpSumTaxFreeAmount)} | 40% Annuity: ${formatINR(r.annuityPurchasedAmount)}`,
+      type: "good",
+    },
+    {
+      icon: "💵",
+      title: `Estimated Pension: ${formatINR(r.estimatedMonthlyPension)}/month`,
+      subtitle: `Section 80CCD(1B) Tax Saved: ${formatINR(r.annualTaxSavedUnder80CCD)}/year (${formatINR(r.lifetimeTaxSaved)} lifetime)`,
+      type: "good",
     },
   ];
 }

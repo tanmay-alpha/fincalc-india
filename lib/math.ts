@@ -412,6 +412,536 @@ export interface Section54ExemptionOutput {
   summary: string;
 }
 
+// ─── CFA & INVESTMENT ANALYTICS TYPES ──────────────────────────
+
+// 1. DCF Valuation
+export interface DcfInput {
+  fcfProjections: number[];
+  terminalGrowthRate: number; // e.g. 4 for 4%
+  discountRate: number; // e.g. 11 for 11% (WACC)
+  sharesOutstanding?: number; // e.g. 100000
+  netDebt?: number; // Total Debt - Cash (default 0)
+}
+
+export interface DcfYearRow {
+  year: number;
+  fcf: number;
+  discountFactor: number;
+  presentValue: number;
+  cumulativePv: number;
+}
+
+export interface DcfSensitivityCell {
+  discountRate: number;
+  terminalGrowthRate: number;
+  intrinsicValuePerShare: number;
+  enterpriseValue: number;
+}
+
+export interface DcfOutput {
+  fcfProjections: number[];
+  terminalGrowthRate: number;
+  discountRate: number;
+  sharesOutstanding: number;
+  netDebt: number;
+  presentValueExplicitFcf: number;
+  terminalValue: number;
+  presentValueTerminalValue: number;
+  enterpriseValue: number;
+  equityValue: number;
+  intrinsicValuePerShare: number;
+  terminalValuePercentageOfEV: number;
+  yearlyBreakdown: DcfYearRow[];
+  sensitivityMatrix: DcfSensitivityCell[][];
+  isValid: boolean;
+  errorMessage?: string;
+  summary: string;
+}
+
+// 2. WACC Calculator
+export interface WaccInput {
+  equityValue: number;
+  debtValue: number;
+  costOfEquityMode?: "direct" | "capm";
+  costOfEquity?: number;
+  riskFreeRate?: number;
+  beta?: number;
+  marketReturn?: number;
+  costOfDebt: number;
+  taxRate: number;
+}
+
+export interface WaccOutput {
+  equityValue: number;
+  debtValue: number;
+  totalValue: number;
+  weightOfEquity: number;
+  weightOfDebt: number;
+  costOfEquity: number;
+  preTaxCostOfDebt: number;
+  afterTaxCostOfDebt: number;
+  taxRate: number;
+  taxShieldBenefit: number;
+  wacc: number;
+  capitalStructureBreakdown: Array<{ name: string; value: number; weight: number; cost: number }>;
+  summary: string;
+}
+
+// 3. DuPont Analysis
+export interface DuPontInput {
+  netIncome: number;
+  revenue: number;
+  totalAssets: number;
+  shareholdersEquity: number;
+  ebt?: number;
+  ebit?: number;
+}
+
+export interface DuPontThreeStep {
+  netProfitMargin: number;
+  assetTurnover: number;
+  financialLeverage: number;
+  decomposedRoe: number;
+}
+
+export interface DuPontFiveStep {
+  taxBurden: number;
+  interestBurden: number;
+  operatingMargin: number;
+  assetTurnover: number;
+  financialLeverage: number;
+  decomposedRoe: number;
+}
+
+export interface DuPontOutput {
+  reportedRoe: number;
+  threeStep: DuPontThreeStep;
+  fiveStep?: DuPontFiveStep;
+  isFiveStepAvailable: boolean;
+  primaryDriver: "profitability" | "efficiency" | "leverage";
+  driverAnalysis: string;
+  summary: string;
+}
+
+// 4. XIRR & TWRR
+export interface CashFlowPoint {
+  date: string;
+  amount: number;
+}
+export type XirrCashflow = CashFlowPoint;
+
+export interface TwrrPeriod {
+  startValue: number;
+  endValue: number;
+  netCashflow: number;
+}
+
+export interface XirrOutput {
+  cashflows: CashFlowPoint[];
+  xirr: number;
+  cagr?: number;
+  totalInvested: number;
+  totalWithdrawn: number;
+  netGain: number;
+  absoluteGainPercent: number;
+  firstDate: string;
+  lastDate: string;
+  durationYears: number;
+  isValid: boolean;
+  errorMessage?: string;
+  summary: string;
+}
+
+export interface TwrrOutput {
+  periods: Array<{
+    periodIndex: number;
+    startValue: number;
+    endValue: number;
+    netCashflow: number;
+    holdingPeriodReturn: number;
+  }>;
+  twrr: number;
+  summary: string;
+}
+
+// 5. Portfolio Risk Ratios
+export interface RiskRatiosInput {
+  returns: number[];
+  periodFrequency?: "monthly" | "daily" | "annual";
+  riskFreeRate: number;
+  portfolioBeta?: number;
+  benchmarkReturns?: number[];
+}
+
+export interface RiskRatiosOutput {
+  periodCount: number;
+  meanReturnAnnualized: number;
+  totalVolatilityAnnualized: number;
+  downsideDeviationAnnualized: number;
+  sharpeRatio: number;
+  sortinoRatio: number;
+  treynorRatio?: number;
+  portfolioBeta?: number;
+  maxDrawdown: number;
+  positivePeriodsPercent: number;
+  summary: string;
+}
+
+// 6. Black-Scholes Option Pricing & Greeks
+export interface BlackScholesInput {
+  spotPrice: number;
+  strikePrice: number;
+  timeToExpiryDays?: number;
+  timeToExpiryYears?: number;
+  volatilityPercent: number;
+  riskFreeRatePercent: number;
+  dividendYieldPercent?: number;
+}
+
+export interface BlackScholesGreeks {
+  delta: number;
+  gamma: number;
+  theta: number;
+  vega: number;
+  rho: number;
+}
+
+export interface BlackScholesOutput {
+  spotPrice: number;
+  strikePrice: number;
+  timeToExpiryYears: number;
+  volatilityPercent: number;
+  riskFreeRatePercent: number;
+  dividendYieldPercent: number;
+  d1: number;
+  d2: number;
+  callPrice: number;
+  putPrice: number;
+  callGreeks: BlackScholesGreeks;
+  putGreeks: BlackScholesGreeks;
+  callIntrinsic: number;
+  callTimeValue: number;
+  putIntrinsic: number;
+  putTimeValue: number;
+  putCallParityCheck: {
+    lhs: number;
+    rhs: number;
+    difference: number;
+    holds: boolean;
+  };
+  summary: string;
+}
+
+// ─── GROUP 2: TRADING / MARGIN TYPES ───────────────────────────
+
+export type MarginInstrumentCategory =
+  | "nifty_futures"
+  | "banknifty_futures"
+  | "finnifty_futures"
+  | "tier1_equity"
+  | "tier2_equity"
+  | "intraday_equity"
+  | "custom";
+
+export interface MarginRequiredInput {
+  instrumentCategory: MarginInstrumentCategory;
+  lotSize: number;
+  numberOfLots: number;
+  price: number;
+  customSpanPercent?: number;
+  customExposurePercent?: number;
+  isMtfHolding?: boolean;
+  mtfHoldingDays?: number;
+  mtfAnnualInterestRate?: number;
+}
+
+export interface MarginRequiredOutput {
+  instrumentCategory: MarginInstrumentCategory;
+  totalQuantity: number;
+  totalContractValue: number;
+  spanMarginPercent: number;
+  spanMarginRequired: number;
+  exposureMarginPercent: number;
+  exposureMarginRequired: number;
+  totalMarginRequired: number;
+  effectiveLeverage: number;
+  isMtfHolding: boolean;
+  mtfBorrowedAmount: number;
+  mtfInterestCost: number;
+  totalCapitalNeeded: number;
+  disclaimer: string;
+  summary: string;
+}
+
+// ─── GROUP 3: LOANS TYPES ──────────────────────────────────────
+
+// 8. Car Loan Total Cost of Ownership (TCO)
+export interface CarTCOInput {
+  carOnRoadPrice: number;
+  downPayment: number;
+  loanInterestRate?: number;
+  loanTenureYears?: number;
+  ownershipTenureYears: number;
+  annualKmDriven: number;
+  fuelMileageKmpl: number;
+  fuelPricePerLitre: number;
+  annualInsuranceCost: number;
+  annualMaintenanceCost: number;
+  annualDepreciationPercent?: number;
+}
+
+export interface CarTCOYearRow {
+  year: number;
+  loanEmiPaid: number;
+  fuelCost: number;
+  insuranceCost: number;
+  maintenanceCost: number;
+  cumulativeRunningCost: number;
+  depreciatedCarValue: number;
+}
+
+export interface CarTCOOutput {
+  carOnRoadPrice: number;
+  downPayment: number;
+  loanPrincipal: number;
+  loanInterestRate: number;
+  loanTenureYears: number;
+  ownershipTenureYears: number;
+  monthlyEmi: number;
+  totalEmiPaid: number;
+  totalLoanInterest: number;
+  totalFuelCost: number;
+  totalInsuranceCost: number;
+  totalMaintenanceCost: number;
+  totalRunningCost: number;
+  grossOutflow: number;
+  estimatedResaleValue: number;
+  netTotalCostOfOwnership: number;
+  effectiveMonthlyCost: number;
+  costPerKm: number;
+  yearlyBreakdown: CarTCOYearRow[];
+  summary: string;
+}
+
+// 9. Home Loan Balance Transfer & Refinancing
+export interface BalanceTransferInput {
+  currentOutstandingPrincipal: number;
+  currentInterestRate: number;
+  currentRemainingTenureMonths: number;
+  newInterestRate: number;
+  newTenureMonths?: number;
+  processingFeeType?: "flat" | "percentage";
+  processingFeeValue?: number;
+  otherSwitchingCharges?: number;
+}
+
+export interface BalanceTransferOutput {
+  currentOutstandingPrincipal: number;
+  currentInterestRate: number;
+  currentRemainingTenureMonths: number;
+  currentMonthlyEmi: number;
+  currentTotalInterestRemaining: number;
+  currentTotalPaymentRemaining: number;
+  newInterestRate: number;
+  newTenureMonths: number;
+  newMonthlyEmi: number;
+  newTotalInterest: number;
+  newTotalPayment: number;
+  monthlyEmiSavings: number;
+  grossInterestSavings: number;
+  totalSwitchingCosts: number;
+  netBenefit: number;
+  isBeneficial: boolean;
+  breakevenMonths: number;
+  recommendation: string;
+  summary: string;
+}
+
+// ─── GROUP 4: TAX / GLOBAL TYPES ───────────────────────────────
+
+// 10. Marginal Relief & High-Income Surcharge
+export interface MarginalReliefInput {
+  grossTotalIncome: number;
+  regime?: "new" | "old";
+  ageCategory?: "general" | "senior" | "super_senior";
+}
+
+export interface MarginalReliefOutput {
+  grossTotalIncome: number;
+  regime: "new" | "old";
+  baseTax: number;
+  applicableSurchargeRatePercent: number;
+  surchargeThreshold: number;
+  surchargeBeforeRelief: number;
+  marginalReliefAmount: number;
+  netSurcharge: number;
+  taxPlusNetSurcharge: number;
+  healthAndEducationCess: number;
+  totalTaxPayable: number;
+  effectiveTaxRatePercent: number;
+  hasMarginalRelief: boolean;
+  thresholdComparison: string;
+  summary: string;
+}
+
+// 11. LRS TCS & Remittance
+export type LrsCategory =
+  | "overseas_tour_package"
+  | "education_loan"
+  | "education_self"
+  | "medical_treatment"
+  | "general_investment";
+
+export interface LrsTcsInput {
+  category: LrsCategory;
+  remittanceAmountInr: number;
+  panAvailable?: boolean;
+}
+
+export interface LrsTcsOutput {
+  category: LrsCategory;
+  categoryLabel: string;
+  remittanceAmountInr: number;
+  exemptionThreshold: number;
+  tier1Amount: number;
+  tier1RatePercent: number;
+  tier1Tcs: number;
+  tier2Amount: number;
+  tier2RatePercent: number;
+  tier2Tcs: number;
+  totalTcsDeducted: number;
+  totalOutflowInr: number;
+  isTcsCreditClaimable: boolean;
+  tcsCreditNote: string;
+  summary: string;
+}
+
+// 12. US Stock Investing Net Return (DTAA Adjusted)
+export interface USStockReturnInput {
+  investmentAmountInr: number;
+  purchaseUsdInrRate: number;
+  saleUsdInrRate: number;
+  capitalGainUsd: number;
+  dividendIncomeUsd?: number;
+  holdingMonths: number;
+  usDividendWithholdingTaxPercent?: number;
+  userTaxBracketPercent?: number;
+}
+
+export interface USStockReturnOutput {
+  investmentAmountInr: number;
+  purchaseUsdInrRate: number;
+  saleUsdInrRate: number;
+  initialInvestmentUsd: number;
+  capitalGainUsd: number;
+  dividendIncomeUsd: number;
+  grossProceedsUsd: number;
+  grossProceedsInr: number;
+  currencyGainLossInr: number;
+  stockCapitalGainInr: number;
+  isLongTerm: boolean;
+  applicableCapitalGainsRatePercent: number;
+  indianCapitalGainsTax: number;
+  grossDividendInr: number;
+  usWithholdingTaxInr: number;
+  foreignTaxCreditInr: number;
+  indianDividendTaxNet: number;
+  totalTaxPaidInr: number;
+  netProceedsInr: number;
+  netAbsoluteGainInr: number;
+  absoluteReturnPercent: number;
+  annualizedReturnCagr: number;
+  dtaaCreditSummary: string;
+  summary: string;
+}
+
+// 13. NRI NRE vs NRO vs FCNR Deposit Comparator
+export interface NRIDepositInput {
+  depositAmount: number;
+  tenureMonths: number;
+  nreInterestRatePercent: number;
+  nroInterestRatePercent: number;
+  fcnrInterestRatePercent: number;
+  nroTdsRatePercent?: number;
+  compoundingFrequency?: "quarterly" | "annual";
+}
+
+export interface SingleNRIDepositResult {
+  depositName: string;
+  currency: string;
+  principal: number;
+  preTaxInterestRate: number;
+  interestEarnedPreTax: number;
+  taxDeducted: number;
+  effectivePostTaxInterest: number;
+  maturityAmount: number;
+  effectivePostTaxAnnualYield: number;
+  isFullyRepatriable: boolean;
+  isTaxFreeInIndia: boolean;
+  notes: string;
+}
+
+export interface NRIDepositOutput {
+  depositAmount: number;
+  tenureMonths: number;
+  nreResult: SingleNRIDepositResult;
+  nroResult: SingleNRIDepositResult;
+  fcnrResult: SingleNRIDepositResult;
+  bestOption: string;
+  sideBySideComparison: SingleNRIDepositResult[];
+  summary: string;
+}
+
+// ─── GROUP 5: RETIREMENT TYPES ─────────────────────────────────
+
+// 14. NPS & Tier-1 Pension Modeler
+export interface NPSInput {
+  currentAge: number;
+  retirementAge?: number;
+  monthlyContribution: number;
+  equityAllocationPercent: number;
+  corporateDebtAllocationPercent: number;
+  govtBondsAllocationPercent: number;
+  expectedEquityReturnPercent?: number;
+  expectedCorpDebtReturnPercent?: number;
+  expectedGovtBondReturnPercent?: number;
+  lumpSumWithdrawalPercent?: number;
+  annuityReinvestmentPercent?: number;
+  assumedAnnuityYieldPercent?: number;
+  taxBracketPercent?: number;
+}
+
+export interface NPSYearRow {
+  age: number;
+  year: number;
+  totalInvested: number;
+  accumulatedCorpus: number;
+  lumpSumValue: number;
+  annuityValue: number;
+}
+
+export interface NPSOutput {
+  currentAge: number;
+  retirementAge: number;
+  totalYearsInvested: number;
+  monthlyContribution: number;
+  totalAmountInvested: number;
+  blendedExpectedReturnPercent: number;
+  totalAccumulatedCorpus: number;
+  lumpSumWithdrawalPercent: number;
+  lumpSumTaxFreeAmount: number;
+  annuityReinvestmentPercent: number;
+  annuityPurchasedAmount: number;
+  assumedAnnuityYieldPercent: number;
+  estimatedMonthlyPension: number;
+  annualTaxSavedUnder80CCD: number;
+  lifetimeTaxSaved: number;
+  yearlyProgression: NPSYearRow[];
+  isValid: boolean;
+  errorMessage?: string;
+  summary: string;
+}
+
 
 
 
@@ -440,6 +970,14 @@ export function safeNum(val: unknown, fallback = 0): number {
 export function safePositive(val: unknown, fallback = 0): number {
   const num = safeNum(val, fallback);
   return Math.max(0, num);
+}
+
+export function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+export function round4(n: number): number {
+  return Math.round(n * 10000) / 10000;
 }
 
 // ─── SIP ──────────────────────────────────────────────────────
@@ -1572,7 +2110,7 @@ export function calcFIRE(input: FireInput): FireOutput {
     const currentSimAge = safeCurrentAge + y;
     const isAccumulation = currentSimAge <= safeRetireAge;
 
-    let annualExp = currentAnnualExpenses * Math.pow(1 + inflationDec, y);
+    const annualExp = currentAnnualExpenses * Math.pow(1 + inflationDec, y);
     let contribution = 0;
     let withdrawal = 0;
 
@@ -1902,10 +2440,6 @@ export interface FnOBreakevenOutput {
   isProfit: boolean;
   breakevenSellPrice: number;
   pointsToBreakeven: number;
-}
-
-function round2(num: number): number {
-  return Math.round((num + Number.EPSILON) * 100) / 100;
 }
 
 export function calcFnOBreakeven(input: FnOBreakevenInput): FnOBreakevenOutput {
@@ -2977,6 +3511,1513 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
     activeResult,
     comparison,
     summary,
+  };
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GROUP 1: CFA & INVESTMENT ANALYTICS ENGINE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// ─── Standard Normal Distribution Helpers ──────────────────────
+function stdNormPdf(x: number): number {
+  return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+}
+
+function stdNormCdf(x: number): number {
+  // Abramowitz & Stegun approximation (error < 7.5e-8)
+  const a1 = 0.319381530;
+  const a2 = -0.356563782;
+  const a3 = 1.781477937;
+  const a4 = -1.821255978;
+  const a5 = 1.330274429;
+  const p = 0.2316419;
+
+  const sign = x < 0 ? -1 : 1;
+  const absX = Math.abs(x);
+  const k = 1.0 / (1.0 + p * absX);
+  const y = 1.0 - stdNormPdf(absX) * (a1 * k + a2 * k * k + a3 * Math.pow(k, 3) + a4 * Math.pow(k, 4) + a5 * Math.pow(k, 5));
+
+  return sign === -1 ? 1.0 - y : y;
+}
+
+// ─── 1. DCF Valuation ──────────────────────────────────────────
+export function calcDCF(input: DcfInput): DcfOutput {
+  const {
+    fcfProjections = [],
+    terminalGrowthRate = 4,
+    discountRate = 11,
+    sharesOutstanding = 100000,
+    netDebt = 0,
+  } = input;
+
+  const safeFcf = Array.isArray(fcfProjections) && fcfProjections.length > 0
+    ? fcfProjections.map((v) => safeNum(v))
+    : [1000000, 1150000, 1320000, 1520000, 1750000];
+
+  const safeR = safeNum(discountRate, 11);
+  const safeG = safeNum(terminalGrowthRate, 4);
+  const safeShares = Math.max(1, safeNum(sharesOutstanding, 100000));
+  const safeNetDebt = safeNum(netDebt, 0);
+
+  const rDec = safeR / 100;
+  const gDec = safeG / 100;
+
+  if (safeR <= 0) {
+    return {
+      fcfProjections: safeFcf,
+      terminalGrowthRate: safeG,
+      discountRate: safeR,
+      sharesOutstanding: safeShares,
+      netDebt: safeNetDebt,
+      presentValueExplicitFcf: 0,
+      terminalValue: 0,
+      presentValueTerminalValue: 0,
+      enterpriseValue: 0,
+      equityValue: 0,
+      intrinsicValuePerShare: 0,
+      terminalValuePercentageOfEV: 0,
+      yearlyBreakdown: [],
+      sensitivityMatrix: [],
+      isValid: false,
+      errorMessage: "Discount rate (WACC) must be strictly greater than 0%.",
+      summary: "Invalid discount rate.",
+    };
+  }
+
+  // Gordon Growth mathematical constraint check: g < r
+  if (gDec >= rDec) {
+    return {
+      fcfProjections: safeFcf,
+      terminalGrowthRate: safeG,
+      discountRate: safeR,
+      sharesOutstanding: safeShares,
+      netDebt: safeNetDebt,
+      presentValueExplicitFcf: 0,
+      terminalValue: 0,
+      presentValueTerminalValue: 0,
+      enterpriseValue: 0,
+      equityValue: 0,
+      intrinsicValuePerShare: 0,
+      terminalValuePercentageOfEV: 0,
+      yearlyBreakdown: [],
+      sensitivityMatrix: [],
+      isValid: false,
+      errorMessage: `Terminal growth rate (${safeG}%) must be strictly less than the discount rate (${safeR}%). Gordon Growth Model denominator becomes zero or negative when g ≥ r.`,
+      summary: "Invalid parameters: Terminal growth rate must be less than discount rate.",
+    };
+  }
+
+  const n = safeFcf.length;
+  const yearlyBreakdown: DcfYearRow[] = [];
+  let pvExplicit = 0;
+
+  for (let t = 1; t <= n; t++) {
+    const fcf = safeFcf[t - 1];
+    const discountFactor = 1 / Math.pow(1 + rDec, t);
+    const pv = fcf * discountFactor;
+    pvExplicit += pv;
+
+    yearlyBreakdown.push({
+      year: t,
+      fcf: Math.round(fcf),
+      discountFactor: round4(discountFactor),
+      presentValue: Math.round(pv),
+      cumulativePv: Math.round(pvExplicit),
+    });
+  }
+
+  const finalFcf = safeFcf[n - 1];
+  const terminalValue = (finalFcf * (1 + gDec)) / (rDec - gDec);
+  const pvTerminalValue = terminalValue / Math.pow(1 + rDec, n);
+
+  const enterpriseValue = pvExplicit + pvTerminalValue;
+  const equityValue = enterpriseValue - safeNetDebt;
+  const intrinsicValuePerShare = equityValue / safeShares;
+  const terminalValuePct = enterpriseValue > 0 ? (pvTerminalValue / enterpriseValue) * 100 : 0;
+
+  // Sensitivity Matrix (Discount Rate vs Terminal Growth)
+  const rVariations = [safeR - 2, safeR - 1, safeR, safeR + 1, safeR + 2].filter((r) => r > safeG);
+  const gVariations = [safeG - 1, safeG - 0.5, safeG, safeG + 0.5, safeG + 1].filter((g) => g >= 0);
+
+  const sensitivityMatrix: DcfSensitivityCell[][] = [];
+  for (const testR of rVariations) {
+    const row: DcfSensitivityCell[] = [];
+    const testRDec = testR / 100;
+
+    for (const testG of gVariations) {
+      const testGDec = testG / 100;
+      if (testGDec >= testRDec) {
+        row.push({
+          discountRate: testR,
+          terminalGrowthRate: testG,
+          intrinsicValuePerShare: 0,
+          enterpriseValue: 0,
+        });
+      } else {
+        let testPvExplicit = 0;
+        for (let t = 1; t <= n; t++) {
+          testPvExplicit += safeFcf[t - 1] / Math.pow(1 + testRDec, t);
+        }
+        const testTv = (finalFcf * (1 + testGDec)) / (testRDec - testGDec);
+        const testPvTv = testTv / Math.pow(1 + testRDec, n);
+        const testEv = testPvExplicit + testPvTv;
+        const testEq = testEv - safeNetDebt;
+        const testSharePrice = testEq / safeShares;
+
+        row.push({
+          discountRate: testR,
+          terminalGrowthRate: testG,
+          intrinsicValuePerShare: round2(testSharePrice),
+          enterpriseValue: Math.round(testEv),
+        });
+      }
+    }
+    sensitivityMatrix.push(row);
+  }
+
+  return {
+    fcfProjections: safeFcf,
+    terminalGrowthRate: safeG,
+    discountRate: safeR,
+    sharesOutstanding: safeShares,
+    netDebt: safeNetDebt,
+    presentValueExplicitFcf: Math.round(pvExplicit),
+    terminalValue: Math.round(terminalValue),
+    presentValueTerminalValue: Math.round(pvTerminalValue),
+    enterpriseValue: Math.round(enterpriseValue),
+    equityValue: Math.round(equityValue),
+    intrinsicValuePerShare: round2(intrinsicValuePerShare),
+    terminalValuePercentageOfEV: round2(terminalValuePct),
+    yearlyBreakdown,
+    sensitivityMatrix,
+    isValid: true,
+    summary: `Intrinsic Value per Share: ₹${round2(intrinsicValuePerShare).toLocaleString("en-IN")} | Enterprise Value: ₹${Math.round(enterpriseValue).toLocaleString("en-IN")}`,
+  };
+}
+
+// ─── 2. WACC Calculator ────────────────────────────────────────
+export function calcWACC(input: WaccInput): WaccOutput {
+  const {
+    equityValue,
+    debtValue,
+    costOfEquityMode = "direct",
+    costOfEquity: directCostOfEquity = 14,
+    riskFreeRate = 6.8,
+    beta = 1.1,
+    marketReturn = 13.5,
+    costOfDebt,
+    taxRate = 25,
+  } = input;
+
+  const safeE = safePositive(equityValue);
+  const safeD = safePositive(debtValue);
+  const totalValue = safeE + safeD;
+
+  let effectiveCostOfEquity = directCostOfEquity;
+  if (costOfEquityMode === "capm") {
+    const rf = safeNum(riskFreeRate, 6.8);
+    const b = safeNum(beta, 1.1);
+    const rm = safeNum(marketReturn, 13.5);
+    effectiveCostOfEquity = rf + b * (rm - rf);
+  }
+
+  const safeKe = safeNum(effectiveCostOfEquity, 14);
+  const safeKd = safePositive(costOfDebt, 9);
+  const safeT = Math.min(100, safePositive(taxRate, 25));
+
+  if (totalValue <= 0) {
+    return {
+      equityValue: 0,
+      debtValue: 0,
+      totalValue: 0,
+      weightOfEquity: 0,
+      weightOfDebt: 0,
+      costOfEquity: safeKe,
+      preTaxCostOfDebt: safeKd,
+      afterTaxCostOfDebt: safeKd * (1 - safeT / 100),
+      taxRate: safeT,
+      taxShieldBenefit: (safeKd * safeT) / 100,
+      wacc: 0,
+      capitalStructureBreakdown: [],
+      summary: "Please enter positive market values for equity and/or debt.",
+    };
+  }
+
+  const weightE = safeE / totalValue;
+  const weightD = safeD / totalValue;
+  const afterTaxKd = safeKd * (1 - safeT / 100);
+  const taxShield = (safeKd * safeT) / 100;
+
+  const wacc = weightE * safeKe + weightD * afterTaxKd;
+
+  const capitalStructureBreakdown = [
+    {
+      name: "Equity",
+      value: Math.round(safeE),
+      weight: round2(weightE * 100),
+      cost: round2(safeKe),
+    },
+    {
+      name: "Debt (After-Tax)",
+      value: Math.round(safeD),
+      weight: round2(weightD * 100),
+      cost: round2(afterTaxKd),
+    },
+  ];
+
+  return {
+    equityValue: Math.round(safeE),
+    debtValue: Math.round(safeD),
+    totalValue: Math.round(totalValue),
+    weightOfEquity: round2(weightE * 100),
+    weightOfDebt: round2(weightD * 100),
+    costOfEquity: round2(safeKe),
+    preTaxCostOfDebt: round2(safeKd),
+    afterTaxCostOfDebt: round2(afterTaxKd),
+    taxRate: round2(safeT),
+    taxShieldBenefit: round2(taxShield),
+    wacc: round2(wacc),
+    capitalStructureBreakdown,
+    summary: `Weighted Average Cost of Capital (WACC): ${round2(wacc)}% (Equity: ${round2(weightE * 100)}%, Debt: ${round2(weightD * 100)}%)`,
+  };
+}
+
+// ─── 3. DuPont Analysis ────────────────────────────────────────
+export function calcDuPont(input: DuPontInput): DuPontOutput {
+  const { netIncome, revenue, totalAssets, shareholdersEquity, ebt, ebit } = input;
+
+  const safeNI = safeNum(netIncome);
+  const safeRev = safePositive(revenue);
+  const safeAssets = safePositive(totalAssets);
+  const safeEquity = safePositive(shareholdersEquity);
+
+  if (safeEquity <= 0) {
+    return {
+      reportedRoe: 0,
+      threeStep: {
+        netProfitMargin: 0,
+        assetTurnover: 0,
+        financialLeverage: 0,
+        decomposedRoe: 0,
+      },
+      isFiveStepAvailable: false,
+      primaryDriver: "profitability",
+      driverAnalysis: "Shareholders equity must be strictly greater than zero.",
+      summary: "Invalid equity value. Please enter positive shareholders equity.",
+    };
+  }
+
+  const reportedRoe = (safeNI / safeEquity) * 100;
+
+  // 3-Step Decomposition
+  const netProfitMargin = safeRev > 0 ? (safeNI / safeRev) * 100 : 0;
+  const assetTurnover = (safeRev > 0 && safeAssets > 0) ? safeRev / safeAssets : 0;
+  const financialLeverage = safeAssets > 0 ? safeAssets / safeEquity : 0;
+  const decomposedRoe3 = (netProfitMargin / 100) * assetTurnover * financialLeverage * 100;
+
+  // 5-Step Decomposition
+  let fiveStep: DuPontFiveStep | undefined = undefined;
+  let isFiveStepAvailable = false;
+
+  if (ebt !== undefined && ebit !== undefined && safeRev > 0 && safeAssets > 0) {
+    const safeEbt = safeNum(ebt);
+    const safeEbit = safeNum(ebit);
+
+    const taxBurden = safeEbt !== 0 ? safeNI / safeEbt : 1;
+    const interestBurden = safeEbit !== 0 ? safeEbt / safeEbit : 1;
+    const operatingMargin = (safeEbit / safeRev) * 100;
+    const decomposedRoe5 = taxBurden * interestBurden * (operatingMargin / 100) * assetTurnover * financialLeverage * 100;
+
+    fiveStep = {
+      taxBurden: round4(taxBurden),
+      interestBurden: round4(interestBurden),
+      operatingMargin: round2(operatingMargin),
+      assetTurnover: round2(assetTurnover),
+      financialLeverage: round2(financialLeverage),
+      decomposedRoe: round2(decomposedRoe5),
+    };
+    isFiveStepAvailable = true;
+  }
+
+  // Driver analysis
+  let primaryDriver: "profitability" | "efficiency" | "leverage" = "profitability";
+  let driverAnalysis = "";
+
+  if (financialLeverage > 2.5) {
+    primaryDriver = "leverage";
+    driverAnalysis = `High Financial Leverage (${round2(financialLeverage)}x) is the primary multiplier of ROE. High debt boosts equity return but elevates financial risk.`;
+  } else if (assetTurnover > 1.5) {
+    primaryDriver = "efficiency";
+    driverAnalysis = `High Asset Turnover (${round2(assetTurnover)}x) drives strong capital efficiency, generating high revenue per rupee of deployed assets.`;
+  } else {
+    primaryDriver = "profitability";
+    driverAnalysis = `Net Profit Margin (${round2(netProfitMargin)}%) is the dominant driver of profitability, reflecting strong pricing power and cost discipline.`;
+  }
+
+  return {
+    reportedRoe: round2(reportedRoe),
+    threeStep: {
+      netProfitMargin: round2(netProfitMargin),
+      assetTurnover: round2(assetTurnover),
+      financialLeverage: round2(financialLeverage),
+      decomposedRoe: round2(decomposedRoe3),
+    },
+    fiveStep,
+    isFiveStepAvailable,
+    primaryDriver,
+    driverAnalysis,
+    summary: `Return on Equity (ROE): ${round2(reportedRoe)}% [Margin: ${round2(netProfitMargin)}% × Turnover: ${round2(assetTurnover)}x × Leverage: ${round2(financialLeverage)}x]`,
+  };
+}
+
+// ─── 4. XIRR & TWRR Analyzer ───────────────────────────────────
+export function calcXIRR(cashflows: CashFlowPoint[]): XirrOutput {
+  if (!Array.isArray(cashflows) || cashflows.length < 2) {
+    return {
+      cashflows: [],
+      xirr: 0,
+      totalInvested: 0,
+      totalWithdrawn: 0,
+      netGain: 0,
+      absoluteGainPercent: 0,
+      firstDate: "",
+      lastDate: "",
+      durationYears: 0,
+      isValid: false,
+      errorMessage: "At least 2 cash flow dates are required (at least one investment outflow and one inflow/current value).",
+      summary: "Insufficient cash flow data.",
+    };
+  }
+
+  const parsed = cashflows
+    .map((cf) => ({
+      date: new Date(cf.date),
+      dateStr: cf.date,
+      amount: safeNum(cf.amount),
+    }))
+    .filter((cf) => !isNaN(cf.date.getTime()))
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  if (parsed.length < 2) {
+    return {
+      cashflows,
+      xirr: 0,
+      totalInvested: 0,
+      totalWithdrawn: 0,
+      netGain: 0,
+      absoluteGainPercent: 0,
+      firstDate: "",
+      lastDate: "",
+      durationYears: 0,
+      isValid: false,
+      errorMessage: "Invalid dates in cash flow series.",
+      summary: "Invalid dates.",
+    };
+  }
+
+  let totalOutflows = 0;
+  let totalInflows = 0;
+  for (const cf of parsed) {
+    if (cf.amount < 0) totalOutflows += Math.abs(cf.amount);
+    else totalInflows += cf.amount;
+  }
+
+  // Must have at least one positive and one negative cash flow
+  if (totalOutflows === 0 || totalInflows === 0) {
+    return {
+      cashflows,
+      xirr: 0,
+      totalInvested: Math.round(totalOutflows),
+      totalWithdrawn: Math.round(totalInflows),
+      netGain: Math.round(totalInflows - totalOutflows),
+      absoluteGainPercent: 0,
+      firstDate: parsed[0].dateStr,
+      lastDate: parsed[parsed.length - 1].dateStr,
+      durationYears: 0,
+      isValid: false,
+      errorMessage: "Cash flows must contain at least one investment outflow (negative) and at least one redemption / current value (positive).",
+      summary: "No valid rate of return exists when cash flows are all of the same sign.",
+    };
+  }
+
+  const d0 = parsed[0].date.getTime();
+  const dN = parsed[parsed.length - 1].date.getTime();
+  const durationYears = (dN - d0) / (365.25 * 24 * 3600 * 1000);
+
+  // Normalized time fractions in years
+  const normalized = parsed.map((cf) => ({
+    t: (cf.date.getTime() - d0) / (365.0 * 24 * 3600 * 1000),
+    amount: cf.amount,
+  }));
+
+  // Bounded Newton-Raphson Solver
+  let r = 0.10;
+  let converged = false;
+
+  for (let iter = 0; iter < 100; iter++) {
+    let f = 0;
+    let df = 0;
+
+    for (const cf of normalized) {
+      const denom = Math.pow(1 + r, cf.t);
+      if (denom === 0 || !Number.isFinite(denom)) continue;
+      f += cf.amount / denom;
+      df -= (cf.t * cf.amount) / (denom * (1 + r));
+    }
+
+    if (Math.abs(f) < 1e-5 || Math.abs(df) < 1e-12) {
+      converged = true;
+      break;
+    }
+
+    const step = f / df;
+    r = Math.max(-0.99, Math.min(10.0, r - step));
+  }
+
+  const xirrPercent = converged ? round2(r * 100) : 0;
+  const netGain = totalInflows - totalOutflows;
+  const absoluteGainPercent = totalOutflows > 0 ? round2((netGain / totalOutflows) * 100) : 0;
+
+  // Compute CAGR if exactly 2 cashflows
+  let cagr: number | undefined = undefined;
+  if (parsed.length === 2 && durationYears > 0) {
+    cagr = round2((Math.pow(totalInflows / totalOutflows, 1 / durationYears) - 1) * 100);
+  }
+
+  return {
+    cashflows,
+    xirr: xirrPercent,
+    cagr,
+    totalInvested: Math.round(totalOutflows),
+    totalWithdrawn: Math.round(totalInflows),
+    netGain: Math.round(netGain),
+    absoluteGainPercent,
+    firstDate: parsed[0].dateStr,
+    lastDate: parsed[parsed.length - 1].dateStr,
+    durationYears: round2(durationYears),
+    isValid: true,
+    summary: `XIRR: ${xirrPercent}% p.a. | Total Invested: ₹${Math.round(totalOutflows).toLocaleString("en-IN")} | Net Gain: ₹${Math.round(netGain).toLocaleString("en-IN")}`,
+  };
+}
+
+export function calcTWRR(periods: TwrrPeriod[]): TwrrOutput {
+  if (!Array.isArray(periods) || periods.length === 0) {
+    return { periods: [], twrr: 0, summary: "No periods provided." };
+  }
+
+  let compoundFactor = 1.0;
+  const breakdown = periods.map((p, idx) => {
+    const start = safePositive(p.startValue);
+    const end = safePositive(p.endValue);
+    const netCf = safeNum(p.netCashflow);
+
+    // HPR = (End - Cashflow) / Start - 1
+    const hpr = start > 0 ? (end - netCf) / start - 1 : 0;
+    compoundFactor *= (1 + hpr);
+
+    return {
+      periodIndex: idx + 1,
+      startValue: Math.round(start),
+      endValue: Math.round(end),
+      netCashflow: Math.round(netCf),
+      holdingPeriodReturn: round2(hpr * 100),
+    };
+  });
+
+  const totalTwrr = round2((compoundFactor - 1) * 100);
+
+  return {
+    periods: breakdown,
+    twrr: totalTwrr,
+    summary: `Time-Weighted Rate of Return (TWRR): ${totalTwrr}% across ${periods.length} sub-periods.`,
+  };
+}
+
+// ─── 5. Portfolio Risk Ratios ──────────────────────────────────
+export function calcRiskRatios(input: RiskRatiosInput): RiskRatiosOutput {
+  const {
+    returns = [],
+    periodFrequency = "monthly",
+    riskFreeRate = 6.5,
+    portfolioBeta,
+  } = input;
+
+  const validReturns = returns.map((r) => safeNum(r)).filter((r) => Number.isFinite(r));
+  const n = validReturns.length;
+
+  if (n < 2) {
+    return {
+      periodCount: n,
+      meanReturnAnnualized: 0,
+      totalVolatilityAnnualized: 0,
+      downsideDeviationAnnualized: 0,
+      sharpeRatio: 0,
+      sortinoRatio: 0,
+      maxDrawdown: 0,
+      positivePeriodsPercent: 0,
+      summary: "Please provide at least 2 return periods to compute portfolio risk statistics.",
+    };
+  }
+
+  const annualMultiplier = periodFrequency === "daily" ? 252 : periodFrequency === "monthly" ? 12 : 1;
+  const sqrtAnnualMultiplier = Math.sqrt(annualMultiplier);
+
+  // Periodic risk-free rate
+  const periodicRf = (safeNum(riskFreeRate, 6.5) / annualMultiplier);
+
+  // Mean periodic return
+  const sum = validReturns.reduce((acc, val) => acc + val, 0);
+  const meanPeriodic = sum / n;
+  const meanAnnualized = meanPeriodic * annualMultiplier;
+
+  // Sample variance and total volatility
+  const sumSqDiff = validReturns.reduce((acc, val) => acc + Math.pow(val - meanPeriodic, 2), 0);
+  const periodicStdDev = Math.sqrt(sumSqDiff / (n - 1));
+  const totalVolatilityAnnualized = periodicStdDev * sqrtAnnualMultiplier;
+
+  // Downside deviation (only negative excess returns vs target risk-free rate)
+  const sumSqDownside = validReturns.reduce((acc, val) => {
+    const diff = Math.min(0, val - periodicRf);
+    return acc + diff * diff;
+  }, 0);
+  const periodicDownsideDev = Math.sqrt(sumSqDownside / (n - 1));
+  const downsideDeviationAnnualized = periodicDownsideDev * sqrtAnnualMultiplier;
+
+  // Sharpe & Sortino
+  const excessReturn = meanAnnualized - riskFreeRate;
+  const sharpeRatio = totalVolatilityAnnualized > 0 ? excessReturn / totalVolatilityAnnualized : 0;
+  const sortinoRatio = downsideDeviationAnnualized > 0
+    ? excessReturn / downsideDeviationAnnualized
+    : excessReturn > 0
+      ? (totalVolatilityAnnualized > 0 ? (excessReturn / totalVolatilityAnnualized) * 2 : excessReturn)
+      : 0;
+
+  // Treynor Ratio (if beta provided and non-zero)
+  let treynorRatio: number | undefined = undefined;
+  if (portfolioBeta !== undefined && Math.abs(portfolioBeta) > 0.001) {
+    treynorRatio = round2(excessReturn / portfolioBeta);
+  }
+
+  // Max Drawdown
+  let peak = 100;
+  let currentValue = 100;
+  let maxDd = 0;
+  for (const r of validReturns) {
+    currentValue *= (1 + r / 100);
+    if (currentValue > peak) peak = currentValue;
+    const dd = (peak - currentValue) / peak;
+    if (dd > maxDd) maxDd = dd;
+  }
+
+  const positiveCount = validReturns.filter((r) => r > 0).length;
+  const winRate = round2((positiveCount / n) * 100);
+
+  return {
+    periodCount: n,
+    meanReturnAnnualized: round2(meanAnnualized),
+    totalVolatilityAnnualized: round2(totalVolatilityAnnualized),
+    downsideDeviationAnnualized: round2(downsideDeviationAnnualized),
+    sharpeRatio: round2(sharpeRatio),
+    sortinoRatio: round2(sortinoRatio),
+    treynorRatio,
+    portfolioBeta,
+    maxDrawdown: round2(maxDd * 100),
+    positivePeriodsPercent: winRate,
+    summary: `Sharpe Ratio: ${round2(sharpeRatio)} | Sortino Ratio: ${round2(sortinoRatio)} | Volatility: ${round2(totalVolatilityAnnualized)}% p.a.`,
+  };
+}
+
+// ─── 6. Black-Scholes Option Pricing & Greeks ──────────────────
+export function calcBlackScholes(input: BlackScholesInput): BlackScholesOutput {
+  const {
+    spotPrice,
+    strikePrice,
+    timeToExpiryDays,
+    timeToExpiryYears,
+    volatilityPercent,
+    riskFreeRatePercent,
+    dividendYieldPercent = 0,
+  } = input;
+
+  const S = safePositive(spotPrice);
+  const K = safePositive(strikePrice);
+  const sigma = Math.max(0.001, safePositive(volatilityPercent, 20) / 100);
+  const r = safeNum(riskFreeRatePercent, 6.8) / 100;
+  const q = safePositive(dividendYieldPercent, 0) / 100;
+
+  let T = 0;
+  if (timeToExpiryYears !== undefined) {
+    T = Math.max(0, safeNum(timeToExpiryYears));
+  } else if (timeToExpiryDays !== undefined) {
+    T = Math.max(0, safeNum(timeToExpiryDays)) / 365;
+  } else {
+    T = 30 / 365;
+  }
+
+  // Zero-time to expiry edge case (intrinsic value only)
+  if (T <= 0 || S <= 0 || K <= 0) {
+    const callIntrinsic = Math.max(0, S - K);
+    const putIntrinsic = Math.max(0, K - S);
+    return {
+      spotPrice: S,
+      strikePrice: K,
+      timeToExpiryYears: 0,
+      volatilityPercent: round2(sigma * 100),
+      riskFreeRatePercent: round2(r * 100),
+      dividendYieldPercent: round2(q * 100),
+      d1: 0,
+      d2: 0,
+      callPrice: round2(callIntrinsic),
+      putPrice: round2(putIntrinsic),
+      callGreeks: { delta: S > K ? 1 : 0, gamma: 0, theta: 0, vega: 0, rho: 0 },
+      putGreeks: { delta: K > S ? -1 : 0, gamma: 0, theta: 0, vega: 0, rho: 0 },
+      callIntrinsic: round2(callIntrinsic),
+      callTimeValue: 0,
+      putIntrinsic: round2(putIntrinsic),
+      putTimeValue: 0,
+      putCallParityCheck: {
+        lhs: round2(callIntrinsic - putIntrinsic),
+        rhs: round2(S - K),
+        difference: 0,
+        holds: true,
+      },
+      summary: `At Expiry: Call Value: ₹${round2(callIntrinsic)} | Put Value: ₹${round2(putIntrinsic)}`,
+    };
+  }
+
+  const sqrtT = Math.sqrt(T);
+  const d1 = (Math.log(S / K) + (r - q + 0.5 * sigma * sigma) * T) / (sigma * sqrtT);
+  const d2 = d1 - sigma * sqrtT;
+
+  const Nd1 = stdNormCdf(d1);
+  const Nd2 = stdNormCdf(d2);
+  const NminusD1 = stdNormCdf(-d1);
+  const NminusD2 = stdNormCdf(-d2);
+  const nd1 = stdNormPdf(d1);
+
+  const expDiscount = Math.exp(-r * T);
+  const expDiv = Math.exp(-q * T);
+
+  // Black-Scholes Pricing
+  const callPrice = S * expDiv * Nd1 - K * expDiscount * Nd2;
+  const putPrice = K * expDiscount * NminusD2 - S * expDiv * NminusD1;
+
+  // Greeks Calculation
+  const callDelta = expDiv * Nd1;
+  const putDelta = -expDiv * NminusD1; // = expDiv * (Nd1 - 1)
+  const gamma = (expDiv * nd1) / (S * sigma * sqrtT);
+
+  // Theta per day (1/365)
+  const thetaCommon = -(S * sigma * expDiv * nd1) / (2 * sqrtT);
+  const callThetaAnnual = thetaCommon - r * K * expDiscount * Nd2 + q * S * expDiv * Nd1;
+  const putThetaAnnual = thetaCommon + r * K * expDiscount * NminusD2 - q * S * expDiv * NminusD1;
+  const callThetaDaily = callThetaAnnual / 365;
+  const putThetaDaily = putThetaAnnual / 365;
+
+  // Vega per 1% change in IV (0.01)
+  const vega = 0.01 * S * expDiv * sqrtT * nd1;
+
+  // Rho per 1% change in interest rate (0.01)
+  const callRho = 0.01 * K * T * expDiscount * Nd2;
+  const putRho = -0.01 * K * T * expDiscount * NminusD2;
+
+  const callIntrinsic = Math.max(0, S - K);
+  const putIntrinsic = Math.max(0, K - S);
+
+  // Put-Call Parity: C - P = S*e^(-qT) - K*e^(-rT)
+  const lhs = callPrice - putPrice;
+  const rhs = S * expDiv - K * expDiscount;
+  const parityDiff = Math.abs(lhs - rhs);
+
+  return {
+    spotPrice: round2(S),
+    strikePrice: round2(K),
+    timeToExpiryYears: round4(T),
+    volatilityPercent: round2(sigma * 100),
+    riskFreeRatePercent: round2(r * 100),
+    dividendYieldPercent: round2(q * 100),
+    d1: round4(d1),
+    d2: round4(d2),
+    callPrice: round2(Math.max(0, callPrice)),
+    putPrice: round2(Math.max(0, putPrice)),
+    callGreeks: {
+      delta: round4(callDelta),
+      gamma: round4(gamma),
+      theta: round2(callThetaDaily),
+      vega: round2(vega),
+      rho: round2(callRho),
+    },
+    putGreeks: {
+      delta: round4(putDelta),
+      gamma: round4(gamma),
+      theta: round2(putThetaDaily),
+      vega: round2(vega),
+      rho: round2(putRho),
+    },
+    callIntrinsic: round2(callIntrinsic),
+    callTimeValue: round2(Math.max(0, callPrice - callIntrinsic)),
+    putIntrinsic: round2(putIntrinsic),
+    putTimeValue: round2(Math.max(0, putPrice - putIntrinsic)),
+    putCallParityCheck: {
+      lhs: round2(lhs),
+      rhs: round2(rhs),
+      difference: round4(parityDiff),
+      holds: parityDiff < 0.01,
+    },
+    summary: `Theoretical Call Price: ₹${round2(callPrice)} (Delta: ${round2(callDelta)}) | Put Price: ₹${round2(putPrice)} (Delta: ${round2(putDelta)})`,
+  };
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GROUP 2: TRADING & MARGIN ENGINE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const STATIC_SPAN_RATES: Record<MarginInstrumentCategory, { span: number; exposure: number; label: string }> = {
+  nifty_futures: { span: 10.5, exposure: 2.0, label: "Nifty Futures (Benchmark Index)" },
+  banknifty_futures: { span: 12.5, exposure: 2.5, label: "Bank Nifty Futures (High Beta Banking Index)" },
+  finnifty_futures: { span: 11.0, exposure: 2.0, label: "FinNifty Futures (Financial Services)" },
+  tier1_equity: { span: 14.0, exposure: 3.5, label: "Large Cap Stock Futures (Tier 1 Liquid Equities)" },
+  tier2_equity: { span: 20.0, exposure: 5.0, label: "Mid/Small Cap Stock Futures (Tier 2 Volatile Equities)" },
+  intraday_equity: { span: 15.0, exposure: 5.0, label: "Intraday MIS Cash Equity (5x Peak Leverage Cap)" },
+  custom: { span: 15.0, exposure: 3.5, label: "Custom Margin Parameter" },
+};
+
+// 7. Margin & Leverage Calculator
+export function calcMarginRequired(input: MarginRequiredInput): MarginRequiredOutput {
+  const {
+    instrumentCategory = "nifty_futures",
+    lotSize = 50,
+    numberOfLots = 1,
+    price = 24000,
+    customSpanPercent,
+    customExposurePercent,
+    isMtfHolding = false,
+    mtfHoldingDays = 30,
+    mtfAnnualInterestRate = 12.5,
+  } = input;
+
+  const safeCategory = STATIC_SPAN_RATES[instrumentCategory] ? instrumentCategory : "custom";
+  const defaultRates = STATIC_SPAN_RATES[safeCategory];
+
+  const safeLotSize = Math.max(1, safePositive(lotSize, 50));
+  const safeNumLots = Math.max(1, safePositive(numberOfLots, 1));
+  const safePrice = safePositive(price, 24000);
+
+  const spanPercent = customSpanPercent !== undefined ? safePositive(customSpanPercent) : defaultRates.span;
+  const exposurePercent = customExposurePercent !== undefined ? safePositive(customExposurePercent) : defaultRates.exposure;
+
+  const totalQuantity = safeLotSize * safeNumLots;
+  const totalContractValue = totalQuantity * safePrice;
+
+  const spanMarginRequired = (totalContractValue * spanPercent) / 100;
+  const exposureMarginRequired = (totalContractValue * exposurePercent) / 100;
+  const totalMarginRequired = spanMarginRequired + exposureMarginRequired;
+
+  const effectiveLeverage = totalMarginRequired > 0 ? totalContractValue / totalMarginRequired : 0;
+
+  let mtfBorrowedAmount = 0;
+  let mtfInterestCost = 0;
+  if (isMtfHolding) {
+    mtfBorrowedAmount = Math.max(0, totalContractValue - totalMarginRequired);
+    const safeDays = safePositive(mtfHoldingDays, 30);
+    const safeInterestRate = safePositive(mtfAnnualInterestRate, 12.5) / 100;
+    mtfInterestCost = (mtfBorrowedAmount * safeInterestRate * safeDays) / 365;
+  }
+
+  const totalCapitalNeeded = totalMarginRequired + mtfInterestCost;
+
+  return {
+    instrumentCategory: safeCategory,
+    totalQuantity,
+    totalContractValue: Math.round(totalContractValue),
+    spanMarginPercent: round2(spanPercent),
+    spanMarginRequired: Math.round(spanMarginRequired),
+    exposureMarginPercent: round2(exposurePercent),
+    exposureMarginRequired: Math.round(exposureMarginRequired),
+    totalMarginRequired: Math.round(totalMarginRequired),
+    effectiveLeverage: round2(effectiveLeverage),
+    isMtfHolding,
+    mtfBorrowedAmount: Math.round(mtfBorrowedAmount),
+    mtfInterestCost: Math.round(mtfInterestCost),
+    totalCapitalNeeded: Math.round(totalCapitalNeeded),
+    disclaimer: "Static baseline SPAN rates for Tax Year 2026-27 under SEBI peak margin norms. Actual exchange SPAN changes dynamically with intraday volatility.",
+    summary: `Total Margin Required: ₹${Math.round(totalMarginRequired).toLocaleString("en-IN")} (${round2(effectiveLeverage)}x Leverage on ₹${Math.round(totalContractValue).toLocaleString("en-IN")} Contract Value)`,
+  };
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GROUP 3: LOANS ENGINE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// 8. Car Loan Total Cost of Ownership (TCO)
+export function calcCarTCO(input: CarTCOInput): CarTCOOutput {
+  const {
+    carOnRoadPrice,
+    downPayment,
+    loanInterestRate = 9.0,
+    loanTenureYears = 5,
+    ownershipTenureYears = 7,
+    annualKmDriven = 12000,
+    fuelMileageKmpl = 15,
+    fuelPricePerLitre = 100,
+    annualInsuranceCost = 35000,
+    annualMaintenanceCost = 15000,
+    annualDepreciationPercent = 15,
+  } = input;
+
+  const safeCarPrice = safePositive(carOnRoadPrice, 1500000);
+  const safeDownPayment = Math.min(safeCarPrice, safePositive(downPayment, 300000));
+  const safeLoanPrincipal = Math.max(0, safeCarPrice - safeDownPayment);
+  const safeLoanRate = safePositive(loanInterestRate, 9.0);
+  const safeLoanTenure = Math.max(1, safePositive(loanTenureYears, 5));
+  const safeOwnershipTenure = Math.max(1, safePositive(ownershipTenureYears, 7));
+
+  const emiResult = safeLoanPrincipal > 0
+    ? calcEMI({ principal: safeLoanPrincipal, annualRate: safeLoanRate, tenureMonths: safeLoanTenure * 12 })
+    : { emi: 0, totalPayment: 0, totalInterest: 0, interestPercentage: 0, amortizationSchedule: [] };
+
+  const monthlyEmi = emiResult.emi;
+  const loanMonthsInOwnership = Math.min(safeOwnershipTenure * 12, safeLoanTenure * 12);
+  const totalEmiPaid = monthlyEmi * loanMonthsInOwnership;
+  const totalLoanInterest = Math.max(0, totalEmiPaid - (loanMonthsInOwnership < safeLoanTenure * 12 ? (safeLoanPrincipal * (loanMonthsInOwnership / (safeLoanTenure * 12))) : safeLoanPrincipal));
+
+  const safeKm = safePositive(annualKmDriven, 12000);
+  const safeMileage = Math.max(1, safePositive(fuelMileageKmpl, 15));
+  const safeFuelPrice = safePositive(fuelPricePerLitre, 100);
+  const annualFuel = (safeKm / safeMileage) * safeFuelPrice;
+  const totalFuelCost = annualFuel * safeOwnershipTenure;
+
+  const safeInsurance = safePositive(annualInsuranceCost, 35000);
+  const totalInsuranceCost = safeInsurance * safeOwnershipTenure;
+
+  const safeMaintenance = safePositive(annualMaintenanceCost, 15000);
+  const totalMaintenanceCost = safeMaintenance * safeOwnershipTenure;
+
+  const totalRunningCost = totalFuelCost + totalInsuranceCost + totalMaintenanceCost;
+  const grossOutflow = safeDownPayment + totalEmiPaid + totalRunningCost;
+
+  const safeDeprRate = Math.min(100, safePositive(annualDepreciationPercent, 15)) / 100;
+  const estimatedResaleValue = Math.max(0, safeCarPrice * Math.pow(Math.max(0, 1 - safeDeprRate), safeOwnershipTenure));
+
+  const netTCO = Math.max(0, grossOutflow - estimatedResaleValue);
+  const effectiveMonthlyCost = netTCO / (safeOwnershipTenure * 12);
+  const totalKmDriven = safeKm * safeOwnershipTenure;
+  const costPerKm = totalKmDriven > 0 ? netTCO / totalKmDriven : 0;
+
+  // Yearly progression breakdown
+  const yearlyBreakdown: CarTCOYearRow[] = [];
+  let cumRunning = 0;
+  let curCarVal = safeCarPrice;
+
+  for (let yr = 1; yr <= safeOwnershipTenure; yr++) {
+    const yrEmi = yr <= safeLoanTenure ? monthlyEmi * 12 : 0;
+    const yrFuel = annualFuel;
+    const yrIns = safeInsurance * Math.pow(0.95, yr - 1);
+    const yrMaint = safeMaintenance * Math.pow(1.08, yr - 1);
+    const yrRunning = yrFuel + yrIns + yrMaint;
+    cumRunning += yrRunning;
+    curCarVal = Math.max(0, curCarVal * (1 - safeDeprRate));
+
+    yearlyBreakdown.push({
+      year: yr,
+      loanEmiPaid: Math.round(yrEmi),
+      fuelCost: Math.round(yrFuel),
+      insuranceCost: Math.round(yrIns),
+      maintenanceCost: Math.round(yrMaint),
+      cumulativeRunningCost: Math.round(cumRunning),
+      depreciatedCarValue: Math.round(curCarVal),
+    });
+  }
+
+  return {
+    carOnRoadPrice: Math.round(safeCarPrice),
+    downPayment: Math.round(safeDownPayment),
+    loanPrincipal: Math.round(safeLoanPrincipal),
+    loanInterestRate: safeLoanRate,
+    loanTenureYears: safeLoanTenure,
+    ownershipTenureYears: safeOwnershipTenure,
+    monthlyEmi: Math.round(monthlyEmi),
+    totalEmiPaid: Math.round(totalEmiPaid),
+    totalLoanInterest: Math.round(totalLoanInterest),
+    totalFuelCost: Math.round(totalFuelCost),
+    totalInsuranceCost: Math.round(totalInsuranceCost),
+    totalMaintenanceCost: Math.round(totalMaintenanceCost),
+    totalRunningCost: Math.round(totalRunningCost),
+    grossOutflow: Math.round(grossOutflow),
+    estimatedResaleValue: Math.round(estimatedResaleValue),
+    netTotalCostOfOwnership: Math.round(netTCO),
+    effectiveMonthlyCost: Math.round(effectiveMonthlyCost),
+    costPerKm: round2(costPerKm),
+    yearlyBreakdown,
+    summary: `Net Cost of Ownership: ₹${Math.round(netTCO).toLocaleString("en-IN")} over ${safeOwnershipTenure} years (₹${round2(costPerKm)}/km or ₹${Math.round(effectiveMonthlyCost).toLocaleString("en-IN")}/mo)`,
+  };
+}
+
+// 9. Home Loan Balance Transfer & Refinancing
+export function calcBalanceTransfer(input: BalanceTransferInput): BalanceTransferOutput {
+  const {
+    currentOutstandingPrincipal,
+    currentInterestRate,
+    currentRemainingTenureMonths,
+    newInterestRate,
+    newTenureMonths,
+    processingFeeType = "percentage",
+    processingFeeValue = 0.5,
+    otherSwitchingCharges = 15000,
+  } = input;
+
+  const safePrincipal = safePositive(currentOutstandingPrincipal, 5000000);
+  const safeCurRate = safePositive(currentInterestRate, 9.5);
+  const safeCurTenure = Math.max(1, safePositive(currentRemainingTenureMonths, 180));
+
+  const curEmiRes = calcEMI({
+    principal: safePrincipal,
+    annualRate: safeCurRate,
+    tenureMonths: safeCurTenure,
+  });
+
+  const curEmi = curEmiRes.emi;
+  const curTotalPayment = curEmi * safeCurTenure;
+  const curTotalInterest = Math.max(0, curTotalPayment - safePrincipal);
+
+  const safeNewRate = safePositive(newInterestRate, 8.4);
+  const safeNewTenure = Math.max(1, safePositive(newTenureMonths, safeCurTenure));
+
+  const newEmiRes = calcEMI({
+    principal: safePrincipal,
+    annualRate: safeNewRate,
+    tenureMonths: safeNewTenure,
+  });
+
+  const newEmi = newEmiRes.emi;
+  const newTotalPayment = newEmi * safeNewTenure;
+  const newTotalInterest = Math.max(0, newTotalPayment - safePrincipal);
+
+  const grossInterestSavings = curTotalInterest - newTotalInterest;
+  const monthlyEmiSavings = curEmi - newEmi;
+
+  const safeProcFeeVal = safePositive(processingFeeValue, 0.5);
+  const procFeeAmount = processingFeeType === "percentage"
+    ? (safePrincipal * safeProcFeeVal) / 100
+    : safeProcFeeVal;
+
+  const safeOtherCharges = safePositive(otherSwitchingCharges, 15000);
+  const totalSwitchingCosts = procFeeAmount + safeOtherCharges;
+
+  const netBenefit = grossInterestSavings - totalSwitchingCosts;
+  const isBeneficial = netBenefit > 0;
+
+  const breakevenMonths = (monthlyEmiSavings > 0 && totalSwitchingCosts > 0)
+    ? Math.ceil(totalSwitchingCosts / monthlyEmiSavings)
+    : 0;
+
+  let recommendation = "";
+  if (!isBeneficial) {
+    recommendation = `Balance transfer is NOT recommended. Switching fees (₹${Math.round(totalSwitchingCosts).toLocaleString("en-IN")} exceed interest savings by ₹${Math.abs(Math.round(netBenefit)).toLocaleString("en-IN")}.`;
+  } else if (breakevenMonths > safeCurTenure) {
+    recommendation = `Marginal benefit. Breakeven period (${breakevenMonths} months) is longer than remaining tenure (${safeCurTenure} months).`;
+  } else {
+    recommendation = `Highly recommended! You save ₹${Math.round(netBenefit).toLocaleString("en-IN")} net after recovering switching fees in ${breakevenMonths} months.`;
+  }
+
+  return {
+    currentOutstandingPrincipal: Math.round(safePrincipal),
+    currentInterestRate: safeCurRate,
+    currentRemainingTenureMonths: safeCurTenure,
+    currentMonthlyEmi: Math.round(curEmi),
+    currentTotalInterestRemaining: Math.round(curTotalInterest),
+    currentTotalPaymentRemaining: Math.round(curTotalPayment),
+    newInterestRate: safeNewRate,
+    newTenureMonths: safeNewTenure,
+    newMonthlyEmi: Math.round(newEmi),
+    newTotalInterest: Math.round(newTotalInterest),
+    newTotalPayment: Math.round(newTotalPayment),
+    monthlyEmiSavings: Math.round(monthlyEmiSavings),
+    grossInterestSavings: Math.round(grossInterestSavings),
+    totalSwitchingCosts: Math.round(totalSwitchingCosts),
+    netBenefit: Math.round(netBenefit),
+    isBeneficial,
+    breakevenMonths,
+    recommendation,
+    summary: `Net Refinancing Savings: ₹${Math.round(netBenefit).toLocaleString("en-IN")} | Breakeven in ${breakevenMonths} months | Monthly EMI drops by ₹${Math.round(monthlyEmiSavings).toLocaleString("en-IN")}`,
+  };
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GROUP 4: TAX & GLOBAL ENGINE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// 10. Marginal Relief & High-Income Surcharge Calculator
+export function calcMarginalRelief(input: MarginalReliefInput): MarginalReliefOutput {
+  const {
+    grossTotalIncome,
+    regime = "new",
+    ageCategory = "general",
+  } = input;
+
+  const safeIncome = safePositive(grossTotalIncome, 5100000);
+
+  const baseTaxResult = calcTax({
+    grossIncome: safeIncome,
+    regime,
+  });
+
+  const baseTax = baseTaxResult.taxBeforeCess;
+
+  let surchargeRate = 0;
+  let threshold = 0;
+
+  if (safeIncome > 50000000) {
+    surchargeRate = regime === "new" ? 25 : 37;
+    threshold = 50000000;
+  } else if (safeIncome > 20000000) {
+    surchargeRate = 25;
+    threshold = 20000000;
+  } else if (safeIncome > 10000000) {
+    surchargeRate = 15;
+    threshold = 10000000;
+  } else if (safeIncome > 5000000) {
+    surchargeRate = 10;
+    threshold = 5000000;
+  }
+
+  const surchargeBeforeRelief = (baseTax * surchargeRate) / 100;
+
+  let marginalReliefAmount = 0;
+  let hasMarginalRelief = false;
+
+  if (surchargeRate > 0 && threshold > 0) {
+    const thresholdTaxResult = calcTax({
+      grossIncome: threshold,
+      regime,
+    });
+
+    const thresholdBaseTax = thresholdTaxResult.taxBeforeCess;
+
+    let thresholdSurchargeRate = 0;
+    if (threshold === 50000000) thresholdSurchargeRate = 25;
+    else if (threshold === 20000000) thresholdSurchargeRate = 15;
+    else if (threshold === 10000000) thresholdSurchargeRate = 10;
+    else if (threshold === 5000000) thresholdSurchargeRate = 0;
+
+    const thresholdTotalTax = thresholdBaseTax * (1 + thresholdSurchargeRate / 100);
+    const extraIncome = safeIncome - threshold;
+    const maxPermissibleTax = thresholdTotalTax + extraIncome;
+
+    const actualTaxWithSurcharge = baseTax + surchargeBeforeRelief;
+
+    if (actualTaxWithSurcharge > maxPermissibleTax) {
+      marginalReliefAmount = actualTaxWithSurcharge - maxPermissibleTax;
+      hasMarginalRelief = true;
+    }
+  }
+
+  const netSurcharge = Math.max(0, surchargeBeforeRelief - marginalReliefAmount);
+  const taxPlusNetSurcharge = baseTax + netSurcharge;
+  const cess = (taxPlusNetSurcharge * 4) / 100;
+  const totalTaxPayable = taxPlusNetSurcharge + cess;
+  const effectiveTaxRate = safeIncome > 0 ? (totalTaxPayable / safeIncome) * 100 : 0;
+
+  let thresholdComparison = "";
+  if (surchargeRate === 0) {
+    thresholdComparison = `Income (₹${safeIncome.toLocaleString("en-IN")}) is within ₹50 Lakh. 0% Surcharge applies.`;
+  } else if (hasMarginalRelief) {
+    thresholdComparison = `Marginal Relief of ₹${Math.round(marginalReliefAmount).toLocaleString("en-IN")} applied! Income exceeds ₹${(threshold / 100000).toFixed(0)}L by ₹${(safeIncome - threshold).toLocaleString("en-IN")}, capping total surcharge tax.`;
+  } else {
+    thresholdComparison = `Full ${surchargeRate}% surcharge applies. Income exceeds ₹${(threshold / 100000).toFixed(0)}L threshold without exceeding marginal relief boundary.`;
+  }
+
+  return {
+    grossTotalIncome: Math.round(safeIncome),
+    regime,
+    baseTax: Math.round(baseTax),
+    applicableSurchargeRatePercent: surchargeRate,
+    surchargeThreshold: threshold,
+    surchargeBeforeRelief: Math.round(surchargeBeforeRelief),
+    marginalReliefAmount: Math.round(marginalReliefAmount),
+    netSurcharge: Math.round(netSurcharge),
+    taxPlusNetSurcharge: Math.round(taxPlusNetSurcharge),
+    healthAndEducationCess: Math.round(cess),
+    totalTaxPayable: Math.round(totalTaxPayable),
+    effectiveTaxRatePercent: round2(effectiveTaxRate),
+    hasMarginalRelief,
+    thresholdComparison,
+    summary: `Total Tax Payable: ₹${Math.round(totalTaxPayable).toLocaleString("en-IN")} (${round2(effectiveTaxRate)}% effective) | Surcharge: ${surchargeRate}% (Saved ₹${Math.round(marginalReliefAmount).toLocaleString("en-IN")} via Marginal Relief)`,
+  };
+}
+
+// 11. LRS TCS & Remittance Calculator
+export function calcLRSTCS(input: LrsTcsInput): LrsTcsOutput {
+  const {
+    category = "general_investment",
+    remittanceAmountInr,
+    panAvailable = true,
+  } = input;
+
+  const safeAmount = safePositive(remittanceAmountInr, 1000000);
+  const threshold = 700000;
+
+  let tier1Rate = 0;
+  let tier2Rate = 0;
+  let categoryLabel = "";
+
+  switch (category) {
+    case "overseas_tour_package":
+      categoryLabel = "Overseas Tour Program Package";
+      tier1Rate = 5.0;
+      tier2Rate = 20.0;
+      break;
+    case "education_loan":
+      categoryLabel = "Education Remittance (Funded by Loan u/s 80E)";
+      tier1Rate = 0;
+      tier2Rate = 0.5;
+      break;
+    case "education_self":
+    case "medical_treatment":
+      categoryLabel = category === "education_self" ? "Education Remittance (Self-Funded)" : "Medical Treatment Remittance";
+      tier1Rate = 0;
+      tier2Rate = 5.0;
+      break;
+    case "general_investment":
+    default:
+      categoryLabel = "Foreign Stocks, Real Estate & General Remittance";
+      tier1Rate = 0;
+      tier2Rate = 20.0;
+      break;
+  }
+
+  if (!panAvailable) {
+    tier1Rate = Math.max(tier1Rate, 20.0);
+    tier2Rate = 20.0;
+  }
+
+  const tier1Amount = Math.min(safeAmount, threshold);
+  const tier2Amount = Math.max(0, safeAmount - threshold);
+
+  const tier1Tcs = (tier1Amount * tier1Rate) / 100;
+  const tier2Tcs = (tier2Amount * tier2Rate) / 100;
+  const totalTcs = tier1Tcs + tier2Tcs;
+  const totalOutflow = safeAmount + totalTcs;
+
+  return {
+    category,
+    categoryLabel,
+    remittanceAmountInr: Math.round(safeAmount),
+    exemptionThreshold: threshold,
+    tier1Amount: Math.round(tier1Amount),
+    tier1RatePercent: tier1Rate,
+    tier1Tcs: Math.round(tier1Tcs),
+    tier2Amount: Math.round(tier2Amount),
+    tier2RatePercent: tier2Rate,
+    tier2Tcs: Math.round(tier2Tcs),
+    totalTcsDeducted: Math.round(totalTcs),
+    totalOutflowInr: Math.round(totalOutflow),
+    isTcsCreditClaimable: true,
+    tcsCreditNote: "TCS is not a permanent tax. 100% of TCS collected is reflected in Form 26AS / AIS and can be adjusted against income tax payable or claimed as a full refund when filing your annual ITR.",
+    summary: `Total TCS Deducted: ₹${Math.round(totalTcs).toLocaleString("en-IN")} | Total Bank Outflow: ₹${Math.round(totalOutflow).toLocaleString("en-IN")} (100% claimable in ITR)`,
+  };
+}
+
+// 12. US Stock Investing Net Return (DTAA Adjusted)
+export function calcUSStockReturn(input: USStockReturnInput): USStockReturnOutput {
+  const {
+    investmentAmountInr,
+    purchaseUsdInrRate = 84.0,
+    saleUsdInrRate = 88.0,
+    capitalGainUsd = 1500,
+    dividendIncomeUsd = 200,
+    holdingMonths = 30,
+    usDividendWithholdingTaxPercent = 25,
+    userTaxBracketPercent = 30,
+  } = input;
+
+  const safeInr = safePositive(investmentAmountInr, 500000);
+  const safeBuyRate = Math.max(1, safePositive(purchaseUsdInrRate, 84.0));
+  const safeSellRate = Math.max(1, safePositive(saleUsdInrRate, 88.0));
+  const safeGainUsd = safeNum(capitalGainUsd, 1500);
+  const safeDivUsd = safePositive(dividendIncomeUsd, 200);
+  const safeHolding = Math.max(1, safePositive(holdingMonths, 30));
+
+  const initialInvestmentUsd = safeInr / safeBuyRate;
+  const grossProceedsUsd = initialInvestmentUsd + safeGainUsd;
+  const grossProceedsInr = grossProceedsUsd * safeSellRate;
+
+  const currencyGainLossInr = initialInvestmentUsd * (safeSellRate - safeBuyRate);
+  const stockCapitalGainInr = safeGainUsd * safeSellRate;
+
+  const isLongTerm = safeHolding >= 24;
+  const capGainsRate = isLongTerm ? 12.5 : safePositive(userTaxBracketPercent, 30);
+  const indianCapGainsTax = stockCapitalGainInr > 0 ? (stockCapitalGainInr * capGainsRate) / 100 : 0;
+
+  const safeWithholdingRate = safePositive(usDividendWithholdingTaxPercent, 25) / 100;
+  const safeSlabRate = safePositive(userTaxBracketPercent, 30) / 100;
+
+  const grossDividendInr = safeDivUsd * safeSellRate;
+  const usWithholdingInr = grossDividendInr * safeWithholdingRate;
+  const grossIndianDividendTax = grossDividendInr * safeSlabRate;
+
+  const foreignTaxCreditInr = Math.min(usWithholdingInr, grossIndianDividendTax);
+  const indianDividendTaxNet = Math.max(0, grossIndianDividendTax - foreignTaxCreditInr);
+
+  const totalTaxPaid = indianCapGainsTax + usWithholdingInr + indianDividendTaxNet;
+  const netProceedsInr = grossProceedsInr + (grossDividendInr - totalTaxPaid);
+  const netAbsoluteGainInr = netProceedsInr - safeInr;
+  const absoluteReturnPercent = safeInr > 0 ? (netAbsoluteGainInr / safeInr) * 100 : 0;
+
+  const durationYears = safeHolding / 12;
+  const cagr = durationYears > 0 && netProceedsInr > 0
+    ? (Math.pow(netProceedsInr / safeInr, 1 / durationYears) - 1) * 100
+    : 0;
+
+  return {
+    investmentAmountInr: Math.round(safeInr),
+    purchaseUsdInrRate: safeBuyRate,
+    saleUsdInrRate: safeSellRate,
+    initialInvestmentUsd: round2(initialInvestmentUsd),
+    capitalGainUsd: round2(safeGainUsd),
+    dividendIncomeUsd: round2(safeDivUsd),
+    grossProceedsUsd: round2(grossProceedsUsd),
+    grossProceedsInr: Math.round(grossProceedsInr),
+    currencyGainLossInr: Math.round(currencyGainLossInr),
+    stockCapitalGainInr: Math.round(stockCapitalGainInr),
+    isLongTerm,
+    applicableCapitalGainsRatePercent: capGainsRate,
+    indianCapitalGainsTax: Math.round(indianCapGainsTax),
+    grossDividendInr: Math.round(grossDividendInr),
+    usWithholdingTaxInr: Math.round(usWithholdingInr),
+    foreignTaxCreditInr: Math.round(foreignTaxCreditInr),
+    indianDividendTaxNet: Math.round(indianDividendTaxNet),
+    totalTaxPaidInr: Math.round(totalTaxPaid),
+    netProceedsInr: Math.round(netProceedsInr),
+    netAbsoluteGainInr: Math.round(netAbsoluteGainInr),
+    absoluteReturnPercent: round2(absoluteReturnPercent),
+    annualizedReturnCagr: round2(cagr),
+    dtaaCreditSummary: `US 25% Dividend Withholding Tax (₹${Math.round(usWithholdingInr).toLocaleString("en-IN")}) is 100% credited against Indian slab tax via Section 90 FTC, eliminating double taxation.`,
+    summary: `Net INR Proceeds: ₹${Math.round(netProceedsInr).toLocaleString("en-IN")} | Net Gain: ₹${Math.round(netAbsoluteGainInr).toLocaleString("en-IN")} (${round2(cagr)}% CAGR over ${durationYears} yrs)`,
+  };
+}
+
+// 13. NRI NRE vs NRO vs FCNR Deposit Comparator
+export function calcNRIDepositReturns(input: NRIDepositInput): NRIDepositOutput {
+  const {
+    depositAmount,
+    tenureMonths = 36,
+    nreInterestRatePercent = 7.1,
+    nroInterestRatePercent = 7.3,
+    fcnrInterestRatePercent = 5.5,
+    nroTdsRatePercent = 31.2,
+    compoundingFrequency = "quarterly",
+  } = input;
+
+  const safePrincipal = safePositive(depositAmount, 1000000);
+  const safeTenure = Math.max(1, safePositive(tenureMonths, 36));
+  const tenureYears = safeTenure / 12;
+
+  const compPerYear = compoundingFrequency === "quarterly" ? 4 : 1;
+
+  // 1. NRE Deposit
+  const nreRateDec = safePositive(nreInterestRatePercent, 7.1) / 100;
+  const nreMaturity = safePrincipal * Math.pow(1 + nreRateDec / compPerYear, compPerYear * tenureYears);
+  const nreInterest = nreMaturity - safePrincipal;
+  const nreYield = tenureYears > 0 ? (nreInterest / safePrincipal / tenureYears) * 100 : 0;
+
+  const nreResult: SingleNRIDepositResult = {
+    depositName: "NRE Fixed Deposit (Non-Resident External)",
+    currency: "INR",
+    principal: Math.round(safePrincipal),
+    preTaxInterestRate: round2(nreRateDec * 100),
+    interestEarnedPreTax: Math.round(nreInterest),
+    taxDeducted: 0,
+    effectivePostTaxInterest: Math.round(nreInterest),
+    maturityAmount: Math.round(nreMaturity),
+    effectivePostTaxAnnualYield: round2(nreYield),
+    isFullyRepatriable: true,
+    isTaxFreeInIndia: true,
+    notes: "100% Tax-Free in India under Section 10(4)(ii). Principal & interest are freely and fully repatriable abroad without limits.",
+  };
+
+  // 2. NRO Deposit
+  const nroRateDec = safePositive(nroInterestRatePercent, 7.3) / 100;
+  const nroPreTaxMaturity = safePrincipal * Math.pow(1 + nroRateDec / compPerYear, compPerYear * tenureYears);
+  const nroPreTaxInterest = nroPreTaxMaturity - safePrincipal;
+  const safeTdsRate = Math.min(100, safePositive(nroTdsRatePercent, 31.2)) / 100;
+  const nroTds = nroPreTaxInterest * safeTdsRate;
+  const nroNetInterest = nroPreTaxInterest - nroTds;
+  const nroNetMaturity = safePrincipal + nroNetInterest;
+  const nroYield = tenureYears > 0 ? (nroNetInterest / safePrincipal / tenureYears) * 100 : 0;
+
+  const nroResult: SingleNRIDepositResult = {
+    depositName: "NRO Fixed Deposit (Non-Resident Ordinary)",
+    currency: "INR",
+    principal: Math.round(safePrincipal),
+    preTaxInterestRate: round2(nroRateDec * 100),
+    interestEarnedPreTax: Math.round(nroPreTaxInterest),
+    taxDeducted: Math.round(nroTds),
+    effectivePostTaxInterest: Math.round(nroNetInterest),
+    maturityAmount: Math.round(nroNetMaturity),
+    effectivePostTaxAnnualYield: round2(nroYield),
+    isFullyRepatriable: false,
+    isTaxFreeInIndia: false,
+    notes: `Taxable in India. TDS deducted at ${round2(safeTdsRate * 100)}% (or lower DTAA rate with TRC). Repatriation limited to USD 1 Million/financial year under Form 15CA/CB.`,
+  };
+
+  // 3. FCNR(B) Deposit
+  const fcnrRateDec = safePositive(fcnrInterestRatePercent, 5.5) / 100;
+  const fcnrMaturity = safePrincipal * Math.pow(1 + fcnrRateDec / compPerYear, compPerYear * tenureYears);
+  const fcnrInterest = fcnrMaturity - safePrincipal;
+  const fcnrYield = tenureYears > 0 ? (fcnrInterest / safePrincipal / tenureYears) * 100 : 0;
+
+  const fcnrResult: SingleNRIDepositResult = {
+    depositName: "FCNR(B) Deposit (Foreign Currency Non-Resident)",
+    currency: "USD / Foreign",
+    principal: Math.round(safePrincipal),
+    preTaxInterestRate: round2(fcnrRateDec * 100),
+    interestEarnedPreTax: Math.round(fcnrInterest),
+    taxDeducted: 0,
+    effectivePostTaxInterest: Math.round(fcnrInterest),
+    maturityAmount: Math.round(fcnrMaturity),
+    effectivePostTaxAnnualYield: round2(fcnrYield),
+    isFullyRepatriable: true,
+    isTaxFreeInIndia: true,
+    notes: "100% Tax-Free in India. Held directly in foreign currency (USD/GBP/EUR) — completely eliminates INR currency depreciation risk.",
+  };
+
+  let bestOption = "NRE Deposit";
+  if (nreYield >= nroYield) {
+    bestOption = `NRE Fixed Deposit offers the highest post-tax return (${round2(nreYield)}% net yield) with zero tax and 100% foreign repatriability.`;
+  } else {
+    bestOption = `NRO Fixed Deposit yields ${round2(nroYield)}% post-tax vs NRE (${round2(nreYield)}%). Check if DTAA TRC allows lower TDS.`;
+  }
+
+  return {
+    depositAmount: Math.round(safePrincipal),
+    tenureMonths: safeTenure,
+    nreResult,
+    nroResult,
+    fcnrResult,
+    bestOption,
+    sideBySideComparison: [nreResult, nroResult, fcnrResult],
+    summary: `NRE Net Maturity: ₹${Math.round(nreMaturity).toLocaleString("en-IN")} (${round2(nreYield)}% Tax-Free) vs NRO Net Maturity: ₹${Math.round(nroNetMaturity).toLocaleString("en-IN")} (${round2(nroYield)}% Post-TDS)`,
+  };
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GROUP 5: RETIREMENT ENGINE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// 14. NPS & Tier-1 Pension Modeler
+export function calcNPS(input: NPSInput): NPSOutput {
+  const {
+    currentAge = 28,
+    retirementAge = 60,
+    monthlyContribution = 10000,
+    equityAllocationPercent = 50,
+    corporateDebtAllocationPercent = 30,
+    govtBondsAllocationPercent = 20,
+    expectedEquityReturnPercent = 12.0,
+    expectedCorpDebtReturnPercent = 9.0,
+    expectedGovtBondReturnPercent = 7.5,
+    lumpSumWithdrawalPercent = 60,
+    annuityReinvestmentPercent = 40,
+    assumedAnnuityYieldPercent = 6.5,
+    taxBracketPercent = 30,
+  } = input;
+
+  const safeAge = Math.max(18, safePositive(currentAge, 28));
+  const safeRetirement = Math.max(safeAge + 1, safePositive(retirementAge, 60));
+  const safeContribution = safePositive(monthlyContribution, 10000);
+
+  const totalAlloc = equityAllocationPercent + corporateDebtAllocationPercent + govtBondsAllocationPercent;
+  if (Math.abs(totalAlloc - 100) > 0.5) {
+    return {
+      currentAge: safeAge,
+      retirementAge: safeRetirement,
+      totalYearsInvested: 0,
+      monthlyContribution: safeContribution,
+      totalAmountInvested: 0,
+      blendedExpectedReturnPercent: 0,
+      totalAccumulatedCorpus: 0,
+      lumpSumWithdrawalPercent: 60,
+      lumpSumTaxFreeAmount: 0,
+      annuityReinvestmentPercent: 40,
+      annuityPurchasedAmount: 0,
+      assumedAnnuityYieldPercent: 6.5,
+      estimatedMonthlyPension: 0,
+      annualTaxSavedUnder80CCD: 0,
+      lifetimeTaxSaved: 0,
+      yearlyProgression: [],
+      isValid: false,
+      errorMessage: `Asset allocations must sum to exactly 100% (currently ${totalAlloc}%: Equity ${equityAllocationPercent}% + Corporate Debt ${corporateDebtAllocationPercent}% + Govt Bonds ${govtBondsAllocationPercent}%).`,
+      summary: "Invalid asset allocation percentages.",
+    };
+  }
+
+  const blendedReturn =
+    (equityAllocationPercent * safePositive(expectedEquityReturnPercent, 12.0) +
+      corporateDebtAllocationPercent * safePositive(expectedCorpDebtReturnPercent, 9.0) +
+      govtBondsAllocationPercent * safePositive(expectedGovtBondReturnPercent, 7.5)) /
+    100;
+
+  const totalYears = safeRetirement - safeAge;
+  const totalMonths = totalYears * 12;
+  const totalInvested = safeContribution * totalMonths;
+
+  const monthlyRate = blendedReturn / 12 / 100;
+  const totalCorpus = monthlyRate > 0
+    ? safeContribution * ((Math.pow(1 + monthlyRate, totalMonths) - 1) / monthlyRate) * (1 + monthlyRate)
+    : totalInvested;
+
+  const safeLumpSumPct = Math.min(60, safePositive(lumpSumWithdrawalPercent, 60));
+  const safeAnnuityPct = Math.max(40, safePositive(annuityReinvestmentPercent, 40));
+
+  const lumpSumAmount = (totalCorpus * safeLumpSumPct) / 100;
+  const annuityAmount = (totalCorpus * safeAnnuityPct) / 100;
+
+  const safeAnnuityRate = safePositive(assumedAnnuityYieldPercent, 6.5) / 100;
+  const estimatedMonthlyPension = (annuityAmount * safeAnnuityRate) / 12;
+
+  const safeTaxBracket = safePositive(taxBracketPercent, 30) / 100;
+  const annualContribution = safeContribution * 12;
+  const annual80CcdSaved = Math.min(annualContribution, 50000) * safeTaxBracket;
+  const lifetimeTaxSaved = annual80CcdSaved * totalYears;
+
+  const yearlyProgression: NPSYearRow[] = [];
+  for (let y = 1; y <= totalYears; y++) {
+    const m = y * 12;
+    const inv = safeContribution * m;
+    const corp = monthlyRate > 0
+      ? safeContribution * ((Math.pow(1 + monthlyRate, m) - 1) / monthlyRate) * (1 + monthlyRate)
+      : inv;
+
+    yearlyProgression.push({
+      age: safeAge + y,
+      year: y,
+      totalInvested: Math.round(inv),
+      accumulatedCorpus: Math.round(corp),
+      lumpSumValue: Math.round((corp * safeLumpSumPct) / 100),
+      annuityValue: Math.round((corp * safeAnnuityPct) / 100),
+    });
+  }
+
+  return {
+    currentAge: safeAge,
+    retirementAge: safeRetirement,
+    totalYearsInvested: totalYears,
+    monthlyContribution: Math.round(safeContribution),
+    totalAmountInvested: Math.round(totalInvested),
+    blendedExpectedReturnPercent: round2(blendedReturn),
+    totalAccumulatedCorpus: Math.round(totalCorpus),
+    lumpSumWithdrawalPercent: safeLumpSumPct,
+    lumpSumTaxFreeAmount: Math.round(lumpSumAmount),
+    annuityReinvestmentPercent: safeAnnuityPct,
+    annuityPurchasedAmount: Math.round(annuityAmount),
+    assumedAnnuityYieldPercent: round2(safeAnnuityRate * 100),
+    estimatedMonthlyPension: Math.round(estimatedMonthlyPension),
+    annualTaxSavedUnder80CCD: Math.round(annual80CcdSaved),
+    lifetimeTaxSaved: Math.round(lifetimeTaxSaved),
+    yearlyProgression,
+    isValid: true,
+    summary: `NPS Retirement Corpus: ₹${Math.round(totalCorpus).toLocaleString("en-IN")} at Age ${safeRetirement} | 60% Tax-Free Lump Sum: ₹${Math.round(lumpSumAmount).toLocaleString("en-IN")} | Monthly Pension: ₹${Math.round(estimatedMonthlyPension).toLocaleString("en-IN")}/mo`,
   };
 }
 
