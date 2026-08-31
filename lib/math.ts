@@ -145,12 +145,21 @@ import {
   STANDARD_DEDUCTION_OLD_REGIME,
   REBATE_SECTION_157,
   HEALTH_AND_EDUCATION_CESS_RATE,
+  SURCHARGE_SLABS_NEW_REGIME,
+  SURCHARGE_SLABS_OLD_REGIME,
+  SPECIAL_RATE_MAX_SURCHARGE,
+  MARGINAL_RELIEF_THRESHOLDS,
   CAPITAL_GAINS_RATES,
+  CII_TABLE,
+  CURRENT_CII_YEAR,
+  CURRENT_CII_VALUE,
+  LRS_TCS_CONSTANTS,
   STT_RATES_F_AND_O,
   TRANSACTION_CHARGES,
   PRESUMPTIVE_TAX_CONSTANTS,
   HRA_CONSTANTS,
   SECTION_54_CONSTANTS,
+  NPS_CONSTANTS,
   MAX_INPUT_LIMITS,
 } from "@/lib/constants/tax-year-2026-27";
 
@@ -165,12 +174,21 @@ export {
   STANDARD_DEDUCTION_OLD_REGIME,
   REBATE_SECTION_157,
   HEALTH_AND_EDUCATION_CESS_RATE,
+  SURCHARGE_SLABS_NEW_REGIME,
+  SURCHARGE_SLABS_OLD_REGIME,
+  SPECIAL_RATE_MAX_SURCHARGE,
+  MARGINAL_RELIEF_THRESHOLDS,
   CAPITAL_GAINS_RATES,
+  CII_TABLE,
+  CURRENT_CII_YEAR,
+  CURRENT_CII_VALUE,
+  LRS_TCS_CONSTANTS,
   STT_RATES_F_AND_O,
   TRANSACTION_CHARGES,
   PRESUMPTIVE_TAX_CONSTANTS,
   HRA_CONSTANTS,
   SECTION_54_CONSTANTS,
+  NPS_CONSTANTS,
   MAX_INPUT_LIMITS,
 };
 
@@ -238,6 +256,7 @@ export interface HRAExemptionInput {
   hraReceived: number;
   rentPaid: number;
   cityType: CityType;
+  regime?: TaxRegime;
   isPayingToParents?: boolean;
   parentsSlabRatePercent?: number;
   userSlabRatePercent?: number;
@@ -332,7 +351,7 @@ export interface PositionSizeInput {
   riskPercent: number; // e.g. 1 for 1%
   entryPrice: number;
   stopLossPrice: number;
-  riskRewardRatio: number; // e.g. 2 for 1:2, 2.5 for 1:2.5
+  riskRewardRatio?: number; // e.g. 2 for 1:2, 2.5 for 1:2.5
   tradeDirection?: "long" | "short" | "auto";
   leverageMultiplier?: number;
 }
@@ -421,6 +440,9 @@ export interface DcfInput {
   discountRate: number; // e.g. 11 for 11% (WACC)
   sharesOutstanding?: number; // e.g. 100000
   netDebt?: number; // Total Debt - Cash (default 0)
+  forecastYears?: number;
+  growthRateYears1to5?: number;
+  cashFlowYear1?: number;
 }
 
 export interface DcfYearRow {
@@ -568,7 +590,7 @@ export interface TwrrOutput {
 export interface RiskRatiosInput {
   returns: number[];
   periodFrequency?: "monthly" | "daily" | "annual";
-  riskFreeRate: number;
+  riskFreeRate?: number;
   portfolioBeta?: number;
   benchmarkReturns?: number[];
 }
@@ -579,7 +601,8 @@ export interface RiskRatiosOutput {
   totalVolatilityAnnualized: number;
   downsideDeviationAnnualized: number;
   sharpeRatio: number;
-  sortinoRatio: number;
+  sortinoRatio?: number;
+  isSortinoInfinite?: boolean;
   treynorRatio?: number;
   portfolioBeta?: number;
   maxDrawdown: number;
@@ -682,11 +705,13 @@ export interface CarTCOInput {
   loanInterestRate?: number;
   loanTenureYears?: number;
   ownershipTenureYears: number;
-  annualKmDriven: number;
-  fuelMileageKmpl: number;
-  fuelPricePerLitre: number;
-  annualInsuranceCost: number;
-  annualMaintenanceCost: number;
+  annualKmDriven?: number;
+  fuelMileageKmpl?: number;
+  fuelPricePerLitre?: number;
+  fuelInflationPercent?: number; // e.g. 5%
+  annualInsuranceCost?: number;
+  annualMaintenanceCost?: number;
+  maintenanceInflationPercent?: number; // e.g. 8%
   annualDepreciationPercent?: number;
 }
 
@@ -857,13 +882,15 @@ export interface USStockReturnOutput {
 
 // 13. NRI NRE vs NRO vs FCNR Deposit Comparator
 export interface NRIDepositInput {
-  depositAmount: number;
+  depositAmount: number; // in INR base
   tenureMonths: number;
   nreInterestRatePercent: number;
   nroInterestRatePercent: number;
   fcnrInterestRatePercent: number;
   nroTdsRatePercent?: number;
   compoundingFrequency?: "quarterly" | "annual";
+  startingUsdInrRate?: number; // e.g. 84.0
+  expectedMaturityUsdInrRate?: number; // e.g. 88.0
 }
 
 export interface SingleNRIDepositResult {
@@ -875,6 +902,7 @@ export interface SingleNRIDepositResult {
   taxDeducted: number;
   effectivePostTaxInterest: number;
   maturityAmount: number;
+  maturityAmountInrEquivalent: number;
   effectivePostTaxAnnualYield: number;
   isFullyRepatriable: boolean;
   isTaxFreeInIndia: boolean;
@@ -909,6 +937,9 @@ export interface NPSInput {
   annuityReinvestmentPercent?: number;
   assumedAnnuityYieldPercent?: number;
   taxBracketPercent?: number;
+  regime?: TaxRegime;
+  employerMonthlyContribution?: number;
+  isGovtEmployee?: boolean;
 }
 
 export interface NPSYearRow {
@@ -1277,12 +1308,88 @@ function internalSlabCalc(
   return { rawTax, breakdown };
 }
 
-function internalSurcharge(taxBeforeCess: number, totalIncome: number): number {
-  if (totalIncome > 5_00_00_000) return taxBeforeCess * 0.37;
-  if (totalIncome > 2_00_00_000) return taxBeforeCess * 0.25;
-  if (totalIncome > 1_00_00_000) return taxBeforeCess * 0.15;
-  if (totalIncome > 50_00_000) return taxBeforeCess * 0.10;
-  return 0;
+function internalSurchargeCalc(
+  slabTax: number,
+  specialRateTax: number,
+  totalIncome: number,
+  regime: TaxRegime
+): { surcharge: number; marginalRelief: number; netSurcharge: number } {
+  let slabSurchargeRate = 0;
+  let specialSurchargeRate = 0;
+  let threshold = 0;
+  let thresholdSurchargeRate = 0;
+
+  if (regime === "new") {
+    if (totalIncome > 20000000) {
+      slabSurchargeRate = 0.25;
+      specialSurchargeRate = 0.15; // Capped at 15% on special rate gains
+      threshold = 20000000;
+      thresholdSurchargeRate = 0.15;
+    } else if (totalIncome > 10000000) {
+      slabSurchargeRate = 0.15;
+      specialSurchargeRate = 0.15;
+      threshold = 10000000;
+      thresholdSurchargeRate = 0.10;
+    } else if (totalIncome > 5000000) {
+      slabSurchargeRate = 0.10;
+      specialSurchargeRate = 0.10;
+      threshold = 5000000;
+      thresholdSurchargeRate = 0.00;
+    }
+  } else {
+    // Old Regime
+    if (totalIncome > 50000000) {
+      slabSurchargeRate = 0.37;
+      specialSurchargeRate = 0.15;
+      threshold = 50000000;
+      thresholdSurchargeRate = 0.25;
+    } else if (totalIncome > 20000000) {
+      slabSurchargeRate = 0.25;
+      specialSurchargeRate = 0.15;
+      threshold = 20000000;
+      thresholdSurchargeRate = 0.15;
+    } else if (totalIncome > 10000000) {
+      slabSurchargeRate = 0.15;
+      specialSurchargeRate = 0.15;
+      threshold = 10000000;
+      thresholdSurchargeRate = 0.10;
+    } else if (totalIncome > 5000000) {
+      slabSurchargeRate = 0.10;
+      specialSurchargeRate = 0.10;
+      threshold = 5000000;
+      thresholdSurchargeRate = 0.00;
+    }
+  }
+
+  const rawSurcharge = slabTax * slabSurchargeRate + specialRateTax * specialSurchargeRate;
+
+  let marginalRelief = 0;
+  if (threshold > 0 && slabSurchargeRate > 0) {
+    // Surcharge marginal relief: Total tax + surcharge on income cannot exceed
+    // (tax + surcharge on threshold) + (income - threshold)
+    const slabs = regime === "new" ? NEW_REGIME_SLABS : OLD_REGIME_SLABS;
+    const stdDed = regime === "new" ? STANDARD_DEDUCTION_NEW_REGIME : STANDARD_DEDUCTION_OLD_REGIME;
+    const thresholdTaxable = Math.max(0, threshold - stdDed);
+    const { rawTax: thresholdBaseTax } = internalSlabCalc(thresholdTaxable, slabs);
+    const thresholdTotalTaxAndSurcharge = thresholdBaseTax * (1 + thresholdSurchargeRate);
+
+    const extraIncome = totalIncome - threshold;
+    const maxPermissibleTaxAndSurcharge = thresholdTotalTaxAndSurcharge + extraIncome;
+
+    const baseTax = slabTax + specialRateTax;
+    const actualTaxWithSurcharge = baseTax + rawSurcharge;
+
+    if (actualTaxWithSurcharge > maxPermissibleTaxAndSurcharge) {
+      marginalRelief = actualTaxWithSurcharge - maxPermissibleTaxAndSurcharge;
+    }
+  }
+
+  const netSurcharge = Math.max(0, rawSurcharge - marginalRelief);
+  return {
+    surcharge: rawSurcharge,
+    marginalRelief,
+    netSurcharge,
+  };
 }
 
 function computeRegimeTax(
@@ -1301,6 +1408,7 @@ function computeRegimeTax(
   equityStcgTax: number;
   taxBeforeCess: number;
   surcharge: number;
+  marginalRelief: number;
   cess: number;
   breakdown: TaxSlabRow[];
 } {
@@ -1308,12 +1416,10 @@ function computeRegimeTax(
   let taxableIncome: number;
 
   if (regime === "new") {
-    // New regime: standard deduction of ₹75,000 for salaried
     const stdDed = STANDARD_DEDUCTION_NEW_REGIME;
     totalDeductions = stdDed;
     taxableIncome = Math.max(0, grossIncome - stdDed);
   } else {
-    // Old regime: standard deduction ₹50,000 + 80C + 80D + HRA + others
     const stdDed = STANDARD_DEDUCTION_OLD_REGIME;
     const capped80C = Math.min(input.deduction80C ?? 0, 150000);
     const capped80D = Math.min(input.deduction80D ?? 0, 100000);
@@ -1324,19 +1430,6 @@ function computeRegimeTax(
   const slabs = regime === "new" ? NEW_REGIME_SLABS : OLD_REGIME_SLABS;
   const { rawTax, breakdown } = internalSlabCalc(taxableIncome, slabs);
 
-  // Section 157 (formerly 87A) Rebate:
-  // Tax Year 2026-27: New regime taxable income ≤ ₹12L gets full slab rebate (up to ₹60,000).
-  // Old regime: taxable income ≤ ₹5L, max rebate ₹12,500.
-  // CRITICAL: Rebate applies ONLY to normal slab tax, NOT special-rate capital gains (Sec 112A / 111A).
-  let rebateAmount = 0;
-  if (regime === "new" && taxableIncome <= REBATE_SECTION_157.newRegimeIncomeLimit) {
-    rebateAmount = Math.min(rawTax, REBATE_SECTION_157.newRegimeMaxRebate);
-  } else if (regime === "old" && taxableIncome <= REBATE_SECTION_157.oldRegimeIncomeLimit) {
-    rebateAmount = Math.min(rawTax, REBATE_SECTION_157.oldRegimeMaxRebate);
-  }
-
-  const slabTaxAfterRebate = Math.max(0, rawTax - rebateAmount);
-
   // Special rate capital gains tax (Section 112A LTCG @ 12.5% above ₹1.25L, Section 111A STCG @ 20%)
   const equityLtcg = Math.max(0, input.equityLtcg ?? 0);
   const equityStcg = Math.max(0, input.equityStcg ?? 0);
@@ -1346,15 +1439,34 @@ function computeRegimeTax(
   const equityStcgTax = Math.round(equityStcg * CAPITAL_GAINS_RATES.equitySTCG.rate);
   const specialRateTax = equityLtcgTax + equityStcgTax;
 
-  const taxBeforeSurchargeAndCess = slabTaxAfterRebate + specialRateTax;
-  const totalCombinedIncome = grossIncome + equityLtcg + equityStcg;
+  // Section 157 (formerly 87A) Rebate:
+  // Evaluated against TOTAL Taxable Income (Ordinary Taxable Income + Taxable Special Gains)
+  const totalTaxableIncome = taxableIncome + equityLtcgTaxable + equityStcg;
+  let rebateAmount = 0;
 
-  // Surcharge on high income (>₹50L)
-  const surcharge = internalSurcharge(taxBeforeSurchargeAndCess, totalCombinedIncome);
+  if (regime === "new" && totalTaxableIncome <= REBATE_SECTION_157.newRegimeIncomeLimit) {
+    // Rebate applies ONLY to normal slab tax (max ₹60,000); special-rate gains (112A/111A) are NOT reduced
+    rebateAmount = Math.min(rawTax, REBATE_SECTION_157.newRegimeMaxRebate);
+  } else if (regime === "old" && totalTaxableIncome <= REBATE_SECTION_157.oldRegimeIncomeLimit) {
+    rebateAmount = Math.min(rawTax, REBATE_SECTION_157.oldRegimeMaxRebate);
+  }
 
-  // Health & Education Cess: 4%
-  const cess = (taxBeforeSurchargeAndCess + surcharge) * HEALTH_AND_EDUCATION_CESS_RATE;
-  const totalTax = taxBeforeSurchargeAndCess + surcharge + cess;
+  const slabTaxAfterRebate = Math.max(0, rawTax - rebateAmount);
+  const baseTax = slabTaxAfterRebate + specialRateTax;
+
+  // Surcharge and Marginal Relief
+  const totalCombinedGross = grossIncome + equityLtcg + equityStcg;
+  const { marginalRelief, netSurcharge } = internalSurchargeCalc(
+    slabTaxAfterRebate,
+    specialRateTax,
+    totalCombinedGross,
+    regime
+  );
+
+  // Health & Education Cess: 4% on (Base Tax + Net Surcharge after Marginal Relief)
+  const taxPlusNetSurcharge = baseTax + netSurcharge;
+  const cess = taxPlusNetSurcharge * HEALTH_AND_EDUCATION_CESS_RATE;
+  const totalTax = taxPlusNetSurcharge + cess;
 
   return {
     totalTax: Math.round(totalTax),
@@ -1366,8 +1478,9 @@ function computeRegimeTax(
     specialRateTax: Math.round(specialRateTax),
     equityLtcgTax: Math.round(equityLtcgTax),
     equityStcgTax: Math.round(equityStcgTax),
-    taxBeforeCess: Math.round(taxBeforeSurchargeAndCess),
-    surcharge: Math.round(surcharge),
+    taxBeforeCess: Math.round(baseTax),
+    surcharge: Math.round(netSurcharge),
+    marginalRelief: Math.round(marginalRelief),
     cess: Math.round(cess),
     breakdown,
   };
@@ -1434,7 +1547,7 @@ export function calcTax(input: TaxInput): TaxOutput {
 
 // ─── STEP-UP SIP & GOAL SIP ───────────────────────────────────
 
-export type StepUpType = "percentage" | "fixed";
+export type StepUpType = "percentage" | "fixed" | "amount";
 
 export interface StepUpSipInput {
   monthlyAmount: number;
@@ -1994,9 +2107,9 @@ export interface FireInput {
   retirementAge: number;
   lifeExpectancy: number;
   currentMonthlyExpenses: number;
-  preRetirementReturn: number; // e.g. 12%
-  postRetirementReturn: number; // e.g. 8%
-  inflationRate: number; // e.g. 6%
+  preRetirementReturn?: number; // e.g. 12%
+  postRetirementReturn?: number; // e.g. 8%
+  inflationRate?: number; // e.g. 6%
   swrPercent?: number; // e.g. 4%
   currentSavings?: number;
 }
@@ -2173,14 +2286,6 @@ export function calcFIRE(input: FireInput): FireOutput {
 
 export type AssetClass = "equity" | "debt_mf" | "real_estate" | "gold_sgb";
 
-export const CII_TABLE: Record<number, number> = {
-  2001: 100, 2002: 105, 2003: 109, 2004: 113, 2005: 117,
-  2006: 122, 2007: 129, 2008: 137, 2009: 148, 2010: 167,
-  2011: 184, 2012: 200, 2013: 220, 2014: 240, 2015: 254,
-  2016: 264, 2017: 272, 2018: 280, 2019: 289, 2020: 301,
-  2021: 317, 2022: 331, 2023: 348, 2024: 363, 2025: 363,
-};
-
 export interface CapitalGainsInput {
   assetClass: AssetClass;
   purchaseDate?: string; // YYYY-MM-DD
@@ -2189,8 +2294,8 @@ export interface CapitalGainsInput {
   purchasePrice: number;
   salePrice: number;
   transferExpenses?: number;
-  purchaseCiiYear?: number;
-  saleCiiYear?: number;
+  purchaseCiiYear?: number | string;
+  saleCiiYear?: number | string;
   isPurchasedBeforeCutoff?: boolean; // Cutoff: 23 July 2024
   investorSlabRatePercent?: number;
   priorExemptionUsed?: number; // Equity ₹1.25L exemption tracking
@@ -2233,7 +2338,7 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
     salePrice,
     transferExpenses = 0,
     purchaseCiiYear = 2015,
-    saleCiiYear = 2024,
+    saleCiiYear = 2026,
     investorSlabRatePercent = 30,
     priorExemptionUsed = 0,
   } = input;
@@ -2261,7 +2366,8 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
       isPurchasedBeforeCutoff = pDate < cutoffDate;
     }
   } else if (isPurchasedBeforeCutoff === undefined) {
-    isPurchasedBeforeCutoff = purchaseCiiYear < 2024;
+    const pNum = typeof purchaseCiiYear === "number" ? purchaseCiiYear : parseInt(purchaseCiiYear, 10);
+    isPurchasedBeforeCutoff = !isNaN(pNum) && pNum < 2024;
   }
 
   const netSaleValue = Math.max(0, safeSale - safeExp);
@@ -2319,8 +2425,8 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
 
       if (isPurchasedBeforeCutoff) {
         // Grandfathering: Calculate both 12.5% without indexation and 20% with indexation
-        const buyCii = CII_TABLE[purchaseCiiYear] || 254;
-        const sellCii = CII_TABLE[saleCiiYear] || 363;
+        const buyCii = typeof purchaseCiiYear === "number" ? (CII_TABLE[purchaseCiiYear] || 254) : (CII_TABLE[purchaseCiiYear] || 254);
+        const sellCii = typeof saleCiiYear === "number" ? (CII_TABLE[saleCiiYear] || 384) : (CII_TABLE[saleCiiYear] || 384);
         const indexedCost = safeBuy * (sellCii / buyCii);
         const indexedGain = Math.max(0, netSaleValue - indexedCost);
         const indexedTax = (indexedGain * 20) / 100;
@@ -2536,10 +2642,10 @@ export function calcFnOBreakeven(input: FnOBreakevenInput): FnOBreakevenOutput {
 // ─── PART B — FEATURE 3: OPTION STRATEGY PAYOFF VISUALIZER ────
 
 export type OptionType = "call" | "put";
-export type OptionPosition = "long" | "short";
+export type OptionPosition = "long" | "short" | "buy" | "sell";
 
 export interface OptionLeg {
-  id: string;
+  id?: string;
   name?: string;
   type: OptionType;
   position: OptionPosition;
@@ -2620,7 +2726,8 @@ export function calcOptionPayoff(input: OptionPayoffInput): OptionPayoffOutput {
   let netPremium = 0;
   for (const leg of legs) {
     const qty = leg.lots * safeLotSize;
-    if (leg.position === "long") {
+    const isLong = leg.position === "long" || leg.position === "buy";
+    if (isLong) {
       netPremium += leg.premium * qty; // Debit (paid)
     } else {
       netPremium -= leg.premium * qty; // Credit (received)
@@ -2655,14 +2762,15 @@ export function calcOptionPayoff(input: OptionPayoffInput): OptionPayoffOutput {
     for (let i = 0; i < legs.length; i++) {
       const leg = legs[i];
       const qty = leg.lots * safeLotSize;
+      const isLong = leg.position === "long" || leg.position === "buy";
       let legPnl = 0;
 
       if (leg.type === "call") {
         const intrinsic = Math.max(0, s - leg.strike);
-        legPnl = leg.position === "long" ? (intrinsic - leg.premium) * qty : (leg.premium - intrinsic) * qty;
+        legPnl = isLong ? (intrinsic - leg.premium) * qty : (leg.premium - intrinsic) * qty;
       } else {
         const intrinsic = Math.max(0, leg.strike - s);
-        legPnl = leg.position === "long" ? (intrinsic - leg.premium) * qty : (leg.premium - intrinsic) * qty;
+        legPnl = isLong ? (intrinsic - leg.premium) * qty : (leg.premium - intrinsic) * qty;
       }
 
       point[`leg_${i}`] = round2(legPnl);
@@ -2798,6 +2906,7 @@ export function calcHRAExemption(input: HRAExemptionInput): HRAExemptionOutput {
     hraReceived,
     rentPaid,
     cityType,
+    regime = "old",
     isPayingToParents = false,
     parentsSlabRatePercent = 0,
     userSlabRatePercent = 30,
@@ -2825,7 +2934,32 @@ export function calcHRAExemption(input: HRAExemptionInput): HRAExemptionOutput {
   const salaryPercentageUsed = cityType === "metro" ? 50 : 40;
   const salaryPercentageLimit = (salaryPercentageUsed / 100) * annualBasicSalaryBase;
 
-  // Minimum of three
+  // If New Regime is selected: HRA Exemption is strictly ₹0 under Section 115BAC / Income Tax Act, 2025
+  if (regime === "new") {
+    return {
+      salaryPeriod,
+      annualBasicSalaryBase: Math.round(annualBasicSalaryBase),
+      monthlyBasicSalaryBase: Math.round(monthlyBasicSalaryBase),
+      annualHraReceived: Math.round(annualHraReceived),
+      monthlyHraReceived: Math.round(monthlyHraReceived),
+      annualRentPaid: Math.round(annualRentPaid),
+      monthlyRentPaid: Math.round(monthlyRentPaid),
+      cityType,
+      actualHraLimit: Math.round(actualHraLimit),
+      rentMinusTenPercentLimit: Math.round(rentMinusTenPercentLimit),
+      salaryPercentageLimit: Math.round(salaryPercentageLimit),
+      salaryPercentageUsed,
+      bindingConstraint: "actual_hra",
+      annualExemptHra: 0,
+      monthlyExemptHra: 0,
+      annualTaxableHra: Math.round(annualHraReceived),
+      monthlyTaxableHra: Math.round(monthlyHraReceived),
+      taxSaved: 0,
+      summary: "HRA tax exemption under Section 10(13A) is not available under the New Tax Regime. Full HRA received is taxable at normal slab rates.",
+    };
+  }
+
+  // Minimum of three for Old Regime
   let annualExemptHra = 0;
   let bindingConstraint: HRAExemptionOutput["bindingConstraint"] = "actual_hra";
 
@@ -2964,7 +3098,7 @@ export function computePGBPTax(
   }
 
   const taxAfterRebate = Math.max(0, rawTax - rebate);
-  const surcharge = internalSurcharge(taxAfterRebate, safeIncome);
+  const { netSurcharge: surcharge } = internalSurchargeCalc(taxAfterRebate, 0, safeIncome, regime);
   const cess = (taxAfterRebate + surcharge) * 0.04;
   const totalTax = Math.round(taxAfterRebate + surcharge + cess);
   const effectiveRate = safeIncome > 0 ? Math.round((totalTax / safeIncome) * 100 * 100) / 100 : 0;
@@ -3950,31 +4084,94 @@ export function calcXIRR(cashflows: CashFlowPoint[]): XirrOutput {
     amount: cf.amount,
   }));
 
-  // Bounded Newton-Raphson Solver
-  let r = 0.10;
-  let converged = false;
-
-  for (let iter = 0; iter < 100; iter++) {
-    let f = 0;
-    let df = 0;
-
+  const npv = (rate: number): number => {
+    let sum = 0;
     for (const cf of normalized) {
-      const denom = Math.pow(1 + r, cf.t);
-      if (denom === 0 || !Number.isFinite(denom)) continue;
-      f += cf.amount / denom;
-      df -= (cf.t * cf.amount) / (denom * (1 + r));
+      const denom = Math.pow(1 + rate, cf.t);
+      if (denom === 0 || !Number.isFinite(denom)) return NaN;
+      sum += cf.amount / denom;
     }
+    return sum;
+  };
 
-    if (Math.abs(f) < 1e-5 || Math.abs(df) < 1e-12) {
-      converged = true;
-      break;
+  const dNpv = (rate: number): number => {
+    let sum = 0;
+    for (const cf of normalized) {
+      const denom = Math.pow(1 + rate, cf.t + 1);
+      if (denom === 0 || !Number.isFinite(denom)) return NaN;
+      sum -= (cf.t * cf.amount) / denom;
     }
+    return sum;
+  };
 
-    const step = f / df;
-    r = Math.max(-0.99, Math.min(10.0, r - step));
+  // Multi-start Newton-Raphson Solver
+  let convergedRate: number | null = null;
+  const initialGuesses = [0.10, 0.00, 0.25, -0.10, -0.50, 0.80, 1.50];
+
+  for (const guess of initialGuesses) {
+    let r = guess;
+    for (let iter = 0; iter < 80; iter++) {
+      const f = npv(r);
+      const df = dNpv(r);
+
+      if (!Number.isFinite(f) || !Number.isFinite(df)) break;
+      if (Math.abs(f) < 1e-5) {
+        convergedRate = r;
+        break;
+      }
+      if (Math.abs(df) < 1e-12) break; // Zero derivative, cannot step
+
+      const step = f / df;
+      r = Math.max(-0.999, Math.min(20.0, r - step));
+    }
+    if (convergedRate !== null) break;
   }
 
-  const xirrPercent = converged ? round2(r * 100) : 0;
+  // Fallback Bisection Search if Newton-Raphson did not converge
+  if (convergedRate === null) {
+    let low = -0.999;
+    let high = 10.0;
+    let fLow = npv(low);
+
+    // Search for sign change
+    const stepSize = 0.2;
+    let foundBracket = false;
+    for (let curr = -0.99; curr <= 10.0; curr += stepSize) {
+      const fCurr = npv(curr);
+      if (Math.abs(fCurr) < 1e-5) {
+        convergedRate = curr;
+        foundBracket = true;
+        break;
+      }
+      if (fLow * fCurr <= 0) {
+        high = curr;
+        foundBracket = true;
+        break;
+      }
+      low = curr;
+      fLow = fCurr;
+    }
+
+    if (foundBracket && convergedRate === null) {
+      for (let iter = 0; iter < 100; iter++) {
+        const mid = (low + high) / 2;
+        const fMid = npv(mid);
+        if (Math.abs(fMid) < 1e-5 || (high - low) < 1e-7) {
+          convergedRate = mid;
+          break;
+        }
+        if (fLow * fMid <= 0) {
+          high = mid;
+        } else {
+          low = mid;
+          fLow = fMid;
+        }
+      }
+    }
+  }
+
+  const isValid = convergedRate !== null && Number.isFinite(convergedRate);
+  const xirrPercent = isValid ? round2(convergedRate! * 100) : 0;
   const netGain = totalInflows - totalOutflows;
   const absoluteGainPercent = totalOutflows > 0 ? round2((netGain / totalOutflows) * 100) : 0;
 
@@ -3995,8 +4192,11 @@ export function calcXIRR(cashflows: CashFlowPoint[]): XirrOutput {
     firstDate: parsed[0].dateStr,
     lastDate: parsed[parsed.length - 1].dateStr,
     durationYears: round2(durationYears),
-    isValid: true,
-    summary: `XIRR: ${xirrPercent}% p.a. | Total Invested: ₹${Math.round(totalOutflows).toLocaleString("en-IN")} | Net Gain: ₹${Math.round(netGain).toLocaleString("en-IN")}`,
+    isValid,
+    errorMessage: isValid ? undefined : "Could not compute XIRR for the provided cash flows (divergence or non-monotonic root).",
+    summary: isValid
+      ? `XIRR: ${xirrPercent}% p.a. | Total Invested: ₹${Math.round(totalOutflows).toLocaleString("en-IN")} | Net Gain: ₹${Math.round(netGain).toLocaleString("en-IN")}`
+      : "XIRR calculation did not converge for the provided cash flow sequence.",
   };
 }
 
@@ -4039,7 +4239,8 @@ export function calcRiskRatios(input: RiskRatiosInput): RiskRatiosOutput {
     returns = [],
     periodFrequency = "monthly",
     riskFreeRate = 6.5,
-    portfolioBeta,
+    portfolioBeta: userBeta,
+    benchmarkReturns,
   } = input;
 
   const validReturns = returns.map((r) => safeNum(r)).filter((r) => Number.isFinite(r));
@@ -4052,7 +4253,7 @@ export function calcRiskRatios(input: RiskRatiosInput): RiskRatiosOutput {
       totalVolatilityAnnualized: 0,
       downsideDeviationAnnualized: 0,
       sharpeRatio: 0,
-      sortinoRatio: 0,
+      sortinoRatio: undefined,
       maxDrawdown: 0,
       positivePeriodsPercent: 0,
       summary: "Please provide at least 2 return periods to compute portfolio risk statistics.",
@@ -4084,15 +4285,37 @@ export function calcRiskRatios(input: RiskRatiosInput): RiskRatiosOutput {
   const downsideDeviationAnnualized = periodicDownsideDev * sqrtAnnualMultiplier;
 
   // Sharpe & Sortino
-  const excessReturn = meanAnnualized - riskFreeRate;
+  const excessReturn = meanAnnualized - (riskFreeRate ?? 6.5);
   const sharpeRatio = totalVolatilityAnnualized > 0 ? excessReturn / totalVolatilityAnnualized : 0;
-  const sortinoRatio = downsideDeviationAnnualized > 0
-    ? excessReturn / downsideDeviationAnnualized
-    : excessReturn > 0
-      ? (totalVolatilityAnnualized > 0 ? (excessReturn / totalVolatilityAnnualized) * 2 : excessReturn)
-      : 0;
+  
+  let sortinoRatio: number | undefined = undefined;
+  let isSortinoInfinite = false;
+  if (downsideDeviationAnnualized > 0) {
+    sortinoRatio = round2(excessReturn / downsideDeviationAnnualized);
+  } else if (excessReturn > 0) {
+    isSortinoInfinite = true;
+    sortinoRatio = totalVolatilityAnnualized > 0 ? round2((excessReturn / totalVolatilityAnnualized) * 2) : round2(excessReturn);
+  } else {
+    sortinoRatio = 0;
+  }
 
-  // Treynor Ratio (if beta provided and non-zero)
+  // Beta Calculation (Empirical if benchmarkReturns provided, else userBeta)
+  let portfolioBeta = userBeta;
+  if (portfolioBeta === undefined && benchmarkReturns && benchmarkReturns.length === n) {
+    const benchSum = benchmarkReturns.reduce((a, b) => a + b, 0);
+    const benchMean = benchSum / n;
+    let cov = 0;
+    let benchVar = 0;
+    for (let i = 0; i < n; i++) {
+      cov += (validReturns[i] - meanPeriodic) * (benchmarkReturns[i] - benchMean);
+      benchVar += Math.pow(benchmarkReturns[i] - benchMean, 2);
+    }
+    if (benchVar > 0) {
+      portfolioBeta = round2(cov / benchVar);
+    }
+  }
+
+  // Treynor Ratio (if beta provided/calculated and non-zero)
   let treynorRatio: number | undefined = undefined;
   if (portfolioBeta !== undefined && Math.abs(portfolioBeta) > 0.001) {
     treynorRatio = round2(excessReturn / portfolioBeta);
@@ -4112,18 +4335,21 @@ export function calcRiskRatios(input: RiskRatiosInput): RiskRatiosOutput {
   const positiveCount = validReturns.filter((r) => r > 0).length;
   const winRate = round2((positiveCount / n) * 100);
 
+  const sortinoDisplay = sortinoRatio !== undefined ? round2(sortinoRatio) : (isSortinoInfinite ? "∞ (Zero downside)" : "N/A");
+
   return {
     periodCount: n,
     meanReturnAnnualized: round2(meanAnnualized),
     totalVolatilityAnnualized: round2(totalVolatilityAnnualized),
     downsideDeviationAnnualized: round2(downsideDeviationAnnualized),
     sharpeRatio: round2(sharpeRatio),
-    sortinoRatio: round2(sortinoRatio),
+    sortinoRatio,
+    isSortinoInfinite,
     treynorRatio,
     portfolioBeta,
     maxDrawdown: round2(maxDd * 100),
     positivePeriodsPercent: winRate,
-    summary: `Sharpe Ratio: ${round2(sharpeRatio)} | Sortino Ratio: ${round2(sortinoRatio)} | Volatility: ${round2(totalVolatilityAnnualized)}% p.a.`,
+    summary: `Sharpe Ratio: ${round2(sharpeRatio)} | Sortino: ${sortinoDisplay} | Volatility: ${round2(totalVolatilityAnnualized)}% p.a.`,
   };
 }
 
@@ -4360,8 +4586,10 @@ export function calcCarTCO(input: CarTCOInput): CarTCOOutput {
     annualKmDriven = 12000,
     fuelMileageKmpl = 15,
     fuelPricePerLitre = 100,
+    fuelInflationPercent = 0,
     annualInsuranceCost = 35000,
     annualMaintenanceCost = 15000,
+    maintenanceInflationPercent = 8,
     annualDepreciationPercent = 15,
   } = input;
 
@@ -4372,62 +4600,85 @@ export function calcCarTCO(input: CarTCOInput): CarTCOOutput {
   const safeLoanTenure = Math.max(1, safePositive(loanTenureYears, 5));
   const safeOwnershipTenure = Math.max(1, safePositive(ownershipTenureYears, 7));
 
+  const totalLoanMonths = safeLoanTenure * 12;
+  const ownershipMonths = safeOwnershipTenure * 12;
+  const loanMonthsInOwnership = Math.min(ownershipMonths, totalLoanMonths);
+
   const emiResult = safeLoanPrincipal > 0
-    ? calcEMI({ principal: safeLoanPrincipal, annualRate: safeLoanRate, tenureMonths: safeLoanTenure * 12 })
+    ? calcEMI({ principal: safeLoanPrincipal, annualRate: safeLoanRate, tenureMonths: totalLoanMonths })
     : { emi: 0, totalPayment: 0, totalInterest: 0, interestPercentage: 0, amortizationSchedule: [] };
 
   const monthlyEmi = emiResult.emi;
-  const loanMonthsInOwnership = Math.min(safeOwnershipTenure * 12, safeLoanTenure * 12);
+
+  // Extract exact principal repaid, interest paid, and outstanding balance at end of ownership
+  let totalLoanInterest = 0;
+  let outstandingLoanBalanceAtSale = 0;
+
+  if (emiResult.amortizationSchedule.length > 0) {
+    for (let m = 0; m < loanMonthsInOwnership; m++) {
+      const row = emiResult.amortizationSchedule[m];
+      if (row) {
+        totalLoanInterest += row.interest;
+      }
+    }
+    if (loanMonthsInOwnership < totalLoanMonths) {
+      outstandingLoanBalanceAtSale = emiResult.amortizationSchedule[loanMonthsInOwnership - 1]?.balance || 0;
+    }
+  }
+
   const totalEmiPaid = monthlyEmi * loanMonthsInOwnership;
-  const totalLoanInterest = Math.max(0, totalEmiPaid - (loanMonthsInOwnership < safeLoanTenure * 12 ? (safeLoanPrincipal * (loanMonthsInOwnership / (safeLoanTenure * 12))) : safeLoanPrincipal));
 
   const safeKm = safePositive(annualKmDriven, 12000);
   const safeMileage = Math.max(1, safePositive(fuelMileageKmpl, 15));
   const safeFuelPrice = safePositive(fuelPricePerLitre, 100);
-  const annualFuel = (safeKm / safeMileage) * safeFuelPrice;
-  const totalFuelCost = annualFuel * safeOwnershipTenure;
-
+  const baseAnnualFuel = (safeKm / safeMileage) * safeFuelPrice;
   const safeInsurance = safePositive(annualInsuranceCost, 35000);
-  const totalInsuranceCost = safeInsurance * safeOwnershipTenure;
-
   const safeMaintenance = safePositive(annualMaintenanceCost, 15000);
-  const totalMaintenanceCost = safeMaintenance * safeOwnershipTenure;
-
-  const totalRunningCost = totalFuelCost + totalInsuranceCost + totalMaintenanceCost;
-  const grossOutflow = safeDownPayment + totalEmiPaid + totalRunningCost;
-
   const safeDeprRate = Math.min(100, safePositive(annualDepreciationPercent, 15)) / 100;
-  const estimatedResaleValue = Math.max(0, safeCarPrice * Math.pow(Math.max(0, 1 - safeDeprRate), safeOwnershipTenure));
-
-  const netTCO = Math.max(0, grossOutflow - estimatedResaleValue);
-  const effectiveMonthlyCost = netTCO / (safeOwnershipTenure * 12);
-  const totalKmDriven = safeKm * safeOwnershipTenure;
-  const costPerKm = totalKmDriven > 0 ? netTCO / totalKmDriven : 0;
+  const fuelInfRate = safePositive(fuelInflationPercent, 0) / 100;
+  const maintInfRate = safePositive(maintenanceInflationPercent, 8) / 100;
 
   // Yearly progression breakdown
   const yearlyBreakdown: CarTCOYearRow[] = [];
   let cumRunning = 0;
   let curCarVal = safeCarPrice;
+  let totalFuelCost = 0;
+  let totalInsuranceCost = 0;
+  let totalMaintenanceCost = 0;
 
   for (let yr = 1; yr <= safeOwnershipTenure; yr++) {
     const yrEmi = yr <= safeLoanTenure ? monthlyEmi * 12 : 0;
-    const yrFuel = annualFuel;
-    const yrIns = safeInsurance * Math.pow(0.95, yr - 1);
-    const yrMaint = safeMaintenance * Math.pow(1.08, yr - 1);
+    const yrFuel = Math.round(baseAnnualFuel * Math.pow(1 + fuelInfRate, yr - 1));
+    const yrIns = Math.round(safeInsurance * Math.pow(0.95, yr - 1));
+    const yrMaint = Math.round(safeMaintenance * Math.pow(1 + maintInfRate, yr - 1));
     const yrRunning = yrFuel + yrIns + yrMaint;
     cumRunning += yrRunning;
-    curCarVal = Math.max(0, curCarVal * (1 - safeDeprRate));
+    curCarVal = Math.round(curCarVal * (1 - safeDeprRate));
+
+    totalFuelCost += yrFuel;
+    totalInsuranceCost += yrIns;
+    totalMaintenanceCost += yrMaint;
 
     yearlyBreakdown.push({
       year: yr,
       loanEmiPaid: Math.round(yrEmi),
-      fuelCost: Math.round(yrFuel),
-      insuranceCost: Math.round(yrIns),
-      maintenanceCost: Math.round(yrMaint),
+      fuelCost: yrFuel,
+      insuranceCost: yrIns,
+      maintenanceCost: yrMaint,
       cumulativeRunningCost: Math.round(cumRunning),
-      depreciatedCarValue: Math.round(curCarVal),
+      depreciatedCarValue: curCarVal,
     });
   }
+
+  const totalRunningCost = totalFuelCost + totalInsuranceCost + totalMaintenanceCost;
+  const estimatedResaleValue = yearlyBreakdown[yearlyBreakdown.length - 1]?.depreciatedCarValue ?? 0;
+
+  // Gross outflow = Down Payment + EMIs paid during ownership + running costs + loan payoff at sale (if any)
+  const grossOutflow = safeDownPayment + totalEmiPaid + outstandingLoanBalanceAtSale + totalRunningCost;
+  const netTCO = Math.max(0, grossOutflow - estimatedResaleValue);
+  const effectiveMonthlyCost = netTCO / ownershipMonths;
+  const totalKmDriven = safeKm * safeOwnershipTenure;
+  const costPerKm = totalKmDriven > 0 ? netTCO / totalKmDriven : 0;
 
   return {
     carOnRoadPrice: Math.round(safeCarPrice),
@@ -4552,7 +4803,6 @@ export function calcMarginalRelief(input: MarginalReliefInput): MarginalReliefOu
   const {
     grossTotalIncome,
     regime = "new",
-    ageCategory = "general",
   } = input;
 
   const safeIncome = safePositive(grossTotalIncome, 5100000);
@@ -4566,19 +4816,41 @@ export function calcMarginalRelief(input: MarginalReliefInput): MarginalReliefOu
 
   let surchargeRate = 0;
   let threshold = 0;
+  let thresholdSurchargeRate = 0;
 
-  if (safeIncome > 50000000) {
-    surchargeRate = regime === "new" ? 25 : 37;
-    threshold = 50000000;
-  } else if (safeIncome > 20000000) {
-    surchargeRate = 25;
-    threshold = 20000000;
-  } else if (safeIncome > 10000000) {
-    surchargeRate = 15;
-    threshold = 10000000;
-  } else if (safeIncome > 5000000) {
-    surchargeRate = 10;
-    threshold = 5000000;
+  if (regime === "new") {
+    if (safeIncome > 20000000) {
+      surchargeRate = 25;
+      threshold = 20000000;
+      thresholdSurchargeRate = 15;
+    } else if (safeIncome > 10000000) {
+      surchargeRate = 15;
+      threshold = 10000000;
+      thresholdSurchargeRate = 10;
+    } else if (safeIncome > 5000000) {
+      surchargeRate = 10;
+      threshold = 5000000;
+      thresholdSurchargeRate = 0;
+    }
+  } else {
+    // Old Regime
+    if (safeIncome > 50000000) {
+      surchargeRate = 37;
+      threshold = 50000000;
+      thresholdSurchargeRate = 25;
+    } else if (safeIncome > 20000000) {
+      surchargeRate = 25;
+      threshold = 20000000;
+      thresholdSurchargeRate = 15;
+    } else if (safeIncome > 10000000) {
+      surchargeRate = 15;
+      threshold = 10000000;
+      thresholdSurchargeRate = 10;
+    } else if (safeIncome > 5000000) {
+      surchargeRate = 10;
+      threshold = 5000000;
+      thresholdSurchargeRate = 0;
+    }
   }
 
   const surchargeBeforeRelief = (baseTax * surchargeRate) / 100;
@@ -4593,13 +4865,6 @@ export function calcMarginalRelief(input: MarginalReliefInput): MarginalReliefOu
     });
 
     const thresholdBaseTax = thresholdTaxResult.taxBeforeCess;
-
-    let thresholdSurchargeRate = 0;
-    if (threshold === 50000000) thresholdSurchargeRate = 25;
-    else if (threshold === 20000000) thresholdSurchargeRate = 15;
-    else if (threshold === 10000000) thresholdSurchargeRate = 10;
-    else if (threshold === 5000000) thresholdSurchargeRate = 0;
-
     const thresholdTotalTax = thresholdBaseTax * (1 + thresholdSurchargeRate / 100);
     const extraIncome = safeIncome - threshold;
     const maxPermissibleTax = thresholdTotalTax + extraIncome;
@@ -4655,7 +4920,7 @@ export function calcLRSTCS(input: LrsTcsInput): LrsTcsOutput {
   } = input;
 
   const safeAmount = safePositive(remittanceAmountInr, 1000000);
-  const threshold = 700000;
+  const threshold = LRS_TCS_CONSTANTS.exemptionThreshold; // Statutory ₹10,00,000 threshold
 
   let tier1Rate = 0;
   let tier2Rate = 0;
@@ -4663,25 +4928,27 @@ export function calcLRSTCS(input: LrsTcsInput): LrsTcsOutput {
 
   switch (category) {
     case "overseas_tour_package":
-      categoryLabel = "Overseas Tour Program Package";
+      categoryLabel = LRS_TCS_CONSTANTS.categories.overseas_tour_package.label;
       tier1Rate = 5.0;
       tier2Rate = 20.0;
       break;
     case "education_loan":
-      categoryLabel = "Education Remittance (Funded by Loan u/s 80E)";
-      tier1Rate = 0;
-      tier2Rate = 0.5;
+      categoryLabel = LRS_TCS_CONSTANTS.categories.education_loan.label;
+      tier1Rate = 0.0;
+      tier2Rate = 0.0; // 0% TCS (Exempt under Section 206C(1G))
       break;
     case "education_self":
     case "medical_treatment":
-      categoryLabel = category === "education_self" ? "Education Remittance (Self-Funded)" : "Medical Treatment Remittance";
-      tier1Rate = 0;
+      categoryLabel = category === "education_self"
+        ? LRS_TCS_CONSTANTS.categories.education_self.label
+        : LRS_TCS_CONSTANTS.categories.medical_treatment.label;
+      tier1Rate = 0.0;
       tier2Rate = 5.0;
       break;
     case "general_investment":
     default:
-      categoryLabel = "Foreign Stocks, Real Estate & General Remittance";
-      tier1Rate = 0;
+      categoryLabel = LRS_TCS_CONSTANTS.categories.general_investment.label;
+      tier1Rate = 0.0;
       tier2Rate = 20.0;
       break;
   }
@@ -4718,6 +4985,7 @@ export function calcLRSTCS(input: LrsTcsInput): LrsTcsOutput {
   };
 }
 
+
 // 12. US Stock Investing Net Return (DTAA Adjusted)
 export function calcUSStockReturn(input: USStockReturnInput): USStockReturnOutput {
   const {
@@ -4742,12 +5010,15 @@ export function calcUSStockReturn(input: USStockReturnInput): USStockReturnOutpu
   const grossProceedsUsd = initialInvestmentUsd + safeGainUsd;
   const grossProceedsInr = grossProceedsUsd * safeSellRate;
 
+  // Rule 115 Income Tax Rules: INR Acquisition cost vs INR Sale proceeds
+  const acquisitionCostInr = initialInvestmentUsd * safeBuyRate; // = safeInr
+  const totalCapitalGainInr = grossProceedsInr - acquisitionCostInr;
   const currencyGainLossInr = initialInvestmentUsd * (safeSellRate - safeBuyRate);
   const stockCapitalGainInr = safeGainUsd * safeSellRate;
 
   const isLongTerm = safeHolding >= 24;
   const capGainsRate = isLongTerm ? 12.5 : safePositive(userTaxBracketPercent, 30);
-  const indianCapGainsTax = stockCapitalGainInr > 0 ? (stockCapitalGainInr * capGainsRate) / 100 : 0;
+  const indianCapGainsTax = totalCapitalGainInr > 0 ? (totalCapitalGainInr * capGainsRate) / 100 : 0;
 
   const safeWithholdingRate = safePositive(usDividendWithholdingTaxPercent, 25) / 100;
   const safeSlabRate = safePositive(userTaxBracketPercent, 30) / 100;
@@ -4756,6 +5027,7 @@ export function calcUSStockReturn(input: USStockReturnInput): USStockReturnOutpu
   const usWithholdingInr = grossDividendInr * safeWithholdingRate;
   const grossIndianDividendTax = grossDividendInr * safeSlabRate;
 
+  // Section 90 Foreign Tax Credit (FTC) is capped at the Indian tax liability on the dividend income
   const foreignTaxCreditInr = Math.min(usWithholdingInr, grossIndianDividendTax);
   const indianDividendTaxNet = Math.max(0, grossIndianDividendTax - foreignTaxCreditInr);
 
@@ -4768,6 +5040,13 @@ export function calcUSStockReturn(input: USStockReturnInput): USStockReturnOutpu
   const cagr = durationYears > 0 && netProceedsInr > 0
     ? (Math.pow(netProceedsInr / safeInr, 1 / durationYears) - 1) * 100
     : 0;
+
+  let dtaaCreditSummary = "";
+  if (safeSlabRate < safeWithholdingRate) {
+    dtaaCreditSummary = `US 25% Dividend Withholding (₹${Math.round(usWithholdingInr).toLocaleString("en-IN")}) is creditable up to your Indian tax bracket (₹${Math.round(foreignTaxCreditInr).toLocaleString("en-IN")}) under Section 90 FTC. Unrelieved US tax: ₹${Math.round(usWithholdingInr - foreignTaxCreditInr).toLocaleString("en-IN")}.`;
+  } else {
+    dtaaCreditSummary = `US 25% Dividend Withholding (₹${Math.round(usWithholdingInr).toLocaleString("en-IN")}) is 100% credited against Indian slab tax via Section 90 FTC, leaving ₹${Math.round(indianDividendTaxNet).toLocaleString("en-IN")} net Indian tax payable.`;
+  }
 
   return {
     investmentAmountInr: Math.round(safeInr),
@@ -4792,7 +5071,7 @@ export function calcUSStockReturn(input: USStockReturnInput): USStockReturnOutpu
     netAbsoluteGainInr: Math.round(netAbsoluteGainInr),
     absoluteReturnPercent: round2(absoluteReturnPercent),
     annualizedReturnCagr: round2(cagr),
-    dtaaCreditSummary: `US 25% Dividend Withholding Tax (₹${Math.round(usWithholdingInr).toLocaleString("en-IN")}) is 100% credited against Indian slab tax via Section 90 FTC, eliminating double taxation.`,
+    dtaaCreditSummary,
     summary: `Net INR Proceeds: ₹${Math.round(netProceedsInr).toLocaleString("en-IN")} | Net Gain: ₹${Math.round(netAbsoluteGainInr).toLocaleString("en-IN")} (${round2(cagr)}% CAGR over ${durationYears} yrs)`,
   };
 }
@@ -4807,6 +5086,8 @@ export function calcNRIDepositReturns(input: NRIDepositInput): NRIDepositOutput 
     fcnrInterestRatePercent = 5.5,
     nroTdsRatePercent = 31.2,
     compoundingFrequency = "quarterly",
+    startingUsdInrRate = 84.0,
+    expectedMaturityUsdInrRate = 88.0,
   } = input;
 
   const safePrincipal = safePositive(depositAmount, 1000000);
@@ -4830,6 +5111,7 @@ export function calcNRIDepositReturns(input: NRIDepositInput): NRIDepositOutput 
     taxDeducted: 0,
     effectivePostTaxInterest: Math.round(nreInterest),
     maturityAmount: Math.round(nreMaturity),
+    maturityAmountInrEquivalent: Math.round(nreMaturity),
     effectivePostTaxAnnualYield: round2(nreYield),
     isFullyRepatriable: true,
     isTaxFreeInIndia: true,
@@ -4855,36 +5137,45 @@ export function calcNRIDepositReturns(input: NRIDepositInput): NRIDepositOutput 
     taxDeducted: Math.round(nroTds),
     effectivePostTaxInterest: Math.round(nroNetInterest),
     maturityAmount: Math.round(nroNetMaturity),
+    maturityAmountInrEquivalent: Math.round(nroNetMaturity),
     effectivePostTaxAnnualYield: round2(nroYield),
     isFullyRepatriable: false,
     isTaxFreeInIndia: false,
     notes: `Taxable in India. TDS deducted at ${round2(safeTdsRate * 100)}% (or lower DTAA rate with TRC). Repatriation limited to USD 1 Million/financial year under Form 15CA/CB.`,
   };
 
-  // 3. FCNR(B) Deposit
+  // 3. FCNR(B) Deposit (USD based)
+  const safeStartUsd = Math.max(1, safePositive(startingUsdInrRate, 84.0));
+  const safeMaturityUsd = Math.max(1, safePositive(expectedMaturityUsdInrRate, 88.0));
+  const fcnrPrincipalUsd = safePrincipal / safeStartUsd;
   const fcnrRateDec = safePositive(fcnrInterestRatePercent, 5.5) / 100;
-  const fcnrMaturity = safePrincipal * Math.pow(1 + fcnrRateDec / compPerYear, compPerYear * tenureYears);
-  const fcnrInterest = fcnrMaturity - safePrincipal;
-  const fcnrYield = tenureYears > 0 ? (fcnrInterest / safePrincipal / tenureYears) * 100 : 0;
+  const fcnrMaturityUsd = fcnrPrincipalUsd * Math.pow(1 + fcnrRateDec / compPerYear, compPerYear * tenureYears);
+  const fcnrInterestUsd = fcnrMaturityUsd - fcnrPrincipalUsd;
+  const fcnrMaturityInrEquivalent = fcnrMaturityUsd * safeMaturityUsd;
+  const fcnrNetInrGain = fcnrMaturityInrEquivalent - safePrincipal;
+  const fcnrYieldInr = tenureYears > 0 ? (fcnrNetInrGain / safePrincipal / tenureYears) * 100 : 0;
 
   const fcnrResult: SingleNRIDepositResult = {
     depositName: "FCNR(B) Deposit (Foreign Currency Non-Resident)",
-    currency: "USD / Foreign",
-    principal: Math.round(safePrincipal),
+    currency: "USD",
+    principal: round2(fcnrPrincipalUsd),
     preTaxInterestRate: round2(fcnrRateDec * 100),
-    interestEarnedPreTax: Math.round(fcnrInterest),
+    interestEarnedPreTax: round2(fcnrInterestUsd),
     taxDeducted: 0,
-    effectivePostTaxInterest: Math.round(fcnrInterest),
-    maturityAmount: Math.round(fcnrMaturity),
-    effectivePostTaxAnnualYield: round2(fcnrYield),
+    effectivePostTaxInterest: round2(fcnrInterestUsd),
+    maturityAmount: round2(fcnrMaturityUsd),
+    maturityAmountInrEquivalent: Math.round(fcnrMaturityInrEquivalent),
+    effectivePostTaxAnnualYield: round2(fcnrYieldInr),
     isFullyRepatriable: true,
     isTaxFreeInIndia: true,
-    notes: "100% Tax-Free in India. Held directly in foreign currency (USD/GBP/EUR) — completely eliminates INR currency depreciation risk.",
+    notes: `100% Tax-Free in India. Held directly in foreign currency (USD/GBP/EUR) — eliminates INR currency depreciation risk (USD Principal: $${round2(fcnrPrincipalUsd).toLocaleString("en-US")} matures to $${round2(fcnrMaturityUsd).toLocaleString("en-US")}).`,
   };
 
   let bestOption = "NRE Deposit";
-  if (nreYield >= nroYield) {
+  if (nreYield >= nroYield && nreMaturity >= fcnrMaturityInrEquivalent) {
     bestOption = `NRE Fixed Deposit offers the highest post-tax return (${round2(nreYield)}% net yield) with zero tax and 100% foreign repatriability.`;
+  } else if (fcnrMaturityInrEquivalent > nreMaturity) {
+    bestOption = `FCNR(B) Deposit in USD provides higher INR return (${round2(fcnrYieldInr)}% net yield) assuming USD/INR moves from ₹${safeStartUsd} to ₹${safeMaturityUsd}.`;
   } else {
     bestOption = `NRO Fixed Deposit yields ${round2(nroYield)}% post-tax vs NRE (${round2(nreYield)}%). Check if DTAA TRC allows lower TDS.`;
   }
@@ -4897,7 +5188,7 @@ export function calcNRIDepositReturns(input: NRIDepositInput): NRIDepositOutput 
     fcnrResult,
     bestOption,
     sideBySideComparison: [nreResult, nroResult, fcnrResult],
-    summary: `NRE Net Maturity: ₹${Math.round(nreMaturity).toLocaleString("en-IN")} (${round2(nreYield)}% Tax-Free) vs NRO Net Maturity: ₹${Math.round(nroNetMaturity).toLocaleString("en-IN")} (${round2(nroYield)}% Post-TDS)`,
+    summary: `NRE Net Maturity: ₹${Math.round(nreMaturity).toLocaleString("en-IN")} (${round2(nreYield)}% Tax-Free) vs FCNR(B) INR-Eq: ₹${Math.round(fcnrMaturityInrEquivalent).toLocaleString("en-IN")}`,
   };
 }
 
@@ -4921,6 +5212,7 @@ export function calcNPS(input: NPSInput): NPSOutput {
     annuityReinvestmentPercent = 40,
     assumedAnnuityYieldPercent = 6.5,
     taxBracketPercent = 30,
+    regime = "new",
   } = input;
 
   const safeAge = Math.max(18, safePositive(currentAge, 28));
@@ -4967,8 +5259,11 @@ export function calcNPS(input: NPSInput): NPSOutput {
     ? safeContribution * ((Math.pow(1 + monthlyRate, totalMonths) - 1) / monthlyRate) * (1 + monthlyRate)
     : totalInvested;
 
-  const safeLumpSumPct = Math.min(60, safePositive(lumpSumWithdrawalPercent, 60));
-  const safeAnnuityPct = Math.max(40, safePositive(annuityReinvestmentPercent, 40));
+  // Small corpus exception (PFRDA Rule: total corpus <= ₹5 Lakh allows 100% lump sum exit)
+  const isSmallCorpus = totalCorpus <= NPS_CONSTANTS.smallCorpusFullWithdrawalLimit;
+
+  const safeLumpSumPct = isSmallCorpus ? 100 : Math.min(60, safePositive(lumpSumWithdrawalPercent, 60));
+  const safeAnnuityPct = isSmallCorpus ? 0 : Math.max(40, safePositive(annuityReinvestmentPercent, 40));
 
   const lumpSumAmount = (totalCorpus * safeLumpSumPct) / 100;
   const annuityAmount = (totalCorpus * safeAnnuityPct) / 100;
@@ -4976,9 +5271,12 @@ export function calcNPS(input: NPSInput): NPSOutput {
   const safeAnnuityRate = safePositive(assumedAnnuityYieldPercent, 6.5) / 100;
   const estimatedMonthlyPension = (annuityAmount * safeAnnuityRate) / 12;
 
+  // Section 80CCD(1B) exclusive ₹50,000 deduction is ONLY available in Old Tax Regime
   const safeTaxBracket = safePositive(taxBracketPercent, 30) / 100;
   const annualContribution = safeContribution * 12;
-  const annual80CcdSaved = Math.min(annualContribution, 50000) * safeTaxBracket;
+  const annual80CcdSaved = regime === "old"
+    ? Math.min(annualContribution, NPS_CONSTANTS.sec80CCD1BMaxDeduction) * safeTaxBracket
+    : 0;
   const lifetimeTaxSaved = annual80CcdSaved * totalYears;
 
   const yearlyProgression: NPSYearRow[] = [];
@@ -4999,6 +5297,10 @@ export function calcNPS(input: NPSInput): NPSOutput {
     });
   }
 
+  const taxSavedSummary = regime === "new"
+    ? "₹0 (Section 80CCD(1B) personal contribution deduction is not available under New Tax Regime)"
+    : `₹${Math.round(annual80CcdSaved).toLocaleString("en-IN")}/yr (under Section 80CCD(1B) Old Regime)`;
+
   return {
     currentAge: safeAge,
     retirementAge: safeRetirement,
@@ -5017,7 +5319,7 @@ export function calcNPS(input: NPSInput): NPSOutput {
     lifetimeTaxSaved: Math.round(lifetimeTaxSaved),
     yearlyProgression,
     isValid: true,
-    summary: `NPS Retirement Corpus: ₹${Math.round(totalCorpus).toLocaleString("en-IN")} at Age ${safeRetirement} | 60% Tax-Free Lump Sum: ₹${Math.round(lumpSumAmount).toLocaleString("en-IN")} | Monthly Pension: ₹${Math.round(estimatedMonthlyPension).toLocaleString("en-IN")}/mo`,
+    summary: `NPS Retirement Corpus: ₹${Math.round(totalCorpus).toLocaleString("en-IN")} at Age ${safeRetirement} | 60% Tax-Free Lump Sum: ₹${Math.round(lumpSumAmount).toLocaleString("en-IN")} | Monthly Pension: ₹${Math.round(estimatedMonthlyPension).toLocaleString("en-IN")}/mo | Tax Saved: ${taxSavedSummary}`,
   };
 }
 
