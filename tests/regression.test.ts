@@ -817,6 +817,7 @@ describe("SECTION 5: Full Regression Audit — Adversarial Edge-Case Suite", () 
         purchaseUsdInrRate: 84,
         saleUsdInrRate: 84,
         capitalGainUsd: 0,
+        holdingMonths: 24, // 24 months = long-term
         dividendIncomeUsd: 1000, // ₹84,000 gross dividend
         usDividendWithholdingTaxPercent: 25, // ₹21,000 US tax
         userTaxBracketPercent: 30, // ₹25,200 Indian tax
@@ -832,6 +833,7 @@ describe("SECTION 5: Full Regression Audit — Adversarial Edge-Case Suite", () 
         purchaseUsdInrRate: 84,
         saleUsdInrRate: 84,
         capitalGainUsd: 0,
+        holdingMonths: 24, // 24 months = long-term
         dividendIncomeUsd: 1000, // ₹84,000 gross dividend
         usDividendWithholdingTaxPercent: 25, // ₹21,000 US tax
         userTaxBracketPercent: 10, // ₹8,400 Indian tax
