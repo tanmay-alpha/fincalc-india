@@ -15,7 +15,7 @@ import type { MarginRequiredInput, MarginInstrumentCategory } from "@/lib/math";
 import { getMarginRequiredInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
-import { Shield, PieChart as PieIcon, Info } from "lucide-react";
+import { Shield, PieChart as PieIcon } from "lucide-react";
 
 const MarginChart = dynamic(
   () => import("@/components/calculators/margin/MarginChart"),

@@ -15,7 +15,7 @@ import type { CarTCOInput } from "@/lib/math";
 import { getCarTCOInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
-import { Car, Fuel, Wrench, Shield, TrendingDown } from "lucide-react";
+import { Car, TrendingDown } from "lucide-react";
 
 const CarTcoChart = dynamic(
   () => import("@/components/calculators/car-tco/CarTcoChart"),

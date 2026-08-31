@@ -15,7 +15,7 @@ import type { MarginalReliefInput, TaxRegime } from "@/lib/math";
 import { getMarginalReliefInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
-import { Landmark, Shield, Gift, Activity } from "lucide-react";
+import { Landmark, Activity } from "lucide-react";
 
 const MarginalReliefChart = dynamic(
   () => import("@/components/calculators/marginal-relief/MarginalReliefChart"),

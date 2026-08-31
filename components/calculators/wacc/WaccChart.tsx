@@ -8,7 +8,7 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
-import { formatINR, formatPercent } from "@/lib/format";
+import { formatINR } from "@/lib/format";
 
 interface WaccChartProps {
   equityValue: number;

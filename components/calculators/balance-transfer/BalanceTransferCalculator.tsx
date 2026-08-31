@@ -15,7 +15,7 @@ import type { BalanceTransferInput } from "@/lib/math";
 import { getBalanceTransferInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
-import { Landmark, ArrowRightLeft, Clock, ShieldAlert } from "lucide-react";
+import { ArrowRightLeft } from "lucide-react";
 
 const BalanceTransferChart = dynamic(
   () => import("@/components/calculators/balance-transfer/BalanceTransferChart"),
@@ -142,9 +142,41 @@ export default function BalanceTransferCalculator() {
             </div>
 
             <div className="pt-2 border-t border-border/40 space-y-4">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Refinancing & Switching Costs
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Refinancing & Switching Costs
+                </h3>
+                <div className="inline-flex rounded-lg p-0.5 bg-muted border border-border text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProcessingFeeType("percentage");
+                      setProcessingFeeValue(0.5);
+                    }}
+                    className={`px-2.5 py-0.5 rounded-md font-medium transition-all ${
+                      processingFeeType === "percentage"
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Percentage (%)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProcessingFeeType("flat");
+                      setProcessingFeeValue(15000);
+                    }}
+                    className={`px-2.5 py-0.5 rounded-md font-medium transition-all ${
+                      processingFeeType === "flat"
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Flat Fee (₹)
+                  </button>
+                </div>
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <HybridInput

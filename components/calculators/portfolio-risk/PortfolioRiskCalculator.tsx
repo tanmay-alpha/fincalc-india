@@ -14,7 +14,7 @@ import { calcRiskRatios } from "@/lib/math";
 import type { RiskRatiosInput } from "@/lib/math";
 import { getRiskRatiosInsights } from "@/lib/insights";
 import { useDebounce } from "@/hooks/useDebounce";
-import { ShieldCheck, BarChart2, Activity } from "lucide-react";
+import { ShieldCheck, BarChart2 } from "lucide-react";
 
 const RiskChart = dynamic(
   () => import("@/components/calculators/portfolio-risk/RiskChart"),
@@ -26,7 +26,7 @@ export default function PortfolioRiskCalculator() {
   const [returnsInput, setReturnsInput] = useState("12, -4, 18, 8, -2, 22, 14, -6, 16, 10, 5, -1");
   const [periodFrequency, setPeriodFrequency] = useState<"monthly" | "annual">("monthly");
   const [riskFreeRate, setRiskFreeRate] = useState(6.5);
-  const [benchmarkReturn, setBenchmarkReturn] = useState(12.0);
+  const benchmarkReturn = 12.0;
   const [shareId, setShareId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -132,7 +132,7 @@ export default function PortfolioRiskCalculator() {
             <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
               <p className="text-[11px] text-muted-foreground">Sortino Ratio</p>
               <p className="text-base font-bold text-emerald-400 mt-0.5">
-                {result.sortinoRatio.toFixed(2)}
+                {result.sortinoRatio !== undefined ? result.sortinoRatio.toFixed(2) : (result.isSortinoInfinite ? "∞ (Zero downside)" : "N/A")}
               </p>
             </div>
             <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">

@@ -14,7 +14,7 @@ import { calcBlackScholes } from "@/lib/math";
 import type { BlackScholesInput } from "@/lib/math";
 import { getBlackScholesInsights } from "@/lib/insights";
 import { useDebounce } from "@/hooks/useDebounce";
-import { Zap, Activity, CheckCircle2, TrendingDown } from "lucide-react";
+import { Zap, Activity } from "lucide-react";
 
 const GreeksChart = dynamic(
   () => import("@/components/calculators/black-scholes/GreeksChart"),
