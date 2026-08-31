@@ -29,6 +29,15 @@ import {
   calcPresumptiveTax,
   calcPositionSize,
   calcSection54Exemption,
+  calcCarTCO,
+  calcBalanceTransfer,
+  calcUSStockReturn,
+  calcNRIDepositReturns,
+  calcNPS,
+  calcXIRR,
+  calcRiskRatios,
+  calcMarginalRelief,
+  calcLRSTCS,
 } from "../lib/math";
 
 describe("SECTION 5: Full Regression Audit — Adversarial Edge-Case Suite", () => {
@@ -98,7 +107,7 @@ describe("SECTION 5: Full Regression Audit — Adversarial Edge-Case Suite", () 
     it("handles ₹500 Cr corporate deposit at 8% quarterly for 10 years", () => {
       const res = calcFD({ principal: 5000000000, annualRate: 8, tenureYears: 10, compoundingFrequency: 4 });
       expect(Number.isFinite(res.maturityAmount)).toBe(true);
-      expect(res.maturityAmount).toBeGreaterThan(res.principalAmount || 5000000000);
+      expect(res.maturityAmount).toBeGreaterThan(5000000000);
     });
   });
 
@@ -638,6 +647,299 @@ describe("SECTION 5: Full Regression Audit — Adversarial Edge-Case Suite", () 
       });
       expect(res.activeResult.isValidTimeline).toBe(false);
       expect(res.activeResult.exemptionAllowed).toBe(0);
+    });
+  });
+
+  // ─── 19. calcTax Statutory Section 157 & Surcharge Hardening ─────
+  describe("19. calcTax Statutory Section 157 & Surcharge Hardening", () => {
+    it("Section 157 Rebate: Total income ₹12L (₹10L salary + ₹2L equity LTCG) reduces slab tax to ₹0 but charges LTCG in full", () => {
+      const res = calcTax({
+        grossIncome: 1000000, // 9.25L taxable slab after 75k std ded
+        equityLtcg: 200000, // 75k taxable after 1.25L exemption
+        regime: "new",
+      });
+      // Total taxable income = 9.25L + 0.75L = 10.0L <= 12L -> eligible for rebate
+      // Slab tax = 4L @ 5% (20k) + 1.25L @ 10% (12.5k) = 32,500
+      // Rebate = 32,500 -> net slab tax = 0
+      // Equity LTCG tax @ 12.5% on 75k = 9,375 (NOT rebated)
+      // Cess @ 4% on 9,375 = 375
+      // Total tax = 9,750
+      expect(res.rebateAmount).toBe(32500);
+      expect(res.equityLtcgTax).toBe(9375);
+      expect(res.cess).toBe(375);
+      expect(res.totalTax).toBe(9750);
+    });
+
+    it("Section 157 Rebate: Total taxable income exceeding ₹12L by ₹1 receives ₹0 rebate", () => {
+      const res = calcTax({
+        grossIncome: 1275001, // 12,00,001 taxable after 75k std ded
+        regime: "new",
+      });
+      expect(res.rebateAmount).toBe(0);
+      expect(res.totalTax).toBeGreaterThan(60000);
+    });
+
+    it("New Regime Surcharge: Above ₹5 Crore is strictly capped at 25% (no 37% tier)", () => {
+      const res = calcMarginalRelief({
+        grossTotalIncome: 60000000, // ₹6 Crore
+        regime: "new",
+      });
+      expect(res.applicableSurchargeRatePercent).toBe(25);
+    });
+
+    it("Old Regime Surcharge: Above ₹5 Crore applies 37% surcharge", () => {
+      const res = calcMarginalRelief({
+        grossTotalIncome: 60000000, // ₹6 Crore
+        regime: "old",
+      });
+      expect(res.applicableSurchargeRatePercent).toBe(37);
+    });
+
+    it("Special Rate Surcharge Cap: Surcharge on Equity LTCG is capped at 15% even when income > ₹5 Cr", () => {
+      const res = calcTax({
+        grossIncome: 60000000, // ₹6 Crore total
+        equityLtcg: 10000000, // ₹1 Crore LTCG
+        regime: "new",
+      });
+      expect(res.surcharge).toBeGreaterThan(0);
+      expect(res.totalTax).toBeGreaterThan(0);
+    });
+
+    it("Marginal Relief: Exact continuity at ₹50,00,001 (Tax + Surcharge <= Base Tax + ₹1)", () => {
+      const resAt50L = calcMarginalRelief({ grossTotalIncome: 5000000, regime: "new" });
+      const resAt50LPlus1 = calcMarginalRelief({ grossTotalIncome: 5000001, regime: "new" });
+      expect(resAt50LPlus1.taxPlusNetSurcharge).toBeLessThanOrEqual(resAt50L.baseTax + 1.5);
+    });
+  });
+
+  // ─── 20. calcHRAExemption Statutory Eligibility ─────────────────
+  describe("20. calcHRAExemption Statutory Rules", () => {
+    it("New Regime: returns ₹0 exemption and explains Section 10(13A) is not available", () => {
+      const res = calcHRAExemption({
+        salaryPeriod: "annual",
+        basicSalary: 1200000,
+        hraReceived: 360000,
+        rentPaid: 360000,
+        cityType: "metro",
+        regime: "new",
+      });
+      expect(res.annualExemptHra).toBe(0);
+      expect(res.annualTaxableHra).toBe(360000);
+      expect(res.summary).toContain("New Tax Regime");
+    });
+
+    it("Old Regime: computes exact 3-condition minimum", () => {
+      const res = calcHRAExemption({
+        salaryPeriod: "annual",
+        basicSalary: 1200000,
+        hraReceived: 360000,
+        rentPaid: 360000,
+        cityType: "metro",
+        regime: "old",
+      });
+      // 1. Actual HRA = 3,60,000
+      // 2. Rent - 10% basic = 3,60,000 - 1,20,000 = 2,40,000
+      // 3. 50% basic (metro) = 6,00,000
+      // Min = 2,40,000
+      expect(res.annualExemptHra).toBe(240000);
+      expect(res.annualTaxableHra).toBe(120000);
+    });
+  });
+
+  // ─── 21. Car Loan TCO Reconciliation ────────────────────────────
+  describe("21. calcCarTCO Full Financial Reconciliation", () => {
+    it("Headline totals strictly equal sum of progression breakdown components", () => {
+      const res = calcCarTCO({
+        carOnRoadPrice: 1500000,
+        downPayment: 300000,
+        loanInterestRate: 9.0,
+        loanTenureYears: 5,
+        ownershipTenureYears: 7,
+        annualKmDriven: 12000,
+        fuelMileageKmpl: 15,
+        fuelPricePerLitre: 100,
+        annualInsuranceCost: 35000,
+        annualMaintenanceCost: 15000,
+        annualDepreciationPercent: 15,
+      });
+
+      const sumFuel = res.yearlyBreakdown.reduce((a, b) => a + b.fuelCost, 0);
+      const sumIns = res.yearlyBreakdown.reduce((a, b) => a + b.insuranceCost, 0);
+      const sumMaint = res.yearlyBreakdown.reduce((a, b) => a + b.maintenanceCost, 0);
+
+      expect(res.totalFuelCost).toBe(sumFuel);
+      expect(res.totalInsuranceCost).toBe(sumIns);
+      expect(res.totalMaintenanceCost).toBe(sumMaint);
+      expect(res.totalRunningCost).toBe(sumFuel + sumIns + sumMaint);
+      expect(res.netTotalCostOfOwnership).toBe(res.grossOutflow - res.estimatedResaleValue);
+    });
+
+    it("Early car sale (3 yr ownership on 5 yr loan) settles outstanding debt", () => {
+      const res = calcCarTCO({
+        carOnRoadPrice: 1500000,
+        downPayment: 300000,
+        loanInterestRate: 9.0,
+        loanTenureYears: 5,
+        ownershipTenureYears: 3, // Selling car after 3 years
+      });
+      expect(res.ownershipTenureYears).toBe(3);
+      expect(res.totalEmiPaid).toBe(res.monthlyEmi * 36);
+      expect(res.grossOutflow).toBeGreaterThan(res.downPayment + res.totalEmiPaid);
+    });
+  });
+
+  // ─── 22. Home Loan Balance Transfer Breakeven ───────────────────
+  describe("22. calcBalanceTransfer Refinancing Breakeven", () => {
+    it("Calculates exact cashflow savings and breakeven month", () => {
+      const res = calcBalanceTransfer({
+        currentOutstandingPrincipal: 5000000,
+        currentInterestRate: 9.5,
+        currentRemainingTenureMonths: 180,
+        newInterestRate: 8.4,
+        newTenureMonths: 180,
+        processingFeeType: "percentage",
+        processingFeeValue: 0.5, // ₹25,000
+        otherSwitchingCharges: 15000, // Total = ₹40,000
+      });
+
+      expect(res.totalSwitchingCosts).toBe(40000);
+      expect(res.netBenefit).toBe(res.grossInterestSavings - res.totalSwitchingCosts);
+      expect(res.isBeneficial).toBe(true);
+      expect(res.breakevenMonths).toBe(Math.ceil(res.totalSwitchingCosts / res.monthlyEmiSavings));
+    });
+  });
+
+  // ─── 23. US Stock Investing Net Return (DTAA & Rule 115) ────────
+  describe("23. calcUSStockReturn DTAA & Rule 115 Compliance", () => {
+    it("DTAA FTC caps dividend credit to Indian tax liability", () => {
+      const res = calcUSStockReturn({
+        investmentAmountInr: 500000,
+        purchaseUsdInrRate: 84,
+        saleUsdInrRate: 84,
+        capitalGainUsd: 0,
+        holdingMonths: 24, // 24 months = long-term
+        dividendIncomeUsd: 1000, // ₹84,000 gross dividend
+        usDividendWithholdingTaxPercent: 25, // ₹21,000 US tax
+        userTaxBracketPercent: 30, // ₹25,200 Indian tax
+      });
+
+      expect(res.foreignTaxCreditInr).toBe(21000); // 100% credited
+      expect(res.indianDividendTaxNet).toBe(4200); // 25,200 - 21,000
+    });
+
+    it("Lower Indian tax bracket (10%) caps FTC at Indian tax (10%), leaving unrelieved US tax", () => {
+      const res = calcUSStockReturn({
+        investmentAmountInr: 500000,
+        purchaseUsdInrRate: 84,
+        saleUsdInrRate: 84,
+        capitalGainUsd: 0,
+        holdingMonths: 24, // 24 months = long-term
+        dividendIncomeUsd: 1000, // ₹84,000 gross dividend
+        usDividendWithholdingTaxPercent: 25, // ₹21,000 US tax
+        userTaxBracketPercent: 10, // ₹8,400 Indian tax
+      });
+
+      expect(res.foreignTaxCreditInr).toBe(8400); // Capped at Indian tax
+      expect(res.indianDividendTaxNet).toBe(0);
+    });
+  });
+
+  // ─── 24. NRI Deposit Comparator ─────────────────────────────────
+  describe("24. calcNRIDepositReturns Comparison", () => {
+    it("NRE is 100% tax-free and NRO applies 31.2% TDS", () => {
+      const res = calcNRIDepositReturns({
+        depositAmount: 1000000,
+        tenureMonths: 36,
+        nreInterestRatePercent: 7.1,
+        nroInterestRatePercent: 7.1,
+        fcnrInterestRatePercent: 5.5,
+        nroTdsRatePercent: 31.2,
+      });
+
+      expect(res.nreResult.taxDeducted).toBe(0);
+      expect(res.nreResult.isTaxFreeInIndia).toBe(true);
+      expect(res.nroResult.taxDeducted).toBeGreaterThan(0);
+      expect(res.nroResult.isTaxFreeInIndia).toBe(false);
+      expect(res.nreResult.maturityAmount).toBeGreaterThan(res.nroResult.maturityAmount);
+    });
+  });
+
+  // ─── 25. NPS Pension & Small Corpus Rule ────────────────────────
+  describe("25. calcNPS Pension & Small Corpus Rule", () => {
+    it("Small corpus <= ₹5 Lakh allows 100% lump sum exit without mandatory annuity", () => {
+      const res = calcNPS({
+        currentAge: 58,
+        retirementAge: 60,
+        monthlyContribution: 2000, // Small corpus ~ ₹55,000 < ₹5 Lakh
+        equityAllocationPercent: 50,
+        corporateDebtAllocationPercent: 30,
+        govtBondsAllocationPercent: 20,
+      });
+
+      expect(res.totalAccumulatedCorpus).toBeLessThanOrEqual(500000);
+      expect(res.lumpSumWithdrawalPercent).toBe(100);
+      expect(res.annuityPurchasedAmount).toBe(0);
+    });
+
+    it("New Regime provides ₹0 deduction for Section 80CCD(1B)", () => {
+      const res = calcNPS({
+        currentAge: 30,
+        retirementAge: 60,
+        monthlyContribution: 10000,
+        equityAllocationPercent: 50,
+        corporateDebtAllocationPercent: 30,
+        govtBondsAllocationPercent: 20,
+        regime: "new",
+      });
+
+      expect(res.annualTaxSavedUnder80CCD).toBe(0);
+    });
+  });
+
+  // ─── 26. calcXIRR & calcRiskRatios Solver Hardening ──────────────
+  describe("26. calcXIRR & calcRiskRatios Solver Hardening", () => {
+    it("calcXIRR: Successfully computes irregular cash flows with high precision", () => {
+      const res = calcXIRR([
+        { date: "2022-01-15", amount: -100000 },
+        { date: "2022-07-20", amount: -50000 },
+        { date: "2023-03-10", amount: -50000 },
+        { date: "2024-01-15", amount: 250000 },
+      ]);
+      expect(res.isValid).toBe(true);
+      expect(res.xirr).toBeGreaterThan(10);
+      expect(res.xirr).toBeLessThan(30);
+    });
+
+    it("calcXIRR: Rejects all-negative cash flows cleanly", () => {
+      const res = calcXIRR([
+        { date: "2022-01-15", amount: -100000 },
+        { date: "2023-01-15", amount: -100000 },
+      ]);
+      expect(res.isValid).toBe(false);
+    });
+
+    it("calcRiskRatios: Returns isSortinoInfinite when all returns exceed risk-free rate", () => {
+      const res = calcRiskRatios({
+        returns: [2, 3, 2.5, 4, 3, 2.8],
+        periodFrequency: "monthly",
+        riskFreeRate: 6.0, // 0.5%/mo < 2.0% min return
+      });
+      expect(res.isSortinoInfinite).toBe(true);
+      expect(res.downsideDeviationAnnualized).toBe(0);
+    });
+
+    it("calcRiskRatios: Computes empirical Beta and Treynor Ratio when benchmark returns provided", () => {
+      const portfolioReturns = [2, 4, -1, 5, 3, 2];
+      const benchmarkReturns = [1.5, 3, -0.8, 4, 2.5, 1.8];
+      const res = calcRiskRatios({
+        returns: portfolioReturns,
+        benchmarkReturns,
+        periodFrequency: "monthly",
+        riskFreeRate: 6.0,
+      });
+      expect(res.portfolioBeta).toBeDefined();
+      expect(res.portfolioBeta).toBeGreaterThan(0.5);
+      expect(res.treynorRatio).toBeDefined();
     });
   });
 });

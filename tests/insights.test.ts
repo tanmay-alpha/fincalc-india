@@ -230,7 +230,7 @@ describe("Insights & Suggestions Engine", () => {
 
   it("generates DCF Valuation insights", () => {
     const res = calcDCF({
-      cashFlowYear1: 10000000,
+      fcfProjections: [10000000, 11500000, 13225000, 15208750, 17490000],
       forecastYears: 5,
       growthRateYears1to5: 15,
       terminalGrowthRate: 4.5,
@@ -243,10 +243,10 @@ describe("Insights & Suggestions Engine", () => {
 
   it("generates WACC insights", () => {
     const res = calcWACC({
-      marketValueOfEquity: 70000000,
-      marketValueOfDebt: 30000000,
+      equityValue: 70000000,
+      debtValue: 30000000,
       costOfEquity: 14.0,
-      preTaxCostOfDebt: 9.0,
+      costOfDebt: 9.0,
       taxRate: 25.0,
     });
     const insights = getWACCInsights(res);
@@ -259,7 +259,7 @@ describe("Insights & Suggestions Engine", () => {
       netIncome: 15000000,
       revenue: 100000000,
       totalAssets: 80000000,
-      totalEquity: 50000000,
+      shareholdersEquity: 50000000,
     });
     const insights = getDuPontInsights(res);
     expect(insights.length).toBeGreaterThanOrEqual(2);

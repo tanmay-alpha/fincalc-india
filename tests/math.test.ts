@@ -3304,49 +3304,49 @@ describe('calcMarginalRelief', () => {
 })
 
 describe('calcLRSTCS', () => {
-  it('1. Exactly at ₹7 Lakh threshold for general investment yields ₹0 TCS', () => {
-    const res = calcLRSTCS({ category: 'general_investment', remittanceAmountInr: 700000 })
-    expect(res.totalTcsDeducted).toBe(0)
-    expect(res.totalOutflowInr).toBe(700000)
-  })
-
-  it('2. General investment amount split across threshold applies 20% only to portion above ₹7L', () => {
-    // 10L: 7L @ 0%, 3L @ 20% = ₹60,000 TCS
+  it('1. Exactly at ₹10 Lakh threshold for general investment yields ₹0 TCS', () => {
     const res = calcLRSTCS({ category: 'general_investment', remittanceAmountInr: 1000000 })
+    expect(res.totalTcsDeducted).toBe(0)
+    expect(res.totalOutflowInr).toBe(1000000)
+  })
+
+  it('2. General investment amount split across threshold applies 20% only to portion above ₹10L', () => {
+    // 15L: 10L @ 0%, 5L @ 20% = ₹1,00,000 TCS
+    const res = calcLRSTCS({ category: 'general_investment', remittanceAmountInr: 1500000 })
     expect(res.tier1Tcs).toBe(0)
-    expect(res.tier2Tcs).toBe(60000)
-    expect(res.totalTcsDeducted).toBe(60000)
-    expect(res.totalOutflowInr).toBe(1060000)
-  })
-
-  it('3. Overseas tour package applies 2-tier structure (5% up to ₹7L + 20% above ₹7L)', () => {
-    // 12L: 7L @ 5% (35,000) + 5L @ 20% (1,00,000) = ₹1,35,000 TCS
-    const res = calcLRSTCS({ category: 'overseas_tour_package', remittanceAmountInr: 1200000 })
-    expect(res.tier1Tcs).toBe(35000)
     expect(res.tier2Tcs).toBe(100000)
-    expect(res.totalTcsDeducted).toBe(135000)
-    expect(res.totalOutflowInr).toBe(1335000)
+    expect(res.totalTcsDeducted).toBe(100000)
+    expect(res.totalOutflowInr).toBe(1600000)
   })
 
-  it('4. Overseas tour package within ₹7 Lakh applies flat 5% TCS', () => {
+  it('3. Overseas tour package applies 2-tier structure (5% up to ₹10L + 20% above ₹10L)', () => {
+    // 12L: 10L @ 5% (50,000) + 2L @ 20% (40,000) = ₹90,000 TCS
+    const res = calcLRSTCS({ category: 'overseas_tour_package', remittanceAmountInr: 1200000 })
+    expect(res.tier1Tcs).toBe(50000)
+    expect(res.tier2Tcs).toBe(40000)
+    expect(res.totalTcsDeducted).toBe(90000)
+    expect(res.totalOutflowInr).toBe(1290000)
+  })
+
+  it('4. Overseas tour package within ₹10 Lakh applies flat 5% TCS', () => {
     const res = calcLRSTCS({ category: 'overseas_tour_package', remittanceAmountInr: 500000 })
     expect(res.totalTcsDeducted).toBe(25000) // 5% of 5L
   })
 
-  it('5. Education remittance via loan applies 0.5% only on amount above ₹7 Lakh', () => {
-    // 20L loan: 7L @ 0%, 13L @ 0.5% = ₹6,500 TCS
+  it('5. Education remittance via loan u/s 80E is 0% exempt across all amounts', () => {
+    // 20L loan: 100% exempt (0% TCS)
     const res = calcLRSTCS({ category: 'education_loan', remittanceAmountInr: 2000000 })
-    expect(res.totalTcsDeducted).toBe(6500)
+    expect(res.totalTcsDeducted).toBe(0)
   })
 
-  it('6. Education self-funded applies 5% only on amount above ₹7 Lakh', () => {
-    // 15L: 7L @ 0%, 8L @ 5% = ₹40,000 TCS
+  it('6. Education self-funded applies 5% only on amount above ₹10 Lakh', () => {
+    // 15L: 10L @ 0%, 5L @ 5% = ₹25,000 TCS
     const res = calcLRSTCS({ category: 'education_self', remittanceAmountInr: 1500000 })
-    expect(res.totalTcsDeducted).toBe(40000)
+    expect(res.totalTcsDeducted).toBe(25000)
   })
 
-  it('7. Medical remittance applies 5% only on amount above ₹7 Lakh', () => {
-    const res = calcLRSTCS({ category: 'medical_treatment', remittanceAmountInr: 1000000 })
+  it('7. Medical remittance applies 5% only on amount above ₹10 Lakh', () => {
+    const res = calcLRSTCS({ category: 'medical_treatment', remittanceAmountInr: 1300000 })
     expect(res.totalTcsDeducted).toBe(15000) // 5% of 3L
   })
 
@@ -3379,7 +3379,8 @@ describe('calcUSStockReturn', () => {
       holdingMonths: 12,
     })
     expect(res.currencyGainLossInr).toBe(40000) // $10,000 * 4 INR/USD
-    expect(res.netProceedsInr).toBe(880000)
+    expect(res.grossProceedsInr).toBe(880000)
+    expect(res.netProceedsInr).toBe(868000)
   })
 
   it('2. Currency appreciation (INR stronger, 88 -> 84) reduces INR returns', () => {
@@ -3541,8 +3542,8 @@ describe('calcNPS', () => {
   })
 
   it('3. Section 80CCD(1B) extra ₹50,000 tax deduction is capped at actual contribution', () => {
-    const smallContribution = calcNPS({ currentAge: 30, monthlyContribution: 2000, equityAllocationPercent: 50, corporateDebtAllocationPercent: 30, govtBondsAllocationPercent: 20, taxBracketPercent: 30 }) // ₹24,000/yr
-    const largeContribution = calcNPS({ currentAge: 30, monthlyContribution: 10000, equityAllocationPercent: 50, corporateDebtAllocationPercent: 30, govtBondsAllocationPercent: 20, taxBracketPercent: 30 }) // ₹1,20,000/yr
+    const smallContribution = calcNPS({ currentAge: 30, monthlyContribution: 2000, equityAllocationPercent: 50, corporateDebtAllocationPercent: 30, govtBondsAllocationPercent: 20, taxBracketPercent: 30, regime: 'old' }) // ₹24,000/yr
+    const largeContribution = calcNPS({ currentAge: 30, monthlyContribution: 10000, equityAllocationPercent: 50, corporateDebtAllocationPercent: 30, govtBondsAllocationPercent: 20, taxBracketPercent: 30, regime: 'old' }) // ₹1,20,000/yr
     expect(smallContribution.annualTaxSavedUnder80CCD).toBe(Math.round(24000 * 0.30)) // 7,200
     expect(largeContribution.annualTaxSavedUnder80CCD).toBe(Math.round(50000 * 0.30)) // 15,000 capped
   })

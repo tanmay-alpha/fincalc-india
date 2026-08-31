@@ -15,7 +15,7 @@ import type { WaccInput } from "@/lib/math";
 import { getWACCInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
-import { Scale, PieChart as PieIcon, ShieldCheck } from "lucide-react";
+import { Scale, PieChart as PieIcon } from "lucide-react";
 
 const WaccChart = dynamic(
   () => import("@/components/calculators/wacc/WaccChart"),

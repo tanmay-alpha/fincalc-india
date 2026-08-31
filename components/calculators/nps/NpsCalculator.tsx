@@ -15,7 +15,7 @@ import type { NPSInput } from "@/lib/math";
 import { getNPSInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
-import { Landmark, ShieldCheck, HeartHandshake, AlertTriangle, TrendingUp } from "lucide-react";
+import { Landmark, AlertTriangle, TrendingUp } from "lucide-react";
 
 const NpsChart = dynamic(
   () => import("@/components/calculators/nps/NpsChart"),
@@ -30,9 +30,9 @@ export default function NpsCalculator() {
   const [equityAllocationPercent, setEquityAllocationPercent] = useState(50);
   const [corporateDebtAllocationPercent, setCorporateDebtAllocationPercent] = useState(30);
   const [govtBondsAllocationPercent, setGovtBondsAllocationPercent] = useState(20);
-  const [expectedEquityReturnPercent, setExpectedEquityReturnPercent] = useState(12.0);
-  const [expectedCorpDebtReturnPercent, setExpectedCorpDebtReturnPercent] = useState(9.0);
-  const [expectedGovtBondReturnPercent, setExpectedGovtBondReturnPercent] = useState(7.5);
+  const expectedEquityReturnPercent = 12.0;
+  const expectedCorpDebtReturnPercent = 9.0;
+  const expectedGovtBondReturnPercent = 7.5;
   const [lumpSumWithdrawalPercent, setLumpSumWithdrawalPercent] = useState(60);
   const [assumedAnnuityYieldPercent, setAssumedAnnuityYieldPercent] = useState(6.0);
   const [taxBracketPercent, setTaxBracketPercent] = useState(30.0);

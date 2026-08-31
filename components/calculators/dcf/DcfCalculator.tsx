@@ -15,7 +15,7 @@ import type { DcfInput } from "@/lib/math";
 import { getDCFInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
-import { Building2, TrendingUp, DollarSign, PieChart as PieIcon, ShieldAlert } from "lucide-react";
+import { Building2, TrendingUp, ShieldAlert } from "lucide-react";
 
 const DcfChart = dynamic(
   () => import("@/components/calculators/dcf/DcfChart"),

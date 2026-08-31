@@ -13,9 +13,8 @@ import InsightCard from "@/components/ui/InsightCard";
 import { calcDuPont } from "@/lib/math";
 import type { DuPontInput } from "@/lib/math";
 import { getDuPontInsights } from "@/lib/insights";
-import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
-import { Layers, Activity, TrendingUp } from "lucide-react";
+import { Layers, Activity } from "lucide-react";
 
 const DuPontChart = dynamic(
   () => import("@/components/calculators/dupont/DuPontChart"),

@@ -15,7 +15,7 @@ import type { USStockReturnInput } from "@/lib/math";
 import { getUSStockReturnInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
-import { DollarSign, Globe, TrendingUp, ShieldCheck } from "lucide-react";
+import { DollarSign, TrendingUp } from "lucide-react";
 
 const USStockChart = dynamic(
   () => import("@/components/calculators/us-stock/USStockChart"),

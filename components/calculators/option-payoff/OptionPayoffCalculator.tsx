@@ -63,12 +63,12 @@ export default function OptionPayoffCalculator() {
     setLegs((prev) => [...prev, newLeg]);
   };
 
-  const handleRemoveLeg = (id: string) => {
+  const handleRemoveLeg = (id?: string) => {
     setSelectedPreset("custom");
     setLegs((prev) => prev.filter((l) => l.id !== id));
   };
 
-  const handleUpdateLeg = (id: string, updates: Partial<OptionLeg>) => {
+  const handleUpdateLeg = (id: string | undefined, updates: Partial<OptionLeg>) => {
     setSelectedPreset("custom");
     setLegs((prev) =>
       prev.map((l) => (l.id === id ? { ...l, ...updates } : l))

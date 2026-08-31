@@ -15,7 +15,7 @@ import type { NRIDepositInput } from "@/lib/math";
 import { getNRIDepositInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
-import { Building, ShieldCheck, ArrowRightLeft, Sparkles } from "lucide-react";
+import { Building, Sparkles } from "lucide-react";
 
 const NRIDepositChart = dynamic(
   () => import("@/components/calculators/nri-deposits/NRIDepositChart"),

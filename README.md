@@ -1,46 +1,83 @@
 # FinCalc India 🇮🇳
 
-**Free financial calculator suite for Indian investors and tax filers.**
+**Production-Grade Financial Calculation Engine & Wealth Advisory Suite for Indian Investors, Traders, Professionals & Corporates.**
 
 🔗 **Live Demo:** [https://fincalc-india.vercel.app/](https://fincalc-india.vercel.app/)  
 📦 **GitHub:** [https://github.com/tanmay-alpha/fincalc-india](https://github.com/tanmay-alpha/fincalc-india)
 
 ---
 
-## What It Is
+## 31 Production-Grade Calculators (Engine v2)
 
-Six financial calculators built for the Indian demographic — with Indian number formatting (₹ / lakh / crore), FY 2025-26 income tax slabs, and a clean dark-mode UI.
+All 31 calculators operate as pure client-safe mathematical models complying with statutory Indian financial regulations, RBI guidelines, SEBI mandates, and Income Tax Department rules.
 
-| Calculator | What it computes |
-|------------|-----------------|
-| SIP | Systematic Investment Plan corpus & year-by-year growth |
-| EMI | Loan EMI + full amortization schedule (home / car / personal) |
-| FD | Fixed Deposit maturity with monthly / quarterly / annual compounding |
-| PPF | Public Provident Fund corpus with withdrawal rules |
-| Lumpsum | One-time investment growth with CAGR |
-| Income Tax | FY 2025-26 / AY 2026-27 — Old vs New regime, 87A rebate, cess |
+### 1. 💰 Investments & Wealth Creation
+1. **SIP (Systematic Investment Plan)**: Compounding wealth growth, yearly progression & inflation adjustments.
+2. **Step-Up SIP**: Annual percentage and fixed-amount top-up modeling with goal tracking.
+3. **Target / Goal SIP**: Reverse SIP solver with exact future value discounting.
+4. **Lumpsum Investment**: Compound growth with annualized CAGR & inflation-adjusted real value.
+5. **Fixed Deposit (FD)**: Monthly, quarterly, and annual compounding with cumulative & non-cumulative payouts.
+6. **Public Provident Fund (PPF)**: Section 80C exempt-exempt-exempt (EEE) compounding with 15-year statutory tenure and lock-in rules.
+7. **FIRE (Financial Independence, Retire Early)**: Fat/Lean FIRE corpus modeling, Safe Withdrawal Rates (SWR), and real withdrawal runways.
+8. **NPS (National Pension System)**: Tier-1 asset allocation (Equity/Corporate Debt/Govt Bonds), 60% tax-free lump sum exit, small-corpus exemption (≤ ₹5 Lakh full exit), and Section 80CCD(1B) deduction.
+
+### 2. 🏠 Loans, Credit & Debt Management
+9. **EMI Calculator**: Exact reducing-balance EMI calculation with interactive month-by-month amortization schedule.
+10. **Loan Prepayment vs. Invest**: Comparative financial simulation of early debt payoff vs equity SIP index investing.
+11. **No-Cost EMI Reality Checker**: Dissects zero-cost processing fees, hidden merchant subvention discounts, and 18% GST on interest.
+12. **Car Loan Total Cost of Ownership (TCO)**: Month-by-month amortization schedule, fuel inflation, insurance degradation, maintenance escalation, and loan payoff on early car resale.
+13. **Home Loan Balance Transfer & Refinancing**: Exact cashflow analysis, processing fees (percentage/flat), MODT stamp duty, and breakeven month timeline.
+
+### 3. ⚖️ Taxation & Statutory Planning (Tax Year 2026-27)
+14. **Income Tax Calculator (FY 2026-27 / AY 2027-28)**: New Regime (0–4L nil, 4–8L 5%, 8–12L 10%, 12–16L 15%, 16–20L 20%, 20–24L 25%, >24L 30%) vs Old Regime comparison, ₹75,000 standard deduction, and Section 157 rebate (up to ₹60,000).
+15. **Marginal Relief & High-Income Surcharge**: Statutory surcharge tiers (10%, 15%, 25% max in New Regime; up to 37% in Old Regime) with exact marginal relief cap at threshold boundaries (₹50L, ₹1Cr, ₹2Cr, ₹5Cr).
+16. **Capital Gains Tax**: Post-July 23, 2024 unified regime — Equity LTCG @ 12.5% (> ₹1.25L exemption), Equity STCG @ 20%, official Cost Inflation Index (CII 2024-25 = 363, 2025-26 = 376, 2026-27 = 384), and dual-calculation grandfathering for pre-July 23, 2024 real estate.
+17. **HRA Exemption**: Statutory 3-condition minimum formula for Old Regime vs ₹0 exemption note under New Tax Regime.
+18. **Presumptive Taxation (Section 44AD / 44ADA)**: 50% presumptive profit for professionals (₹50L / ₹75L threshold) and 6%/8% for businesses (₹2Cr / ₹3Cr threshold) with Section 44AB tax audit warnings.
+19. **Section 54 / 54EC Capital Gains Exemption**: Residential property roll-over u/s 54 (₹10 Cr statutory cap) and NHAI/REC/PFC/IRFC capital gains bonds u/s 54EC (₹50 Lakh statutory cap and 6-month timeline).
+20. **LRS TCS & Remittance (Section 206C(1G))**: ₹10,00,000 statutory exemption threshold, 0% TCS on education loans u/s 80E, 5% on self-funded education/medical, and 20% on foreign investments/tour packages.
+21. **US Stock Investing Net Return**: Rule 115 INR currency conversion, 24-month long-term holding period, and Section 90 Foreign Tax Credit (FTC) on 25% US dividend withholding.
+22. **NRI NRE vs NRO vs FCNR Deposit Comparator**: Side-by-side post-tax yield analysis, 31.2% NRO TDS, 100% tax-free NRE repatriability, and USD FCNR exchange rate normalization.
+
+### 4. 📈 Trading, Derivatives & Quantitative Risk
+23. **F&O Brokerage & STT Calculator**: Exact exchange turnover charges, SEBI turnover fees, GST (18%), and revised STT rates (0.02% on futures, 0.1% on options premium) with net breakeven points.
+24. **Option Strategy Payoff Visualizer**: Multi-leg Option Greeks & PnL payoff curve across underlying spot prices for Bull Call Spreads, Bear Put Spreads, Straddles, Strangles, and Iron Condors.
+25. **Black-Scholes Option Pricing & Greeks**: European Call/Put pricing model with Delta, Gamma, Theta, Vega, and Rho Greeks.
+26. **Position Size & Risk Calculator**: Fixed fractional risk management, stop-loss sizing, maximum buying power allocation, and short trade inversion.
+27. **Futures & Options Margin Estimator**: Initial SPAN margin + Exposure margin requirements across Nifty, BankNifty, and Stock contracts.
+28. **Portfolio Risk & Performance Ratios**: Sharpe Ratio, Sortino Ratio (with zero-downside handling), annualized volatility, max drawdown, and empirical Beta/Treynor Ratios.
+
+### 5. 🏢 Corporate Finance & Valuation
+29. **DCF Valuation (Discounted Cash Flow)**: Multi-stage Free Cash Flow to Firm (FCFF) discounting, Gordon Growth terminal value, net debt reconciliation, and 2D WACC vs Terminal Growth sensitivity matrix.
+30. **WACC (Weighted Average Cost of Capital)**: Debt/Equity market weightings, CAPM cost of equity, and post-tax cost of debt tax shield.
+31. **DuPont 5-Step Analysis**: ROE decomposition into Operating Margin, Asset Turnover, Financial Leverage, Interest Burden, and Tax Burden.
 
 ---
 
-## Tech Stack
+## Statutory Authority & Regulatory Sources
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 14 (App Router) |
-| Language | TypeScript |
-| Styling | Tailwind CSS 3.4 |
-| Charts | Recharts |
-| Forms / Validation | Zod |
-| Database (optional) | PostgreSQL + Prisma |
-| Auth (optional) | NextAuth v5 + Google OAuth |
-| Icons | Lucide React |
-| Toasts | Sonner |
-| Theme | next-themes (dark mode) |
-| Deployment | Vercel |
+All tax, legal, and financial logic adheres strictly to official regulatory hierarchy:
+1. **Income Tax Department / Central Board of Direct Taxes (CBDT)**: Income Tax Act, 2025 / Finance Act 2024 & 2025 / Budget Notifications.
+2. **Reserve Bank of India (RBI)**: Liberalised Remittance Scheme (LRS) & NRI Deposit Master Directions.
+3. **Securities and Exchange Board of India (SEBI)**: STT, turnover charges, mutual fund categorization, and margin regulations.
+4. **Pension Fund Regulatory and Development Authority (PFRDA)**: National Pension System (NPS) Exit and Withdrawal Regulations.
+5. **NSE & BSE**: Derivatives contract specifications, lot sizes, and settlement frameworks.
 
 ---
 
-## Quick Start
+## Tech Stack & Architecture
+
+- **Framework**: Next.js 15 (App Router, Server Components & Client Hydration)
+- **Language**: TypeScript (100% Strict Type Safety, Zero `any`)
+- **Mathematical Engine**: Pure client-safe numerical algorithms (Newton-Raphson solvers, Bisection search, Amortization trees)
+- **Design System**: Tailored dark-mode glassmorphism, responsive data grids, Lucide icons, and Recharts interactive visualizations
+- **Validation**: Zod schema validation & comprehensive boundary sanitation
+- **Testing**: Vitest test runner with 396+ unit and adversarial regulatory regression tests
+- **CI/CD**: Automated GitHub Actions quality gate (type-check, test suite, production build)
+
+---
+
+## Quick Start & Verification
 
 ```bash
 # 1. Clone
@@ -50,138 +87,17 @@ cd fincalc-india
 # 2. Install
 npm install
 
-# 3. Set up environment
-cp .env.example .env
-# Edit .env with your credentials (see below)
+# 3. Type-check
+npx tsc --noEmit
 
-# 4. Generate Prisma client
-npx prisma generate
+# 4. Run 396+ Regulatory & Unit Tests
+npm test
 
-# 5. Run dev server
+# 5. Production Build
+npm run build
+
+# 6. Start Dev Server
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
-
-> **All 6 calculators work without a database or Google auth.** Database and OAuth are only needed for the Save / Share / History features.
-
----
-
-## Environment Variables
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `DATABASE_URL` | Optional | PostgreSQL connection string (Neon free tier works great) |
-| `NEXTAUTH_SECRET` | Optional | Random string for session encryption |
-| `NEXTAUTH_URL` | Optional | Your app URL (default: `http://localhost:3000`) |
-| `GOOGLE_CLIENT_ID` | Optional | Google OAuth client ID |
-| `GOOGLE_CLIENT_SECRET` | Optional | Google OAuth client secret |
-
-### Setting up Google OAuth (for save/share features)
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
-2. Create an OAuth 2.0 Client ID (Web application)
-3. Add redirect URI: `http://localhost:3000/api/auth/callback/google`
-4. Copy credentials to `.env`
-
-### Setting up Database (free with Neon)
-
-1. Create account at [neon.tech](https://neon.tech)
-2. Create a project → copy the connection string to `DATABASE_URL`
-3. Run migrations:
-
-```bash
-npx prisma migrate dev --name init
-```
-
----
-
-## NPM Scripts
-
-```bash
-npm run dev       # Start development server
-npm run build     # Production build (runs prisma generate first)
-npm run lint      # ESLint check
-npm run test      # Run Vitest tests (math engine)
-npm run test:watch # Vitest in watch mode
-npm start         # Start production server
-```
-
----
-
-## Project Structure
-
-```
-fincalc-india/
-├── app/
-│   ├── api/
-│   │   ├── calculate/[type]/  # Server-side calculation + save API
-│   │   ├── auth/              # NextAuth route
-│   │   ├── history/           # Saved calculations CRUD
-│   │   └── result/[shareId]/  # Public share link API
-│   ├── sip/                   # SIP calculator page
-│   ├── emi/                   # EMI calculator + amortization
-│   ├── fd/                    # FD calculator
-│   ├── ppf/                   # PPF calculator
-│   ├── lumpsum/               # Lumpsum calculator
-│   ├── tax/                   # Income Tax estimator (FY 2025-26)
-│   ├── history/               # Saved calculations (auth required)
-│   ├── result/[shareId]/      # Shared result page
-│   ├── layout.tsx             # Root layout + providers
-│   ├── sitemap.ts             # Auto-generated sitemap
-│   └── robots.ts              # Crawler rules
-├── components/
-│   ├── calculators/           # Per-calculator interactive components
-│   ├── seo/                   # Static SEO content sections
-│   ├── ui/                    # Shared UI primitives
-│   ├── Navbar.tsx
-│   └── Footer.tsx
-├── lib/
-│   ├── math.ts                # All 6 calculator functions (core logic)
-│   ├── validations.ts         # Zod schemas for all calculators
-│   ├── format.ts              # Indian number formatting
-│   └── prisma.ts              # Prisma singleton
-├── tests/
-│   └── math.test.ts           # Vitest tests for math engine
-├── prisma/schema.prisma       # Database schema
-├── auth.ts                    # NextAuth v5 config
-├── middleware.ts              # Security headers
-└── .env.example               # Environment variable template
-```
-
----
-
-## LinkedIn Demo Flow
-
-If you're evaluating this project for a portfolio review:
-
-1. **Homepage** → [fincalc-india.vercel.app](https://fincalc-india.vercel.app/) — overview of all calculators
-2. **SIP Calculator** → [/sip](https://fincalc-india.vercel.app/sip) — adjust monthly amount + rate + years
-3. **EMI Calculator** → [/emi](https://fincalc-india.vercel.app/emi) — home loan with full amortization
-4. **Tax Calculator** → [/tax](https://fincalc-india.vercel.app/tax) — FY 2025-26 Old vs New regime
-5. **Sign in with Google** → save a calculation → see history → share a result link
-
----
-
-## Engineering Notes
-
-- **Server-side security:** The `/api/calculate/[type]` route validates inputs with Zod and **recomputes results server-side** via `lib/math.ts`. Client-submitted result values are never trusted.
-- **SEO:** Calculator pages are Next.js Server Components with static H1 / description / slab tables that Google can index without JavaScript.
-- **Math engine:** All formulas are in `lib/math.ts` — completely decoupled from UI and testable.
-- **Rate limiting:** Basic IP-based rate limiting on the save API.
-
----
-
-## Disclaimer
-
-> This project is for **educational and estimation purposes only**. It is not financial, investment, or tax advice. Tax calculations are based on announced budget slabs and may not reflect every individual's tax situation. Consult a qualified professional before making financial decisions.
-
----
-
-## License
-
-MIT — free to use, modify, and distribute.
-
----
-
-Made with ❤️ in India
+Open [http://localhost:3000](http://localhost:3000) to access the 31 calculator suite.
