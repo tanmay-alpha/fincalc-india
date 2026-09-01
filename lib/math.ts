@@ -2595,6 +2595,9 @@ export interface CapitalGainsOutput {
   rawCapitalGain: number;
   isLoss: boolean;
   exemptionAllowed: number;
+  /** Gain that remains subject to tax after any asset-specific exemption. */
+  taxableGainAfterExemption: number;
+  /** Gain after deductible transfer costs but before an exemption is applied. */
   taxableGain: number;
   taxRatePercent: number;
   totalTaxPayable: number;
@@ -2790,6 +2793,7 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
     rawCapitalGain > 0
       ? Math.round((totalTaxPayable / rawCapitalGain) * 100 * 100) / 100
       : 0;
+  const taxableGainAfterExemption = Math.max(0, taxableGain - exemptionAllowed);
 
   return {
     taxYear: CURRENT_TAX_YEAR,
@@ -2805,6 +2809,7 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
     rawCapitalGain: Math.round(rawCapitalGain),
     isLoss,
     exemptionAllowed: Math.round(exemptionAllowed),
+    taxableGainAfterExemption: Math.round(taxableGainAfterExemption),
     taxableGain: Math.round(taxableGain),
     taxRatePercent,
     totalTaxPayable: Math.round(totalTaxPayable),
@@ -5806,6 +5811,5 @@ export function calcNPS(input: NPSInput): NPSOutput {
     summary: `NPS Corpus: ₹${Math.round(totalCorpus).toLocaleString("en-IN")} at Age ${safeRetirement} | Tax-Free Lump Sum: ₹${Math.round(taxFreeLumpSumAmount).toLocaleString("en-IN")} | Monthly Pension: ₹${Math.round(estimatedMonthlyPension).toLocaleString("en-IN")}/mo`,
   };
 }
-
 
 

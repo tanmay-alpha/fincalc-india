@@ -430,6 +430,21 @@ describe("SECTION 5: Full Regression Audit — Adversarial Edge-Case Suite", () 
       expect(res.totalTaxPayable).toBe(0);
     });
 
+    it("reports equity LTCG taxable gain after the ₹1.25L annual exemption", () => {
+      const res = calcCapitalGains({
+        assetClass: "equity",
+        purchasePrice: 500000,
+        salePrice: 1000000,
+        transferExpenses: 5000,
+        holdingMonths: 18,
+      });
+
+      expect(res.taxableGain).toBe(495000);
+      expect(res.exemptionAllowed).toBe(125000);
+      expect(res.taxableGainAfterExemption).toBe(370000);
+      expect(res.totalTaxPayable).toBe(46250);
+    });
+
     it("Tax Year 2026-27: Equity STCG taxed flat 20%", () => {
       const res = calcCapitalGains({
         assetClass: "equity",

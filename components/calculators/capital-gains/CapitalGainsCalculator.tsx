@@ -258,7 +258,7 @@ export default function CapitalGainsCalculator() {
             breakdown={[
               { label: "Gross Capital Gain", value: Math.max(0, result.rawCapitalGain), color: "blue" },
               { label: "Exemption Applied", value: result.exemptionAllowed, color: "green" },
-              { label: "Taxable Capital Gain", value: result.taxableGain, color: "blue" },
+              { label: "Taxable Capital Gain", value: result.taxableGainAfterExemption, color: "blue" },
               { label: "Net Cash In Hand", value: netInPocket, color: "green" },
             ]}
           />
