@@ -126,7 +126,7 @@ export default function TaxInfo() {
               <p>Taxable: ₹11,25,000</p>
               <p className="mt-1 font-bold
                 text-green-700 dark:text-green-400">
-                Tax: ₹71,500
+                Tax: ₹0 (Section 156 rebate)
               </p>
             </div>
             <div>
@@ -145,8 +145,8 @@ export default function TaxInfo() {
           </div>
           <p className="text-xs text-slate-500
             dark:text-slate-400 mt-3">
-            * Tax Year 2026-27 (FY 2026-27): New Regime makes income up to ₹12L
-            effectively tax-free (Section 156 rebate up to ₹60,000 with marginal relief). Old Regime
+            * Tax Year 2026-27 (FY 2026-27): with the ₹75,000 standard deduction, salary income up to
+            ₹12.75L is tax-free under the Section 156 rebate (up to ₹60,000, with marginal relief above the threshold). Old Regime
             saves more only with high itemized deductions (₹3.5L+).
           </p>
         </div>
