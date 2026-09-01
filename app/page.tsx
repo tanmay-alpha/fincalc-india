@@ -106,7 +106,7 @@ const calculators: CalculatorCard[] = [
     icon: FileText,
     description: "Compare old and new regime tax estimates with slab-by-slab breakdown for Tax Year 2026-27.",
     bestFor: "Salary and tax planning",
-    includes: "Tax payable, regime comparison, Section 157 rebate",
+    includes: "Tax payable, regime comparison, Section 156 rebate",
     href: "/tax",
     badge: "Tax Year 2026-27",
   },
@@ -332,11 +332,11 @@ const calculators: CalculatorCard[] = [
     name: "LRS TCS & Remittance",
     shortName: "LRS TCS",
     icon: WalletCards,
-    description: "Calculate Section 206C(1G) TCS on foreign remittances for foreign stocks, tours, education loans, and medical treatment.",
+    description: "Calculate Section 394 (formerly 206C(1G)) TCS on foreign remittances for foreign stocks, tours, education loans, and medical treatment.",
     bestFor: "Foreign investors, travelers & parents of students abroad",
-    includes: "₹7L threshold split, 0.5%/5%/20% slabs, Form 26AS credit",
+    includes: "₹10L threshold, 2% tour/edu, 20% general, Form 26AS credit",
     href: "/lrs-tcs",
-    badge: "RBI LRS Norms",
+    badge: "Section 394 Norms",
   },
   {
     id: "us-stock-tax",
@@ -365,11 +365,11 @@ const calculators: CalculatorCard[] = [
     name: "NPS Pension & Corpus",
     shortName: "NPS Tier-1",
     icon: Landmark,
-    description: "Model National Pension System Tier-1 wealth accumulation across E/C/G asset classes with 60% tax-free lump sum and monthly pension.",
+    description: "Model National Pension System Tier-1 wealth accumulation with PFRDA 2026 exit rules (up to 80% lump sum, 60% tax-free) and monthly pension.",
     bestFor: "Retirement planning & Section 80CCD(1B) extra ₹50k deduction",
-    includes: "Monthly pension, 60/40 split, Section 80CCD tax saved",
+    includes: "Monthly pension, 60% tax-free cap, Section 80CCD tax saved",
     href: "/nps",
-    badge: "Section 80CCD",
+    badge: "PFRDA 2026",
   },
 ];
 
@@ -377,7 +377,7 @@ const stats = [
   { value: "31", label: "Calculators" },
   { value: "100%", label: "Free forever" },
   { value: "0", label: "Ads" },
-  { value: "Tax Year 2026-27", label: "Finance Act 2025" },
+  { value: "Tax Year 2026-27", label: "Finance Act 2026" },
 ];
 
 const whyItems = [

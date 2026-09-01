@@ -192,11 +192,11 @@ export default function NpsCalculator() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <HybridInput
                   label="Lump Sum Split (%)"
-                  hint="Tax-free lump sum withdrawal (max 60%)"
+                  hint="PFRDA 2026 allows up to 80% lump sum (60% tax-free u/s 10(12A), excess taxable)"
                   value={lumpSumWithdrawalPercent}
                   onChange={setLumpSumWithdrawalPercent}
                   min={0}
-                  max={60}
+                  max={80}
                   step={5}
                   suffix="%"
                 />
@@ -244,25 +244,28 @@ export default function NpsCalculator() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
                   <p className="text-[11px] text-muted-foreground">Monthly Pension</p>
-                  <p className="text-base font-bold text-emerald-400 mt-0.5">
+                  <p className="text-base font-bold text-emerald-500 mt-0.5">
                     {formatINR(result.estimatedMonthlyPension)}/mo
                   </p>
                 </div>
                 <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
-                  <p className="text-[11px] text-muted-foreground">60% Tax-Free Lump Sum</p>
+                  <p className="text-[11px] text-muted-foreground">Tax-Free Lump Sum</p>
                   <p className="text-base font-bold text-foreground mt-0.5">
                     {formatINR(result.lumpSumTaxFreeAmount)}
                   </p>
+                  {result.taxableLumpSumAmount > 0 && (
+                    <span className="text-[10px] text-amber-500 block">+{formatINR(result.taxableLumpSumAmount)} taxable</span>
+                  )}
                 </div>
                 <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
-                  <p className="text-[11px] text-muted-foreground">40% Annuity Corpus</p>
+                  <p className="text-[11px] text-muted-foreground">Annuity Corpus ({100 - result.lumpSumWithdrawalPercent}%)</p>
                   <p className="text-base font-bold text-primary mt-0.5">
                     {formatINR(result.annuityPurchasedAmount)}
                   </p>
                 </div>
                 <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
                   <p className="text-[11px] text-muted-foreground">Sec 80CCD Tax Saved</p>
-                  <p className="text-base font-bold text-emerald-400 mt-0.5">
+                  <p className="text-base font-bold text-emerald-500 mt-0.5">
                     {formatINR(result.annualTaxSavedUnder80CCD)}/yr
                   </p>
                 </div>

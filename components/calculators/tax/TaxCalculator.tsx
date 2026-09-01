@@ -246,6 +246,16 @@ export default function TaxCalculator() {
                       <td className="px-6 py-3 text-right font-medium text-destructive">{formatINR(s.tax)}</td>
                     </tr>
                   ))}
+                  {results.rebateAmount > 0 && (
+                    <tr className="table-row text-emerald-600 dark:text-emerald-400">
+                      <td className="px-6 py-3" colSpan={3}>
+                        Tax Rebate ({results.isMarginalRebateApplied ? "Section 156(2)(b) Marginal Relief" : "Section 156"})
+                      </td>
+                      <td className="px-6 py-3 text-right font-medium text-emerald-600 dark:text-emerald-400">
+                        - {formatINR(results.rebateAmount)}
+                      </td>
+                    </tr>
+                  )}
                   {results.surcharge > 0 && (
                     <tr className="table-row text-foreground/80">
                       <td className="px-6 py-3" colSpan={3}>Surcharge</td>
@@ -253,11 +263,11 @@ export default function TaxCalculator() {
                     </tr>
                   )}
                   <tr className="table-row text-foreground/80">
-                    <td className="px-6 py-3" colSpan={3}>Cess (4%)</td>
+                    <td className="px-6 py-3" colSpan={3}>Health & Education Cess (4%)</td>
                     <td className="px-6 py-3 text-right font-medium">{formatINR(results.cess)}</td>
                   </tr>
                   <tr className="bg-muted font-semibold text-foreground">
-                    <td className="px-6 py-3.5" colSpan={3}>Total Tax</td>
+                    <td className="px-6 py-3.5" colSpan={3}>Total Tax Payable</td>
                     <td className="px-6 py-3.5 text-right text-destructive">{formatINR(results.totalTax)}</td>
                   </tr>
                 </tbody>
