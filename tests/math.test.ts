@@ -18,6 +18,7 @@ import {
   calcNoCostEMITruth,
   calcFIRE,
   calcSWP,
+  calcHumanLifeValue,
   calcCapitalGains,
   calcFnOBreakeven,
   calcOptionPayoff,
@@ -3640,5 +3641,17 @@ describe('calcSWP', () => {
   })
 })
 
+describe('calcHumanLifeValue', () => {
+  const base = { currentAge: 30, retirementAge: 60, annualIncome: 1000000, incomeGrowthRate: 6, discountRate: 8, existingLiabilities: 500000, futureGoals: 500000, existingAssets: 0, existingCover: 0 }
+  it('never returns negative additional cover', () => {
+    expect(calcHumanLifeValue({ ...base, existingCover: 999999999 }).additionalCoverNeeded).toBe(0)
+  })
+  it('returns a smaller income replacement value close to retirement', () => {
+    expect(calcHumanLifeValue({ ...base, currentAge: 58 }).presentValueOfIncome).toBeLessThan(calcHumanLifeValue(base).presentValueOfIncome)
+  })
+  it('handles income growth above the discount rate without non-finite output', () => {
+    expect(Number.isFinite(calcHumanLifeValue({ ...base, incomeGrowthRate: 12, discountRate: 6 }).presentValueOfIncome)).toBe(true)
+  })
+})
 
 

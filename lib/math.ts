@@ -2521,6 +2521,43 @@ export function calcSWP(input: SwpInput): SwpOutput {
   };
 }
 
+export interface HumanLifeValueInput {
+  currentAge: number;
+  retirementAge: number;
+  annualIncome: number;
+  incomeGrowthRate: number;
+  discountRate: number;
+  existingLiabilities?: number;
+  futureGoals?: number;
+  existingAssets?: number;
+  existingCover?: number;
+}
+
+export interface HumanLifeValueOutput {
+  yearsToRetirement: number;
+  presentValueOfIncome: number;
+  grossProtectionNeed: number;
+  additionalCoverNeeded: number;
+}
+
+export function calcHumanLifeValue(input: HumanLifeValueInput): HumanLifeValueOutput {
+  const yearsToRetirement = Math.max(0, Math.round(input.retirementAge) - Math.round(input.currentAge));
+  const income = Math.max(0, input.annualIncome || 0);
+  const growth = Math.max(-0.99, input.incomeGrowthRate || 0) / 100;
+  const discount = Math.max(-0.99, input.discountRate || 0) / 100;
+  let presentValueOfIncome = 0;
+  for (let year = 1; year <= yearsToRetirement; year++) {
+    presentValueOfIncome += income * Math.pow(1 + growth, year - 1) / Math.pow(1 + discount, year);
+  }
+  const grossProtectionNeed = presentValueOfIncome + Math.max(0, input.existingLiabilities || 0) + Math.max(0, input.futureGoals || 0) - Math.max(0, input.existingAssets || 0);
+  return {
+    yearsToRetirement,
+    presentValueOfIncome: Math.round(presentValueOfIncome),
+    grossProtectionNeed: Math.max(0, Math.round(grossProtectionNeed)),
+    additionalCoverNeeded: Math.max(0, Math.round(grossProtectionNeed - Math.max(0, input.existingCover || 0))),
+  };
+}
+
 // ─── PART B — FEATURE 1: CAPITAL GAINS TAX CALCULATOR ─────────
 
 export type AssetClass = "equity" | "debt_mf" | "real_estate" | "gold_sgb";
@@ -5769,7 +5806,6 @@ export function calcNPS(input: NPSInput): NPSOutput {
     summary: `NPS Corpus: ₹${Math.round(totalCorpus).toLocaleString("en-IN")} at Age ${safeRetirement} | Tax-Free Lump Sum: ₹${Math.round(taxFreeLumpSumAmount).toLocaleString("en-IN")} | Monthly Pension: ₹${Math.round(estimatedMonthlyPension).toLocaleString("en-IN")}/mo`,
   };
 }
-
 
 
 
