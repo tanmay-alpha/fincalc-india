@@ -3595,6 +3595,29 @@ describe('calcNPS', () => {
   })
 })
 
+describe('calcFIRE Coast mode', () => {
+  const base = {
+    currentAge: 30,
+    retirementAge: 50,
+    lifeExpectancy: 85,
+    currentMonthlyExpenses: 50000,
+    preRetirementReturn: 10,
+    postRetirementReturn: 7,
+    inflationRate: 5,
+  }
+
+  it('recognises a corpus already at the Coast FIRE number', () => {
+    const target = calcFIRE(base).standardFireCorpus
+    const coastNumber = target / Math.pow(1.1, 20)
+    expect(calcFIRE({ ...base, currentSavings: coastNumber, coastMode: true }).coast?.hasReachedCoast).toBe(true)
+  })
+
+  it('reports a positive monthly saving when below Coast FIRE', () => {
+    const result = calcFIRE({ ...base, currentSavings: 0, coastMode: true })
+    expect(result.coast?.shortfall).toBeGreaterThan(0)
+    expect(result.coast?.monthlySavingToCoast).toBeGreaterThan(0)
+  })
+})
 
 
 

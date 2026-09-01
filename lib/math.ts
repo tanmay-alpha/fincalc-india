@@ -2273,6 +2273,7 @@ export interface FireInput {
   inflationRate?: number; // e.g. 6%
   swrPercent?: number; // e.g. 4%
   currentSavings?: number;
+  coastMode?: boolean;
 }
 
 export interface FireTimelinePoint {
@@ -2297,6 +2298,13 @@ export interface FireOutput {
   depletionAge: number | null;
   isPerpetual: boolean;
   timeline: FireTimelinePoint[];
+  coast?: {
+    coastFireNumber: number;
+    projectedExistingCorpus: number;
+    shortfall: number;
+    hasReachedCoast: boolean;
+    monthlySavingToCoast: number;
+  };
 }
 
 export function calcFIRE(input: FireInput): FireOutput {
@@ -2428,6 +2436,19 @@ export function calcFIRE(input: FireInput): FireOutput {
 
   const isPerpetual = rReal > 0 && rReal >= safeSwr / 100;
 
+  const projectedExistingCorpus = safeSavings * Math.pow(1 + preRateDec, yearsToRetirement);
+  const coastFireNumber = yearsToRetirement === 0
+    ? roundedStandard
+    : roundedStandard / Math.pow(1 + preRateDec, yearsToRetirement);
+  const coastShortfall = Math.max(0, coastFireNumber - safeSavings);
+  const coast = input.coastMode ? {
+    coastFireNumber: Math.round(coastFireNumber),
+    projectedExistingCorpus: Math.round(projectedExistingCorpus),
+    shortfall: Math.round(coastShortfall),
+    hasReachedCoast: projectedExistingCorpus + 1 >= roundedStandard,
+    monthlySavingToCoast: Math.round(requiredMonthlySavings),
+  } : undefined;
+
   return {
     yearsToRetirement,
     yearsInRetirement,
@@ -2440,6 +2461,7 @@ export function calcFIRE(input: FireInput): FireOutput {
     depletionAge,
     isPerpetual,
     timeline,
+    coast,
   };
 }
 
@@ -5691,7 +5713,6 @@ export function calcNPS(input: NPSInput): NPSOutput {
     summary: `NPS Corpus: ₹${Math.round(totalCorpus).toLocaleString("en-IN")} at Age ${safeRetirement} | Tax-Free Lump Sum: ₹${Math.round(taxFreeLumpSumAmount).toLocaleString("en-IN")} | Monthly Pension: ₹${Math.round(estimatedMonthlyPension).toLocaleString("en-IN")}/mo`,
   };
 }
-
 
 
 
