@@ -414,9 +414,8 @@ export interface PositionSizeOutput {
   summary: string;
 }
 
-// ─── SECTION 54 / 54EC CAPITAL GAINS EXEMPTION PLANNER ────────
-
-export type Section54Type = "section_54_property" | "section_54ec_bonds" | "compare_both";
+// ─── SECTION 54 / 54EC / 54F CAPITAL GAINS EXEMPTION PLANNER ──
+export type Section54Type = "section_54_property" | "section_54ec_bonds" | "section_54f_property" | "compare_both";
 export type Section54PropertyMode = "purchase" | "construction";
 
 export interface Section54ExemptionInput {
@@ -429,10 +428,12 @@ export interface Section54ExemptionInput {
   bondsInvestmentAmount?: number;
   bondsTimelineMonths?: number; // months from sale date (0 to 6)
   taxRatePercent?: number; // default 12.5 (plus 4% cess = 13%)
+  netSaleConsideration?: number; // For Section 54F proportionate calculation
+  existingResidentialHousesCount?: number; // For Section 54F ownership restriction (<= 1 allowed)
 }
 
 export interface Section54SingleExemptionResult {
-  section: "54" | "54EC";
+  section: "54" | "54EC" | "54F";
   investmentAmount: number;
   statutoryCap: number;
   isValidTimeline: boolean;
@@ -445,6 +446,9 @@ export interface Section54SingleExemptionResult {
   effectiveTaxRate: number;
   lockInPeriod: string;
   conditions: string[];
+  disqualified?: boolean;
+  disqualificationReason?: string;
+  proportionateExemptionApplied?: boolean;
 }
 
 export interface Section54ExemptionOutput {
@@ -458,6 +462,7 @@ export interface Section54ExemptionOutput {
   comparison?: {
     section54: Section54SingleExemptionResult;
     section54ec: Section54SingleExemptionResult;
+    section54f?: Section54SingleExemptionResult;
     taxDifference: number;
     recommendation: string;
   };
@@ -1012,6 +1017,7 @@ export interface NPSOutput {
   permittedLumpSumAmount: number;
   lumpSumTaxFreeAmount: number;
   taxableLumpSumAmount: number;
+  estimatedTaxOnLumpSum: number;
   annuityReinvestmentPercent: number;
   annuityPurchasedAmount: number;
   assumedAnnuityYieldPercent: number;
@@ -1021,6 +1027,7 @@ export interface NPSOutput {
   annualTaxSavedUnder80CCD2: number;
   lifetimeTaxSaved: number;
   taxTreatmentNote: string;
+  regulatoryExitCategory: "small_corpus_full_payout" | "standard_superannuation" | "premature_exit";
   yearlyProgression: NPSYearRow[];
   isValid: boolean;
   errorMessage?: string;
@@ -1347,8 +1354,6 @@ const OLD_REGIME_SLABS_SUPER_SENIOR: InternalSlab[] = OLD_REGIME_SLABS_SUPER_SEN
   rate: s.rate,
   label: s.max === Infinity ? "10L+" : `${s.min / 100000}L – ${s.max / 100000}L`,
 }));
-
-const OLD_REGIME_SLABS = OLD_REGIME_SLABS_GENERAL;
 
 function internalSlabCalc(
   income: number,
@@ -3298,37 +3303,33 @@ export function computePGBPTax(
   totalTax: number;
   effectiveRate: number;
   slabBreakdown: TaxSlabRow[];
+  rebate: number;
+  surcharge: number;
+  cess: number;
+  taxPayableBeforeCess: number;
 } {
   const safeIncome = Math.max(0, netBusinessIncome || 0);
-  let totalDeductions = 0;
-  if (regime === "old") {
-    const capped80C = Math.min(deduction80C, 150000);
-    const capped80D = Math.min(deduction80D, 100000);
-    totalDeductions = capped80C + capped80D + (otherDeductions || 0);
-  }
-  const taxableIncome = Math.max(0, safeIncome - totalDeductions);
-  const slabs = regime === "new" ? NEW_REGIME_SLABS : OLD_REGIME_SLABS;
-  const { rawTax, breakdown } = internalSlabCalc(taxableIncome, slabs);
-
-  // Rebate u/s 87A
-  let rebate = 0;
-  if (regime === "new" && taxableIncome <= 1200000) {
-    rebate = rawTax; // Full rebate up to ₹12L in FY 2025-26 new regime
-  } else if (regime === "old" && taxableIncome <= 500000) {
-    rebate = Math.min(rawTax, 12500);
-  }
-
-  const taxAfterRebate = Math.max(0, rawTax - rebate);
-  const { netSurcharge: surcharge } = internalSurchargeCalc(taxAfterRebate, 0, safeIncome, regime);
-  const cess = (taxAfterRebate + surcharge) * 0.04;
-  const totalTax = Math.round(taxAfterRebate + surcharge + cess);
-  const effectiveRate = safeIncome > 0 ? Math.round((totalTax / safeIncome) * 100 * 100) / 100 : 0;
+  const regimeResult = computeRegimeTax(safeIncome, regime, {
+    salaryIncome: 0,
+    businessIncome: safeIncome,
+    interestAndOtherIncome: 0,
+    regime,
+    deduction80C,
+    deduction80D,
+    otherDeductions,
+    residency: "resident_individual",
+    ageCategory: "below_60",
+  });
 
   return {
-    taxableIncome: Math.round(taxableIncome),
-    totalTax,
-    effectiveRate,
-    slabBreakdown: breakdown,
+    taxableIncome: regimeResult.ordinaryTaxableIncome,
+    totalTax: regimeResult.totalTax,
+    effectiveRate: safeIncome > 0 ? Math.round((regimeResult.totalTax / safeIncome) * 100 * 100) / 100 : 0,
+    slabBreakdown: regimeResult.breakdown,
+    rebate: regimeResult.rebateAmount,
+    surcharge: regimeResult.surcharge,
+    cess: regimeResult.cess,
+    taxPayableBeforeCess: regimeResult.taxBeforeCess,
   };
 }
 
@@ -3820,10 +3821,89 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
     };
   }
 
+  // Helper to compute Section 54F (Long-term asset other than residential house -> Residential House)
+  function computeSection54F(): Section54SingleExemptionResult {
+    const invAmount = Math.max(0, propertyInvestmentAmount || 0);
+    const statutoryCap = 100000000; // ₹10 Crore cap on new house cost
+    const netSale = Math.max(initialLtcgGains, (input.netSaleConsideration !== undefined && input.netSaleConsideration > 0) ? input.netSaleConsideration : initialLtcgGains);
+    const existingHouses = input.existingResidentialHousesCount ?? 0;
+
+    let isValidTimeline = false;
+    let timelineMessage = "";
+
+    if (propertyMode === "purchase") {
+      isValidTimeline = propertyTimelineMonths >= -12 && propertyTimelineMonths <= 24;
+      timelineMessage = isValidTimeline
+        ? `Valid purchase timeline (${propertyTimelineMonths} months relative to sale date. Prescribed window: 1 year before to 2 years after sale).`
+        : `Invalid purchase timeline (${propertyTimelineMonths} months). Section 54F requires property purchase between 1 year before and 2 years after transfer date.`;
+    } else {
+      isValidTimeline = propertyTimelineMonths >= 0 && propertyTimelineMonths <= 36;
+      timelineMessage = isValidTimeline
+        ? `Valid construction timeline (${propertyTimelineMonths} months from sale date. Prescribed window: within 3 years after sale).`
+        : `Invalid construction timeline (${propertyTimelineMonths} months). Section 54F requires construction completion within 3 years from transfer date.`;
+    }
+
+    let disqualified = false;
+    let disqualificationReason: string | undefined = undefined;
+    if (existingHouses > 1) {
+      disqualified = true;
+      disqualificationReason = `Disqualified: Section 54F is not available if the taxpayer owns more than one residential house (currently owns ${existingHouses}) on the date of transfer.`;
+    }
+
+    let exemptionAllowed = 0;
+    if (!disqualified && isValidTimeline && initialLtcgGains > 0 && invAmount > 0 && netSale > 0) {
+      const eligibleInvestment = Math.min(invAmount, statutoryCap);
+      if (eligibleInvestment >= netSale) {
+        exemptionAllowed = initialLtcgGains;
+      } else {
+        exemptionAllowed = Math.round((initialLtcgGains * eligibleInvestment) / netSale);
+      }
+      exemptionAllowed = Math.min(initialLtcgGains, exemptionAllowed);
+    }
+
+    const taxableGainsRemaining = Math.max(0, initialLtcgGains - exemptionAllowed);
+    const taxAfterExemption = Math.round((taxableGainsRemaining * effectiveTaxRateBeforeExemption) / 100);
+    const taxSaved = taxBeforeExemption - taxAfterExemption;
+    const effectiveTaxRate = initialLtcgGains > 0 ? round2((taxAfterExemption / initialLtcgGains) * 100) : 0;
+
+    return {
+      section: "54F",
+      investmentAmount: invAmount,
+      statutoryCap,
+      isValidTimeline,
+      timelineMessage: disqualified ? (disqualificationReason || timelineMessage) : timelineMessage,
+      exemptionAllowed: Math.round(exemptionAllowed),
+      taxableGainsRemaining: Math.round(taxableGainsRemaining),
+      taxBeforeExemption,
+      taxAfterExemption,
+      taxSaved,
+      effectiveTaxRate,
+      lockInPeriod: "3 Years (from date of purchase/construction)",
+      disqualified,
+      disqualificationReason,
+      proportionateExemptionApplied: !disqualified && invAmount < netSale && invAmount > 0,
+      conditions: [
+        "Transferred asset must be a long-term capital asset other than a residential house (e.g. plot, gold, commercial property, shares).",
+        "Taxpayer must not own more than ONE residential house (other than the new house) on the date of transfer.",
+        "Proportionate statutory exemption: LTCG × (Cost of New House / Net Sale Consideration).",
+        "Statutory cost of new residential house recognized is capped at ₹10 Crore (Finance Act 2023 / 2026).",
+        "3-year lock-in period on new house. Sale within 3 years revokes the exemption, taxing it as LTCG in that year.",
+      ],
+    };
+  }
+
   const s54Result = computeSection54();
   const s54ecResult = computeSection54EC();
+  const s54fResult = computeSection54F();
 
-  const activeResult = sectionType === "section_54ec_bonds" ? s54ecResult : s54Result;
+  let activeResult: Section54SingleExemptionResult;
+  if (sectionType === "section_54ec_bonds") {
+    activeResult = s54ecResult;
+  } else if (sectionType === "section_54f_property") {
+    activeResult = s54fResult;
+  } else {
+    activeResult = s54Result;
+  }
 
   let comparison: Section54ExemptionOutput["comparison"] | undefined = undefined;
   if (sectionType === "compare_both") {
@@ -3840,6 +3920,7 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
     comparison = {
       section54: s54Result,
       section54ec: s54ecResult,
+      section54f: s54fResult,
       taxDifference: taxDiff,
       recommendation: rec,
     };
@@ -3848,10 +3929,12 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
   let summary = "";
   if (initialLtcgGains === 0) {
     summary = "No Long-Term Capital Gains entered. Tax payable and exemption required are ₹0.";
+  } else if (activeResult.disqualified) {
+    summary = `Section ${activeResult.section} Disqualified: ${activeResult.disqualificationReason || "Conditions not met"}. Total tax payable: ₹${taxBeforeExemption.toLocaleString("en-IN")}.`;
   } else if (activeResult.exemptionAllowed >= initialLtcgGains) {
-    summary = `100% Tax Exemption Achieved! Full ₹${initialLtcgGains.toLocaleString("en-IN")} LTCG is exempt. Total tax payable is ₹0 (saved ₹${taxBeforeExemption.toLocaleString("en-IN")}).`;
+    summary = `100% Tax Exemption Achieved! Full ₹${initialLtcgGains.toLocaleString("en-IN")} LTCG is exempt u/s ${activeResult.section}. Total tax payable is ₹0 (saved ₹${taxBeforeExemption.toLocaleString("en-IN")}).`;
   } else if (activeResult.exemptionAllowed > 0) {
-    summary = `Partial Exemption of ₹${activeResult.exemptionAllowed.toLocaleString("en-IN")} applied. Remaining taxable gains: ₹${activeResult.taxableGainsRemaining.toLocaleString("en-IN")}. Tax payable: ₹${activeResult.taxAfterExemption.toLocaleString("en-IN")}.`;
+    summary = `Section ${activeResult.section} ${activeResult.proportionateExemptionApplied ? "Proportionate " : ""}Exemption of ₹${activeResult.exemptionAllowed.toLocaleString("en-IN")} applied. Remaining taxable gains: ₹${activeResult.taxableGainsRemaining.toLocaleString("en-IN")}. Tax payable: ₹${activeResult.taxAfterExemption.toLocaleString("en-IN")}.`;
   } else {
     summary = `No exemption allowed (${activeResult.isValidTimeline ? "reinvestment amount is ₹0" : "investment outside prescribed timeline window"}). Total tax payable: ₹${taxBeforeExemption.toLocaleString("en-IN")}.`;
   }
@@ -4451,6 +4534,59 @@ export function calcTWRR(periods: TwrrPeriod[]): TwrrOutput {
     periods: breakdown,
     twrr: totalTwrr,
     summary: `Time-Weighted Rate of Return (TWRR): ${totalTwrr}% across ${periods.length} sub-periods.`,
+  };
+}
+
+export interface CagrInput {
+  initialValue: number;
+  finalValue: number;
+  durationYears: number;
+}
+
+export interface CagrOutput {
+  initialValue: number;
+  finalValue: number;
+  durationYears: number;
+  cagr: number;
+  totalGain: number;
+  absoluteReturnPercent: number;
+  isValid: boolean;
+  errorMessage?: string;
+  summary: string;
+}
+
+export function calcCAGR(input: CagrInput): CagrOutput {
+  const init = safePositive(input.initialValue, 100000);
+  const finalVal = Math.max(0, safeNum(input.finalValue, 250000));
+  const years = Math.max(0.01, safePositive(input.durationYears, 5));
+
+  if (init <= 0) {
+    return {
+      initialValue: 0,
+      finalValue: finalVal,
+      durationYears: years,
+      cagr: 0,
+      totalGain: 0,
+      absoluteReturnPercent: 0,
+      isValid: false,
+      errorMessage: "Initial investment value must be greater than zero.",
+      summary: "Invalid initial investment value.",
+    };
+  }
+
+  const cagr = (Math.pow(finalVal / init, 1 / years) - 1) * 100;
+  const totalGain = finalVal - init;
+  const absoluteReturnPercent = (totalGain / init) * 100;
+
+  return {
+    initialValue: Math.round(init),
+    finalValue: Math.round(finalVal),
+    durationYears: round2(years),
+    cagr: round2(cagr),
+    totalGain: Math.round(totalGain),
+    absoluteReturnPercent: round2(absoluteReturnPercent),
+    isValid: true,
+    summary: `CAGR: ${round2(cagr)}% p.a. over ${round2(years)} years (${round2(absoluteReturnPercent)}% absolute return).`,
   };
 }
 
@@ -5564,6 +5700,7 @@ export function calcNPS(input: NPSInput): NPSOutput {
       permittedLumpSumAmount: 0,
       lumpSumTaxFreeAmount: 0,
       taxableLumpSumAmount: 0,
+      estimatedTaxOnLumpSum: 0,
       annuityReinvestmentPercent: 40,
       annuityPurchasedAmount: 0,
       assumedAnnuityYieldPercent: 6.5,
@@ -5573,6 +5710,7 @@ export function calcNPS(input: NPSInput): NPSOutput {
       annualTaxSavedUnder80CCD2: 0,
       lifetimeTaxSaved: 0,
       taxTreatmentNote: "",
+      regulatoryExitCategory: "standard_superannuation",
       yearlyProgression: [],
       isValid: false,
       errorMessage: `Asset allocations must sum to exactly 100% (currently ${totalAlloc}%: Equity ${equityAllocationPercent}% + Corporate Debt ${corporateDebtAllocationPercent}% + Govt Bonds ${govtBondsAllocationPercent}%).`,
@@ -5600,6 +5738,12 @@ export function calcNPS(input: NPSInput): NPSOutput {
     ? NPS_CONSTANTS.smallCorpusPrematureExitLimit
     : NPS_CONSTANTS.smallCorpusFullWithdrawalLimit;
   const isSmallCorpus = totalCorpus <= smallCorpusLimit;
+  const regulatoryExitCategory: "small_corpus_full_payout" | "standard_superannuation" | "premature_exit" =
+    isSmallCorpus
+      ? "small_corpus_full_payout"
+      : isPrematureExit
+        ? "premature_exit"
+        : "standard_superannuation";
 
   // Regulatory limits:
   // Superannuation (All Citizen): Max 80% lump sum, Min 20% annuity. Default 60% lump sum, 40% annuity.
@@ -5615,12 +5759,10 @@ export function calcNPS(input: NPSInput): NPSOutput {
   const permittedLumpSumAmount = (totalCorpus * safeLumpSumPct) / 100;
   const annuityAmount = (totalCorpus * safeAnnuityPct) / 100;
 
-  // Tax treatment u/s 10(12A):
+  // Tax treatment u/s 10(12A) (Income-tax Act, 2025):
   // Up to 60% of total corpus is strictly TAX-FREE.
-  // Any lump sum chosen above 60% (e.g. up to 80% under PFRDA All Citizen rules) is TAXABLE at slab rates.
-  const taxFreeLumpSumAmount = isSmallCorpus
-    ? permittedLumpSumAmount
-    : Math.min(permittedLumpSumAmount, (totalCorpus * NPS_CONSTANTS.taxFreeLumpSumPercent) / 100);
+  // Any lump sum chosen above 60% (e.g. up to 80% under PFRDA All Citizen rules, or 100% small corpus) is TAXABLE at slab rates.
+  const taxFreeLumpSumAmount = Math.min(permittedLumpSumAmount, (totalCorpus * NPS_CONSTANTS.taxFreeLumpSumPercent) / 100);
   const taxableLumpSumAmount = Math.max(0, permittedLumpSumAmount - taxFreeLumpSumAmount);
 
   const safeAnnuityRate = safePositive(assumedAnnuityYieldPercent, 6.5) / 100;
@@ -5630,6 +5772,7 @@ export function calcNPS(input: NPSInput): NPSOutput {
   // 1. Section 80CCD(1B): ₹50,000 self contribution deduction available ONLY under Old Regime.
   // 2. Section 80CCD(2): Employer contribution deduction (available in BOTH regimes).
   const safeTaxBracket = safePositive(taxBracketPercent, 30) / 100;
+  const estimatedTaxOnLumpSum = Math.round(taxableLumpSumAmount * safeTaxBracket);
   const annualSelfContribution = safeContribution * 12;
   const annualEmployerContribution = safeEmployerContribution * 12;
 
@@ -5660,9 +5803,9 @@ export function calcNPS(input: NPSInput): NPSOutput {
   }
 
   const taxTreatmentNote = isSmallCorpus
-    ? `Small corpus (≤ ₹${(smallCorpusLimit / 100000).toFixed(0)} Lakh): 100% lump sum exit permitted under PFRDA guidelines.`
+    ? `Small corpus (≤ ₹${(smallCorpusLimit / 100000).toFixed(0)} Lakh): 100% lump sum exit permitted under PFRDA regulations. Under Section 10(12A), up to 60% (₹${Math.round(taxFreeLumpSumAmount).toLocaleString("en-IN")}) is strictly tax-free; the remaining 40% (₹${Math.round(taxableLumpSumAmount).toLocaleString("en-IN")}) is taxable at your applicable slab rate.`
     : taxableLumpSumAmount > 0
-      ? `Statutory Note: PFRDA permits up to ${safeLumpSumPct}% lump sum withdrawal. Section 10(12A) exempts up to 60% of total corpus (₹${Math.round(taxFreeLumpSumAmount).toLocaleString("en-IN")}). The remaining ₹${Math.round(taxableLumpSumAmount).toLocaleString("en-IN")} is added to your taxable income at retirement.`
+      ? `Statutory Note: PFRDA permits up to ${safeLumpSumPct}% lump sum withdrawal. Section 10(12A) exempts up to 60% of total corpus (₹${Math.round(taxFreeLumpSumAmount).toLocaleString("en-IN")}). The remaining ₹${Math.round(taxableLumpSumAmount).toLocaleString("en-IN")} is added to your taxable income at retirement (Estimated tax: ₹${estimatedTaxOnLumpSum.toLocaleString("en-IN")}).`
       : `Statutory Note: ${safeLumpSumPct}% lump sum (₹${Math.round(taxFreeLumpSumAmount).toLocaleString("en-IN")}) is 100% tax-free u/s 10(12A). Annuity income (₹${Math.round(estimatedMonthlyPension).toLocaleString("en-IN")}/mo) is taxable as salary/other income in the year of receipt.`;
 
   return {
@@ -5677,6 +5820,7 @@ export function calcNPS(input: NPSInput): NPSOutput {
     permittedLumpSumAmount: Math.round(permittedLumpSumAmount),
     lumpSumTaxFreeAmount: Math.round(taxFreeLumpSumAmount),
     taxableLumpSumAmount: Math.round(taxableLumpSumAmount),
+    estimatedTaxOnLumpSum,
     annuityReinvestmentPercent: safeAnnuityPct,
     annuityPurchasedAmount: Math.round(annuityAmount),
     assumedAnnuityYieldPercent: round2(safeAnnuityRate * 100),
@@ -5686,6 +5830,7 @@ export function calcNPS(input: NPSInput): NPSOutput {
     annualTaxSavedUnder80CCD2: Math.round(annual80Ccd2Saved),
     lifetimeTaxSaved: Math.round(lifetimeTaxSaved),
     taxTreatmentNote,
+    regulatoryExitCategory,
     yearlyProgression,
     isValid: true,
     summary: `NPS Corpus: ₹${Math.round(totalCorpus).toLocaleString("en-IN")} at Age ${safeRetirement} | Tax-Free Lump Sum: ₹${Math.round(taxFreeLumpSumAmount).toLocaleString("en-IN")} | Monthly Pension: ₹${Math.round(estimatedMonthlyPension).toLocaleString("en-IN")}/mo`,

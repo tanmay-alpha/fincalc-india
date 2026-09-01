@@ -55,11 +55,16 @@ export default function LrsTcsCalculator() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Remittance Inputs */}
         <div className="lg:col-span-6 space-y-5 bg-card/60 backdrop-blur border border-border/60 rounded-2xl p-5 md:p-6 shadow-sm">
-          <div className="flex items-center gap-2 pb-2 border-b border-border/40">
-            <Globe className="w-5 h-5 text-primary" />
-            <h2 className="font-semibold text-foreground text-base">
-              LRS Remittance Purpose & Slabs
-            </h2>
+          <div className="flex items-center justify-between pb-2 border-b border-border/40">
+            <div className="flex items-center gap-2">
+              <Globe className="w-5 h-5 text-primary" />
+              <h2 className="font-semibold text-foreground text-base">
+                LRS Remittance Purpose & Slabs
+              </h2>
+            </div>
+            <span className="text-[11px] font-medium bg-primary/10 text-primary border border-primary/20 rounded-full px-2.5 py-0.5">
+              Section 394 / FA 2026
+            </span>
           </div>
 
           <div className="space-y-4">
@@ -72,17 +77,27 @@ export default function LrsTcsCalculator() {
                 onChange={(e) => setCategory(e.target.value as LrsCategory)}
                 className="w-full bg-card border border-border/60 rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               >
-                <option value="general_investment">Foreign Stocks / Real Estate / Gift (0% ≤ ₹7L, 20% &gt; ₹7L)</option>
-                <option value="overseas_tour_package">Overseas Tour Packages (5% ≤ ₹7L, 20% &gt; ₹7L)</option>
-                <option value="education_loan">Education Abroad funded by Loan (0% ≤ ₹7L, 0.5% &gt; ₹7L)</option>
-                <option value="education_self">Education Abroad self-funded (0% ≤ ₹7L, 5% &gt; ₹7L)</option>
-                <option value="medical_treatment">Medical Treatment Abroad (0% ≤ ₹7L, 5% &gt; ₹7L)</option>
+                <option value="general_investment">
+                  Foreign Stocks / Real Estate / Gift & General (0% ≤ ₹10L, 20% &gt; ₹10L)
+                </option>
+                <option value="overseas_tour_package">
+                  Overseas Tour Packages (Flat 2% on total cost)
+                </option>
+                <option value="education_loan">
+                  Education Abroad funded by Loan u/s 80E (0% Nil TCS)
+                </option>
+                <option value="education_self">
+                  Education Abroad self-funded (0% ≤ ₹10L, 2% &gt; ₹10L)
+                </option>
+                <option value="medical_treatment">
+                  Medical Treatment Abroad (0% ≤ ₹10L, 2% &gt; ₹10L)
+                </option>
               </select>
             </div>
 
             <HybridInput
               label="Remittance Amount (INR)"
-              hint="Amount remitted abroad under RBI $250k LRS limit"
+              hint="Amount remitted abroad under RBI $250k LRS annual ceiling"
               value={remittanceAmountInr}
               onChange={setRemittanceAmountInr}
               min={10000}
@@ -100,7 +115,7 @@ export default function LrsTcsCalculator() {
                   className="rounded border-border text-primary focus:ring-primary w-4 h-4"
                 />
                 <span className="text-xs font-semibold text-foreground">
-                  Valid PAN Provided to Authorized Dealer Bank (Unchecked applies flat 20% TCS)
+                  Valid PAN Furnished to AD Bank (Unchecked triggers higher statutory TCS rate)
                 </span>
               </label>
             </div>
@@ -127,7 +142,9 @@ export default function LrsTcsCalculator() {
               </p>
             </div>
             <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
-              <p className="text-[11px] text-muted-foreground">TCS Rate (Above ₹7L)</p>
+              <p className="text-[11px] text-muted-foreground">
+                {category === "overseas_tour_package" ? "TCS Rate (Flat)" : "TCS Rate (> ₹10L)"}
+              </p>
               <p className="text-base font-bold text-foreground mt-0.5">
                 {result.tier2RatePercent}%
               </p>

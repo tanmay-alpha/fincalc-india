@@ -48,3 +48,4 @@ next-env.d.ts
 .chrome-shot-upgrade/
 .chrome-verify-ui/
 final_report.md
+.worktrees/
