@@ -1,5 +1,16 @@
 [
   {
+    "id": "STAT-LRS-TOUR-5L-FA2026",
+    "authority": "Section 206C(1G) as amended by Section 394 of the Income-tax Act, 2025 / Finance Act, 2026",
+    "sourceUrl": "https://incometaxindia.gov.in",
+    "effectiveFrom": "2026-04-01",
+    "manualCalculationSteps": [
+      "Category: Overseas Tour Package",
+      "Remittance: ₹5,00,000",
+      "Statutory Rate: Flat 2% up to ₹7,00,000 threshold",
+      "TCS = ₹5,00,000 × 2% = ₹10,000",
+      "Total Inflow = ₹5,00,000 + ₹10,000 = ₹5,10,000"
+    ],
     "description": "Overseas Tour Package: ₹5,00,000 under Finance Act 2026 (Flat 2% on entire ₹5L -> TCS ₹10,000)",
     "inputs": {
       "category": "overseas_tour_package",
@@ -14,6 +25,17 @@
     }
   },
   {
+    "id": "STAT-LRS-EDULOAN-20L-FA2026",
+    "authority": "Section 206C(1G) / Section 394, Finance Act, 2026",
+    "sourceUrl": "https://incometaxindia.gov.in",
+    "effectiveFrom": "2026-04-01",
+    "manualCalculationSteps": [
+      "Category: Education Abroad via Loan u/s 80E",
+      "Remittance: ₹20,00,000",
+      "Statutory Rate: 0% flat",
+      "TCS = ₹0",
+      "Total Outflow = ₹20,00,000"
+    ],
     "description": "Education via Loan: ₹20,00,000 under Finance Act 2026 (0% rate -> TCS ₹0)",
     "inputs": {
       "category": "education_loan",
@@ -28,6 +50,18 @@
     }
   },
   {
+    "id": "STAT-LRS-MED-15L-FA2026",
+    "authority": "Section 206C(1G) / Section 394, Finance Act, 2026",
+    "sourceUrl": "https://incometaxindia.gov.in",
+    "effectiveFrom": "2026-04-01",
+    "manualCalculationSteps": [
+      "Category: Medical Treatment Abroad / Education (Self-Funded)",
+      "Remittance: ₹15,00,000",
+      "First ₹10,00,000 @ 0% = ₹0",
+      "Excess ₹5,00,000 @ 2% = ₹10,000",
+      "Total TCS = ₹10,000",
+      "Total Outflow = ₹15,10,000"
+    ],
     "description": "Medical Treatment / Education (Self): ₹15,00,000 (0% up to ₹10L, 2% on excess ₹5L -> TCS ₹10,000)",
     "inputs": {
       "category": "medical_treatment",
@@ -42,6 +76,18 @@
     }
   },
   {
+    "id": "STAT-LRS-INVEST-15L-FA2026",
+    "authority": "Section 206C(1G) / Section 394, Finance Act, 2026",
+    "sourceUrl": "https://incometaxindia.gov.in",
+    "effectiveFrom": "2026-04-01",
+    "manualCalculationSteps": [
+      "Category: General Overseas Remittance (Foreign Stocks / Property)",
+      "Remittance: ₹15,00,000",
+      "First ₹10,00,000 @ 0% = ₹0",
+      "Excess ₹5,00,000 @ 20% = ₹1,00,000",
+      "Total TCS = ₹1,00,000",
+      "Total Outflow = ₹16,00,000"
+    ],
     "description": "General Overseas Investment: ₹15,00,000 (0% up to ₹10L, 20% on excess ₹5L -> TCS ₹1,00,000)",
     "inputs": {
       "category": "general_investment",

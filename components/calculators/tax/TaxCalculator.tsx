@@ -143,7 +143,17 @@ export default function TaxCalculator() {
                 max={100000000}
                 step={25000}
                 prefix="₹"
-                hint="Savings interest, FD interest, dividend, etc."
+                hint="Savings interest, FD interest, rental income, etc."
+              />
+              <HybridInput
+                label="Dividend Income"
+                value={inputs.dividendIncome ?? 0}
+                onChange={(v) => setInputs((p) => ({ ...p, dividendIncome: v }))}
+                min={0}
+                max={100000000}
+                step={25000}
+                prefix="₹"
+                hint="Taxed at slab rates; high-income surcharge capped at 15%"
               />
               <HybridInput
                 label="Business / Professional Income (PGBP)"
@@ -207,10 +217,12 @@ export default function TaxCalculator() {
                   onChange={(e) => setInputs((p) => ({ ...p, residency: e.target.value as TaxpayerResidency }))}
                   className="w-full bg-card border border-border/60 rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 >
-                  <option value="resident_individual">Resident Individual (Section 156 Rebate Eligible)</option>
-                  <option value="nri">Non-Resident Indian / NRI (Rebate Ineligible)</option>
-                  <option value="other">Other / Entity</option>
+                  <option value="resident_individual">Resident Individual (Section 156 Rebate & Senior Slabs Eligible)</option>
+                  <option value="nri">Non-Resident Indian / NRI (Rebate Ineligible; ₹2.5L Old Slab)</option>
                 </select>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  * Note: Other taxpayer categories (HUF, Firms, Companies, AOP) are not modeled in this individual tax suite.
+                </p>
               </div>
 
               {inputs.regime === "old" && (
@@ -221,12 +233,18 @@ export default function TaxCalculator() {
                   <select
                     value={inputs.ageCategory ?? "below_60"}
                     onChange={(e) => setInputs((p) => ({ ...p, ageCategory: e.target.value as TaxpayerAgeCategory }))}
-                    className="w-full bg-card border border-border/60 rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    disabled={inputs.residency === "nri"}
+                    className="w-full bg-card border border-border/60 rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-60"
                   >
                     <option value="below_60">Below 60 Years (₹2.5 Lakh Nil slab)</option>
                     <option value="senior_60_to_79">Senior Citizen: 60 to 79 Years (₹3.0 Lakh Nil slab)</option>
                     <option value="super_senior_80_plus">Super Senior: 80+ Years (₹5.0 Lakh Nil slab)</option>
                   </select>
+                  {inputs.residency === "nri" && (
+                    <p className="text-[10px] text-amber-500 mt-1">
+                      Statutory Rule: Higher basic exemptions for seniors apply only to Resident Individuals. Slabs for NRIs remain ₹2.5 Lakh.
+                    </p>
+                  )}
                 </div>
               )}
             </div>

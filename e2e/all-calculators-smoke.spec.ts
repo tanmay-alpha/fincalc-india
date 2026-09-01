@@ -1,61 +1,45 @@
 import { test, expect } from "@playwright/test";
+import { ALL_CALCULATOR_ROUTES } from "../lib/calculators";
 
-const CALCULATOR_ROUTES = [
-  "/calculators/sip",
-  "/calculators/step-up-sip",
-  "/calculators/goal-sip",
-  "/calculators/lumpsum",
-  "/calculators/fd",
-  "/calculators/ppf",
-  "/calculators/fire",
-  "/calculators/nps",
-  "/calculators/emi",
-  "/calculators/prepayment-vs-invest",
-  "/calculators/no-cost-emi",
-  "/calculators/car-tco",
-  "/calculators/balance-transfer",
-  "/calculators/tax",
-  "/calculators/marginal-relief",
-  "/calculators/capital-gains",
-  "/calculators/hra",
-  "/calculators/presumptive-tax",
-  "/calculators/section-54",
-  "/calculators/lrs-tcs",
-  "/calculators/us-stock-return",
-  "/calculators/nri-deposit",
-  "/calculators/fno-brokerage",
-  "/calculators/option-payoff",
-  "/calculators/black-scholes",
-  "/calculators/position-size",
-  "/calculators/margin-required",
-  "/calculators/portfolio-risk",
-  "/calculators/dcf",
-  "/calculators/wacc",
-  "/calculators/dupont",
-  "/calculators/xirr",
-];
-
-test.describe("All 31+ Calculator Pages Smoke Tests", () => {
-  for (const route of CALCULATOR_ROUTES) {
-    test(`Route ${route} renders HTTP 200 without console errors or NaN text`, async ({ page }) => {
+test.describe("Production Calculator Smoke Suite (All 31 Canonical Routes)", () => {
+  for (const route of ALL_CALCULATOR_ROUTES) {
+    test(`Smoke test route: ${route}`, async ({ page }) => {
+      const pageErrors: Error[] = [];
       const consoleErrors: string[] = [];
+
+      page.on("pageerror", (err) => {
+        pageErrors.push(err);
+      });
+
       page.on("console", (msg) => {
         if (msg.type() === "error") {
-          consoleErrors.push(msg.text());
+          // Ignore favicon 404 in local dev / testing if any
+          if (!msg.text().includes("favicon.ico")) {
+            consoleErrors.push(msg.text());
+          }
         }
       });
 
       const response = await page.goto(route, { waitUntil: "domcontentloaded" });
-      expect(response?.status()).toBe(200);
 
-      // Verify no NaN or undefined text visible in main UI
-      const bodyText = await page.innerText("body");
-      expect(bodyText).not.toContain("NaN");
-      expect(bodyText).not.toContain("undefined");
+      // 1. Assert HTTP 200
+      expect(response?.status(), `Route ${route} should return HTTP 200`).toBe(200);
 
-      // Verify page has heading
+      // 2. Assert Visible H1
       const heading = page.locator("h1");
-      await expect(heading).toBeVisible();
+      await expect(heading, `Route ${route} must have a visible H1`).toBeVisible();
+
+      // 3. Assert Zero Page Errors
+      expect(pageErrors, `Route ${route} had unhandled page errors`).toEqual([]);
+
+      // 4. Assert Zero Console Errors
+      expect(consoleErrors, `Route ${route} had unexpected console errors`).toEqual([]);
+
+      // 5. Assert No NaN, undefined, or unhandled literal Infinity in body
+      const bodyText = await page.innerText("body");
+      expect(bodyText, `Route ${route} contained literal 'NaN'`).not.toMatch(/\bNaN\b/);
+      expect(bodyText, `Route ${route} contained literal 'undefined'`).not.toMatch(/\bundefined\b/);
+      expect(bodyText, `Route ${route} contained literal 'Infinity'`).not.toMatch(/\bInfinity\b/);
     });
   }
 });
