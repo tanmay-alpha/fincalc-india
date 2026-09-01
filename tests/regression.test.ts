@@ -389,6 +389,22 @@ describe("SECTION 5: Full Regression Audit — Adversarial Edge-Case Suite", () 
 
   // ─── 12. Capital Gains Tax Calculator ───────────────────────────
   describe("12. calcCapitalGains Adversarial Tests", () => {
+    it("calculates an indexed 2026 real-estate sale with the current CII", () => {
+      const res = calcCapitalGains({
+        assetClass: "real_estate",
+        purchasePrice: 1000000,
+        salePrice: 2000000,
+        transferExpenses: 0,
+        holdingMonths: 48,
+        purchaseCiiYear: 2018,
+        saleCiiYear: 2026,
+        isPurchasedBeforeCutoff: true,
+        investorSlabRatePercent: 30,
+      });
+
+      expect(res.realEstateComparison?.indexedCost).toBeGreaterThan(1000000);
+    });
+
     it("handles capital loss (salePrice < purchasePrice) cleanly", () => {
       const res = calcCapitalGains({
         assetClass: "equity",

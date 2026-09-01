@@ -8,7 +8,7 @@ import StickyResultBar from "@/components/ui/StickyResultBar";
 import InsightCard from "@/components/ui/InsightCard";
 import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
-import { calcCapitalGains } from "@/lib/math";
+import { calcCapitalGains, CURRENT_CII_YEAR } from "@/lib/math";
 import type { AssetClass } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -207,7 +207,7 @@ export default function CapitalGainsCalculator() {
                       value={inputs.saleCiiYear}
                       onChange={(val) => setInputs((prev) => ({ ...prev, saleCiiYear: val }))}
                       min={2024}
-                      max={2025}
+                      max={Number.parseInt(CURRENT_CII_YEAR, 10)}
                       step={1}
                       prefix="FY "
                     />
