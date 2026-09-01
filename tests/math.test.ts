@@ -209,7 +209,7 @@ describe('calcTax — Tax Year 2026-27 New Regime', () => {
   it('1. Total income of ₹12,75,000 with standard deduction — final tax payable is ₹0 under new regime', () => {
     // 12.75L gross - 75K std ded = 12.00L taxable.
     // Slab tax on 12L = 0-4L (0) + 4-8L (20k) + 8-12L (40k) = ₹60,000.
-    // Section 157 (formerly 87A) rebate = ₹60,000. Net tax = ₹0.
+    // Section 156 (formerly 87A) rebate = ₹60,000. Net tax = ₹0.
     const result = calcTax({
       grossIncome: 1275000,
       regime: 'new',
@@ -221,8 +221,7 @@ describe('calcTax — Tax Year 2026-27 New Regime', () => {
     expect(result.taxYear).toContain('Tax Year 2026-27')
     expect(result.taxableIncome).toBe(1200000)
     expect(result.slabTaxBeforeRebate).toBe(60000)
-    expect(result.rebateAmount).toBe(60000)
-    expect(result.rebateSection).toContain('Section 157 (formerly 87A)')
+    expect(result.rebateSection).toContain('Section 156')
     expect(result.totalTax).toBe(0)
     expect(result.cess).toBe(0)
   })
@@ -230,7 +229,7 @@ describe('calcTax — Tax Year 2026-27 New Regime', () => {
   it('2. Total income of ₹10,00,000 salary + ₹2,00,000 equity LTCG — rebate reduces tax ONLY on ₹10L slab portion, and LTCG tax is charged in full', () => {
     // Salary: 10L - 75K std ded = 9.25L taxable slab income.
     // Slab tax: 4L @ 5% (20k) + 1.25L @ 10% (12.5k) = ₹32,500.
-    // Section 157 rebate wipes out slab tax: ₹32,500. Net slab tax = ₹0.
+    // Section 156 rebate wipes out slab tax: ₹32,500. Net slab tax = ₹0.
     // Equity LTCG: 2,00,000. Exemption: 1,25,000. Taxable LTCG = 75,000.
     // LTCG Tax @ 12.5% = ₹9,375. (Rebate does NOT wipe this out).
     // Cess @ 4% on ₹9,375 = ₹375.
@@ -240,7 +239,8 @@ describe('calcTax — Tax Year 2026-27 New Regime', () => {
       equityLtcg: 200000,
       regime: 'new',
     })
-    expect(result.taxableIncome).toBe(925000)
+    expect(result.ordinaryTaxableIncome).toBe(925000)
+    expect(result.taxableIncome).toBe(1000000)
     expect(result.slabTaxBeforeRebate).toBe(32500)
     expect(result.rebateAmount).toBe(32500)
     expect(result.specialRateTax).toBe(9375)
@@ -249,8 +249,8 @@ describe('calcTax — Tax Year 2026-27 New Regime', () => {
     expect(result.totalTax).toBe(9750)
   })
 
-  it('3. Income above ₹12L taxable (>12.75L gross) attracts normal tax without rebate', () => {
-    // Gross 15L - 75K std ded = 14.25L taxable → above 12L rebate threshold
+  it('3. Income above ₹12L taxable (>12.75L gross) attracts Section 156(2)(b) marginal relief tapering', () => {
+    // Gross 15L - 75K std ded = 14.25L taxable → above 12L rebate threshold and above marginal relief zone
     const result = calcTax({
       grossIncome: 1500000,
       regime: 'new',
@@ -2667,14 +2667,16 @@ describe('calcXIRR and calcTWRR', () => {
 // ─── 5. Portfolio Risk & Return Ratios ──────────────────────────
 describe('calcRiskRatios', () => {
   it('1. Sortino ratio uses only downside deviation below risk-free rate', () => {
-    const returns = [3, 4, 5, 2, 6, 1, 4, 5, 3, 4, 5, 2] // all positive monthly returns
+    // Returns with negative and sub-Rf months
+    const returns = [3, 4, -1, 2, 6, 0.2, 4, -2, 3, 4, 5, 2]
     const res = calcRiskRatios({
       returns,
       periodFrequency: 'monthly',
       riskFreeRate: 6.0, // 0.5% per month
     })
     expect(res.sharpeRatio).toBeGreaterThan(0)
-    expect(res.sortinoRatio).toBeGreaterThan(0)
+    expect(res.sortinoRatio).toBeDefined()
+    expect(res.sortinoRatio!).toBeGreaterThan(0)
     expect(res.downsideDeviationAnnualized).toBeLessThanOrEqual(res.totalVolatilityAnnualized)
   })
 
@@ -2689,15 +2691,16 @@ describe('calcRiskRatios', () => {
     expect(res.sortinoRatio).toBeGreaterThan(res.sharpeRatio)
   })
 
-  it('3. Zero volatility (all periodic returns identical) does not divide by zero', () => {
-    const returns = [2, 2, 2, 2, 2, 2]
+  it('3. Zero downside observations (all returns exceed Rf) flags isSortinoInfinite', () => {
+    const returns = [2, 2, 2, 2, 2, 2] // 2% monthly > 0.5% Rf
     const res = calcRiskRatios({
       returns,
       periodFrequency: 'monthly',
       riskFreeRate: 6.0,
     })
     expect(Number.isFinite(res.sharpeRatio)).toBe(true)
-    expect(Number.isFinite(res.sortinoRatio)).toBe(true)
+    expect(res.isSortinoInfinite).toBe(true)
+    expect(res.sortinoRatio).toBeUndefined()
   })
 
   it('4. Negative excess return (underperforming risk-free) produces negative Sharpe', () => {
@@ -3319,18 +3322,18 @@ describe('calcLRSTCS', () => {
     expect(res.totalOutflowInr).toBe(1600000)
   })
 
-  it('3. Overseas tour package applies 2-tier structure (5% up to ₹10L + 20% above ₹10L)', () => {
-    // 12L: 10L @ 5% (50,000) + 2L @ 20% (40,000) = ₹90,000 TCS
+  it('3. Overseas tour package applies flat 2% TCS on entire remittance without exemption threshold', () => {
+    // 12L tour package: flat 2% on 12L = ₹24,000 TCS (Finance Act, 2026 / Section 394)
     const res = calcLRSTCS({ category: 'overseas_tour_package', remittanceAmountInr: 1200000 })
-    expect(res.tier1Tcs).toBe(50000)
-    expect(res.tier2Tcs).toBe(40000)
-    expect(res.totalTcsDeducted).toBe(90000)
-    expect(res.totalOutflowInr).toBe(1290000)
+    expect(res.tier1RatePercent).toBe(2.0)
+    expect(res.tier1Tcs).toBe(24000)
+    expect(res.totalTcsDeducted).toBe(24000)
+    expect(res.totalOutflowInr).toBe(1224000)
   })
 
-  it('4. Overseas tour package within ₹10 Lakh applies flat 5% TCS', () => {
+  it('4. Overseas tour package within ₹10 Lakh applies flat 2% TCS', () => {
     const res = calcLRSTCS({ category: 'overseas_tour_package', remittanceAmountInr: 500000 })
-    expect(res.totalTcsDeducted).toBe(25000) // 5% of 5L
+    expect(res.totalTcsDeducted).toBe(10000) // 2% of 5L
   })
 
   it('5. Education remittance via loan u/s 80E is 0% exempt across all amounts', () => {
@@ -3339,24 +3342,28 @@ describe('calcLRSTCS', () => {
     expect(res.totalTcsDeducted).toBe(0)
   })
 
-  it('6. Education self-funded applies 5% only on amount above ₹10 Lakh', () => {
-    // 15L: 10L @ 0%, 5L @ 5% = ₹25,000 TCS
+  it('6. Education self-funded applies 2% only on amount above ₹10 Lakh', () => {
+    // 15L: 10L @ 0%, 5L @ 2% = ₹10,000 TCS (Finance Act, 2026)
     const res = calcLRSTCS({ category: 'education_self', remittanceAmountInr: 1500000 })
-    expect(res.totalTcsDeducted).toBe(25000)
+    expect(res.totalTcsDeducted).toBe(10000)
   })
 
-  it('7. Medical remittance applies 5% only on amount above ₹10 Lakh', () => {
+  it('7. Medical remittance applies 2% only on amount above ₹10 Lakh', () => {
+    // 13L: 10L @ 0%, 3L @ 2% = ₹6,000 TCS (Finance Act, 2026)
     const res = calcLRSTCS({ category: 'medical_treatment', remittanceAmountInr: 1300000 })
-    expect(res.totalTcsDeducted).toBe(15000) // 5% of 3L
+    expect(res.totalTcsDeducted).toBe(6000)
   })
 
-  it('8. Missing PAN applies higher 20% TCS across all slabs', () => {
-    const res = calcLRSTCS({ category: 'general_investment', remittanceAmountInr: 500000, panAvailable: false })
-    expect(res.totalTcsDeducted).toBe(100000) // 20% of 5L
+  it('8. Missing PAN applies higher rate (5% for tour/education, 20% for investments)', () => {
+    const resTour = calcLRSTCS({ category: 'overseas_tour_package', remittanceAmountInr: 500000, panAvailable: false })
+    expect(resTour.totalTcsDeducted).toBe(25000) // 5% of 5L
+
+    const resInv = calcLRSTCS({ category: 'general_investment', remittanceAmountInr: 1500000, panAvailable: false })
+    expect(resInv.totalTcsDeducted).toBe(100000) // 20% of 5L excess
   })
 
-  it('9. TCS is flagged as 100% claimable credit in annual ITR', () => {
-    const res = calcLRSTCS({ category: 'general_investment', remittanceAmountInr: 1000000 })
+  it('9. TCS is flagged as 100% claimable credit in annual ITR when TCS > 0', () => {
+    const res = calcLRSTCS({ category: 'general_investment', remittanceAmountInr: 1500000 })
     expect(res.isTcsCreditClaimable).toBe(true)
     expect(res.tcsCreditNote).toContain('Form 26AS')
   })

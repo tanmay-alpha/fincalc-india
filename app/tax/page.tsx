@@ -7,7 +7,7 @@ import CalculatorDisclaimer from "@/components/ui/CalculatorDisclaimer";
 
 export const metadata: Metadata = {
   title: 'Income Tax Calculator — Tax Year 2026-27 (FY 2026-27)',
-  description: 'Calculate and compare Income Tax under Old vs New Tax Regime for Tax Year 2026-27 (Income Tax Act, 2025). Detailed slab breakdown, ₹75k standard deduction, Section 157 rebate, and tax-saving recommendations.',
+  description: 'Calculate and compare Income Tax under Old vs New Tax Regime for Tax Year 2026-27 (Income-tax Act, 2025 as amended by Finance Act, 2026). Detailed slab breakdown, ₹75k standard deduction, Section 156 rebate, and tax-saving recommendations.',
   openGraph: {
     title: 'Income Tax Calculator — Tax Year 2026-27 — FinCalc India',
     description: 'Free Old vs New tax regime comparison for Tax Year 2026-27 (FY 2026-27). Find the regime that saves you the most tax.',
@@ -28,7 +28,7 @@ export default function TaxPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">Income Tax Calculator — Tax Year 2026-27 <span className="text-sm font-normal text-muted-foreground">(FY 2026-27)</span></h1>
           </div>
           <p className="text-muted-foreground text-sm mt-1 max-w-2xl">
-            Compare Old vs New tax regime under Tax Year 2026-27 slabs (Income Tax Act, 2025). Includes ₹75,000 standard deduction and Section 157 (formerly 87A) rebate up to ₹12L.
+            Compare Old vs New tax regime under Tax Year 2026-27 slabs (Income-tax Act, 2025 as amended by Finance Act, 2026). Includes ₹75,000 standard deduction and Section 156 (formerly 87A) rebate up to ₹12L with marginal relief.
           </p>
         </div>
         <TaxCalculator />

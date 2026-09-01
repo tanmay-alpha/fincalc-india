@@ -37,7 +37,6 @@ import {
   calcXIRR,
   calcRiskRatios,
   calcMarginalRelief,
-  calcLRSTCS,
 } from "../lib/math";
 
 describe("SECTION 5: Full Regression Audit — Adversarial Edge-Case Suite", () => {
@@ -162,16 +161,18 @@ describe("SECTION 5: Full Regression Audit — Adversarial Edge-Case Suite", () 
 
   // ─── 6. Income Tax Calculator ───────────────────────────────────
   describe("6. calcTax Adversarial Tests", () => {
-    it("Tax Year 2026-27: ₹12,75,000 gross with ₹75k std ded gives exact ₹0 tax via Section 157 rebate", () => {
+    it("Tax Year 2026-27: ₹12,75,000 gross with ₹75k std ded gives exact ₹0 tax via Section 156 rebate", () => {
       const res = calcTax({ grossIncome: 1275000, regime: "new" });
       expect(res.taxableIncome).toBe(1200000);
       expect(res.totalTax).toBe(0);
+      expect(res.rebateAmount).toBe(60000);
     });
 
-    it("Tax Year 2026-27: ₹12,75,100 gross with ₹75k std ded crosses threshold (no rebate, full slab tax applied)", () => {
+    it("Tax Year 2026-27: ₹12,75,100 gross with ₹75k std ded applies Section 156(2)(b) marginal rebate (capping tax to excess income + cess)", () => {
       const res = calcTax({ grossIncome: 1275100, regime: "new" });
       expect(res.taxableIncome).toBe(1200100);
-      expect(res.totalTax).toBeGreaterThan(60000);
+      expect(res.isMarginalRebateApplied).toBe(true);
+      expect(res.totalTax).toBe(104); // ₹100 excess + 4% cess = ₹104
     });
 
     it("handles zero income (₹0 gross)", () => {
@@ -650,9 +651,9 @@ describe("SECTION 5: Full Regression Audit — Adversarial Edge-Case Suite", () 
     });
   });
 
-  // ─── 19. calcTax Statutory Section 157 & Surcharge Hardening ─────
-  describe("19. calcTax Statutory Section 157 & Surcharge Hardening", () => {
-    it("Section 157 Rebate: Total income ₹12L (₹10L salary + ₹2L equity LTCG) reduces slab tax to ₹0 but charges LTCG in full", () => {
+  // ─── 19. calcTax Statutory Section 156 & Surcharge Hardening ─────
+  describe("19. calcTax Statutory Section 156 & Surcharge Hardening", () => {
+    it("Section 156 Rebate: Total income ₹12L (₹10L salary + ₹2L equity LTCG) reduces slab tax to ₹0 but charges LTCG in full", () => {
       const res = calcTax({
         grossIncome: 1000000, // 9.25L taxable slab after 75k std ded
         equityLtcg: 200000, // 75k taxable after 1.25L exemption
@@ -670,13 +671,15 @@ describe("SECTION 5: Full Regression Audit — Adversarial Edge-Case Suite", () 
       expect(res.totalTax).toBe(9750);
     });
 
-    it("Section 157 Rebate: Total taxable income exceeding ₹12L by ₹1 receives ₹0 rebate", () => {
+    it("Section 156 Rebate: Total taxable income exceeding ₹12L by ₹1 receives Section 156(2)(b) marginal rebate", () => {
       const res = calcTax({
         grossIncome: 1275001, // 12,00,001 taxable after 75k std ded
         regime: "new",
       });
-      expect(res.rebateAmount).toBe(0);
-      expect(res.totalTax).toBeGreaterThan(60000);
+      // Excess income over ₹12L is ₹1. Tax before cess capped at ₹1.
+      expect(res.isMarginalRebateApplied).toBe(true);
+      expect(res.rebateAmount).toBe(59999);
+      expect(res.totalTax).toBe(1);
     });
 
     it("New Regime Surcharge: Above ₹5 Crore is strictly capped at 25% (no 37% tier)", () => {
@@ -866,17 +869,17 @@ describe("SECTION 5: Full Regression Audit — Adversarial Edge-Case Suite", () 
 
   // ─── 25. NPS Pension & Small Corpus Rule ────────────────────────
   describe("25. calcNPS Pension & Small Corpus Rule", () => {
-    it("Small corpus <= ₹5 Lakh allows 100% lump sum exit without mandatory annuity", () => {
+    it("Small corpus <= ₹8 Lakh allows 100% lump sum exit without mandatory annuity (PFRDA 2026 rules)", () => {
       const res = calcNPS({
         currentAge: 58,
         retirementAge: 60,
-        monthlyContribution: 2000, // Small corpus ~ ₹55,000 < ₹5 Lakh
+        monthlyContribution: 2000, // Small corpus ~ ₹55,000 < ₹8 Lakh
         equityAllocationPercent: 50,
         corporateDebtAllocationPercent: 30,
         govtBondsAllocationPercent: 20,
       });
 
-      expect(res.totalAccumulatedCorpus).toBeLessThanOrEqual(500000);
+      expect(res.totalAccumulatedCorpus).toBeLessThanOrEqual(800000);
       expect(res.lumpSumWithdrawalPercent).toBe(100);
       expect(res.annuityPurchasedAmount).toBe(0);
     });

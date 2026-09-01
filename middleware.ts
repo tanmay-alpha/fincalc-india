@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 
 /**
  * Security middleware — adds hardened HTTP response headers to every page
@@ -16,7 +15,7 @@ import type { NextRequest } from "next/server";
  *   - Content-Security-Policy: strict default-deny with explicit allow-list
  *     for Google OAuth, Vercel analytics, and our own assets.
  */
-export function middleware(request: NextRequest) {
+export function middleware() {
   const response = NextResponse.next();
 
   // Clickjacking protection

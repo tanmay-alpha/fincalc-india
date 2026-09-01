@@ -141,8 +141,12 @@ import {
   PENDING_SECTIONS_NOTE,
   NEW_REGIME_SLABS_2026_27,
   OLD_REGIME_SLABS_2026_27,
+  OLD_REGIME_SLABS_GENERAL_2026_27,
+  OLD_REGIME_SLABS_SENIOR_2026_27,
+  OLD_REGIME_SLABS_SUPER_SENIOR_2026_27,
   STANDARD_DEDUCTION_NEW_REGIME,
   STANDARD_DEDUCTION_OLD_REGIME,
+  REBATE_SECTION_156,
   REBATE_SECTION_157,
   HEALTH_AND_EDUCATION_CESS_RATE,
   SURCHARGE_SLABS_NEW_REGIME,
@@ -170,8 +174,12 @@ export {
   PENDING_SECTIONS_NOTE,
   NEW_REGIME_SLABS_2026_27,
   OLD_REGIME_SLABS_2026_27,
+  OLD_REGIME_SLABS_GENERAL_2026_27,
+  OLD_REGIME_SLABS_SENIOR_2026_27,
+  OLD_REGIME_SLABS_SUPER_SENIOR_2026_27,
   STANDARD_DEDUCTION_NEW_REGIME,
   STANDARD_DEDUCTION_OLD_REGIME,
+  REBATE_SECTION_156,
   REBATE_SECTION_157,
   HEALTH_AND_EDUCATION_CESS_RATE,
   SURCHARGE_SLABS_NEW_REGIME,
@@ -195,16 +203,32 @@ export {
 // ─── TAX ──────────────────────────────────────────────────────
 
 export type TaxRegime = "old" | "new";
+export type TaxpayerResidency = "resident_individual" | "nri" | "other";
+export type TaxpayerAgeCategory = "below_60" | "senior_60_to_79" | "super_senior_80_plus";
 
 export interface TaxInput {
-  grossIncome: number;
-  regime: TaxRegime;
-  deduction80C?: number;
-  deduction80D?: number;
-  hraExemption?: number;
-  otherDeductions?: number;
+  // Income streams
+  grossIncome?: number; // legacy alias (treated as salary income by default)
+  salaryIncome?: number; // eligible for standard deduction (₹75k new / ₹50k old)
+  interestAndOtherIncome?: number; // ordinary income, not eligible for salary standard deduction
+  businessIncome?: number; // ordinary income, not eligible for salary standard deduction
+
+  // Special-rate capital gains (isolated from standard rebate)
   equityLtcg?: number; // Section 112A special rate (12.5% above ₹1.25L)
   equityStcg?: number; // Section 111A special rate (20%)
+  otherLtcg?: number; // Section 112 special rate (12.5% / 20%)
+
+  // Regime, Residency & Age Category
+  regime: TaxRegime;
+  residency?: TaxpayerResidency; // default: "resident_individual" (Section 156 rebate is ONLY for resident individuals)
+  ageCategory?: TaxpayerAgeCategory; // default: "below_60" (for Old Regime age slabs)
+
+  // Old Regime deductions
+  deduction80C?: number;
+  deduction80D?: number;
+  deduction80CCD1B?: number;
+  hraExemption?: number;
+  otherDeductions?: number;
 }
 
 export interface TaxSlabRow {
@@ -225,16 +249,25 @@ export interface TaxComparison {
 export interface TaxOutput {
   taxYear: string;
   grossIncome: number;
+  salaryIncome: number;
+  otherIncome: number;
+  standardDeduction: number;
   totalDeductions: number;
-  taxableIncome: number;
+  ordinaryTaxableIncome: number;
+  specialRateTaxableIncome: number;
+  totalTaxableIncome: number;
+  taxableIncome: number; // alias to totalTaxableIncome for backwards compatibility
   taxBeforeCess: number;
   slabTaxBeforeRebate: number;
   rebateAmount: number;
   rebateSection: string;
+  isMarginalRebateApplied: boolean;
   specialRateTax: number;
   equityLtcgTax: number;
   equityStcgTax: number;
+  otherLtcgTax: number;
   surcharge: number;
+  marginalRelief: number;
   cess: number;
   totalTax: number;
   effectiveRate: number;
@@ -749,6 +782,13 @@ export interface CarTCOOutput {
 }
 
 // 9. Home Loan Balance Transfer & Refinancing
+export interface BalanceTransferMonthPoint {
+  month: number;
+  cumulativeOldPayment: number;
+  cumulativeNewPayment: number;
+  netSavings: number;
+}
+
 export interface BalanceTransferInput {
   currentOutstandingPrincipal: number;
   currentInterestRate: number;
@@ -758,6 +798,7 @@ export interface BalanceTransferInput {
   processingFeeType?: "flat" | "percentage";
   processingFeeValue?: number;
   otherSwitchingCharges?: number;
+  discountRatePercent?: number; // Optional discount rate for NPV savings calculation
 }
 
 export interface BalanceTransferOutput {
@@ -776,8 +817,11 @@ export interface BalanceTransferOutput {
   grossInterestSavings: number;
   totalSwitchingCosts: number;
   netBenefit: number;
+  npvSavings?: number;
   isBeneficial: boolean;
+  isTenureExtendedAndHarmful: boolean;
   breakevenMonths: number;
+  timeline: BalanceTransferMonthPoint[];
   recommendation: string;
   summary: string;
 }
@@ -891,6 +935,7 @@ export interface NRIDepositInput {
   compoundingFrequency?: "quarterly" | "annual";
   startingUsdInrRate?: number; // e.g. 84.0
   expectedMaturityUsdInrRate?: number; // e.g. 88.0
+  homeCountryTaxRatePercent?: number; // Tax in NRI's country of residence (e.g. US 24%, UAE 0%)
 }
 
 export interface SingleNRIDepositResult {
@@ -900,6 +945,9 @@ export interface SingleNRIDepositResult {
   preTaxInterestRate: number;
   interestEarnedPreTax: number;
   taxDeducted: number;
+  afterTdsYieldPercent: number;
+  homeCountryTaxAmount: number;
+  finalPostTaxReturnPercent: number;
   effectivePostTaxInterest: number;
   maturityAmount: number;
   maturityAmountInrEquivalent: number;
@@ -933,13 +981,14 @@ export interface NPSInput {
   expectedEquityReturnPercent?: number;
   expectedCorpDebtReturnPercent?: number;
   expectedGovtBondReturnPercent?: number;
-  lumpSumWithdrawalPercent?: number;
-  annuityReinvestmentPercent?: number;
+  lumpSumWithdrawalPercent?: number; // Up to 80% permitted in All Citizen Model
+  annuityReinvestmentPercent?: number; // Minimum 20%
   assumedAnnuityYieldPercent?: number;
   taxBracketPercent?: number;
   regime?: TaxRegime;
   employerMonthlyContribution?: number;
   isGovtEmployee?: boolean;
+  isPrematureExit?: boolean;
 }
 
 export interface NPSYearRow {
@@ -960,13 +1009,18 @@ export interface NPSOutput {
   blendedExpectedReturnPercent: number;
   totalAccumulatedCorpus: number;
   lumpSumWithdrawalPercent: number;
+  permittedLumpSumAmount: number;
   lumpSumTaxFreeAmount: number;
+  taxableLumpSumAmount: number;
   annuityReinvestmentPercent: number;
   annuityPurchasedAmount: number;
   assumedAnnuityYieldPercent: number;
   estimatedMonthlyPension: number;
   annualTaxSavedUnder80CCD: number;
+  annualTaxSavedUnder80CCD1B: number;
+  annualTaxSavedUnder80CCD2: number;
   lifetimeTaxSaved: number;
+  taxTreatmentNote: string;
   yearlyProgression: NPSYearRow[];
   isValid: boolean;
   errorMessage?: string;
@@ -1263,8 +1317,9 @@ interface InternalSlab {
 }
 
 /**
- * Tax Year 2026-27 New Regime Slabs (Income Tax Act, 2025)
- * Nil tax up to ₹4L; Section 157 (formerly 87A) rebate makes taxable income ≤ ₹12L effectively tax-free.
+ * Tax Year 2026-27 New Regime Slabs (Income-tax Act, 2025)
+ * Nil tax up to ₹4L; Section 156 (formerly 87A) rebate makes taxable income ≤ ₹12L effectively tax-free,
+ * with Section 156(2)(b) marginal relief for total income slightly above ₹12L.
  */
 const NEW_REGIME_SLABS: InternalSlab[] = NEW_REGIME_SLABS_2026_27.map((s) => ({
   limit: s.max,
@@ -1273,13 +1328,27 @@ const NEW_REGIME_SLABS: InternalSlab[] = NEW_REGIME_SLABS_2026_27.map((s) => ({
 }));
 
 /**
- * Tax Year 2026-27 Old Regime Slabs (Optional)
+ * Old Regime Slabs by Age Category
  */
-const OLD_REGIME_SLABS: InternalSlab[] = OLD_REGIME_SLABS_2026_27.map((s) => ({
+const OLD_REGIME_SLABS_GENERAL: InternalSlab[] = OLD_REGIME_SLABS_GENERAL_2026_27.map((s) => ({
   limit: s.max,
   rate: s.rate,
   label: s.max === Infinity ? "10L+" : `${s.min / 100000}L – ${s.max / 100000}L`,
 }));
+
+const OLD_REGIME_SLABS_SENIOR: InternalSlab[] = OLD_REGIME_SLABS_SENIOR_2026_27.map((s) => ({
+  limit: s.max,
+  rate: s.rate,
+  label: s.max === Infinity ? "10L+" : `${s.min / 100000}L – ${s.max / 100000}L`,
+}));
+
+const OLD_REGIME_SLABS_SUPER_SENIOR: InternalSlab[] = OLD_REGIME_SLABS_SUPER_SENIOR_2026_27.map((s) => ({
+  limit: s.max,
+  rate: s.rate,
+  label: s.max === Infinity ? "10L+" : `${s.min / 100000}L – ${s.max / 100000}L`,
+}));
+
+const OLD_REGIME_SLABS = OLD_REGIME_SLABS_GENERAL;
 
 function internalSlabCalc(
   income: number,
@@ -1311,8 +1380,9 @@ function internalSlabCalc(
 function internalSurchargeCalc(
   slabTax: number,
   specialRateTax: number,
-  totalIncome: number,
-  regime: TaxRegime
+  totalTaxableIncome: number,
+  regime: TaxRegime,
+  ageCategory: TaxpayerAgeCategory = "below_60"
 ): { surcharge: number; marginalRelief: number; netSurcharge: number } {
   let slabSurchargeRate = 0;
   let specialSurchargeRate = 0;
@@ -1320,17 +1390,17 @@ function internalSurchargeCalc(
   let thresholdSurchargeRate = 0;
 
   if (regime === "new") {
-    if (totalIncome > 20000000) {
+    if (totalTaxableIncome > 20000000) {
       slabSurchargeRate = 0.25;
       specialSurchargeRate = 0.15; // Capped at 15% on special rate gains
       threshold = 20000000;
       thresholdSurchargeRate = 0.15;
-    } else if (totalIncome > 10000000) {
+    } else if (totalTaxableIncome > 10000000) {
       slabSurchargeRate = 0.15;
       specialSurchargeRate = 0.15;
       threshold = 10000000;
       thresholdSurchargeRate = 0.10;
-    } else if (totalIncome > 5000000) {
+    } else if (totalTaxableIncome > 5000000) {
       slabSurchargeRate = 0.10;
       specialSurchargeRate = 0.10;
       threshold = 5000000;
@@ -1338,22 +1408,22 @@ function internalSurchargeCalc(
     }
   } else {
     // Old Regime
-    if (totalIncome > 50000000) {
+    if (totalTaxableIncome > 50000000) {
       slabSurchargeRate = 0.37;
       specialSurchargeRate = 0.15;
       threshold = 50000000;
       thresholdSurchargeRate = 0.25;
-    } else if (totalIncome > 20000000) {
+    } else if (totalTaxableIncome > 20000000) {
       slabSurchargeRate = 0.25;
       specialSurchargeRate = 0.15;
       threshold = 20000000;
       thresholdSurchargeRate = 0.15;
-    } else if (totalIncome > 10000000) {
+    } else if (totalTaxableIncome > 10000000) {
       slabSurchargeRate = 0.15;
       specialSurchargeRate = 0.15;
       threshold = 10000000;
       thresholdSurchargeRate = 0.10;
-    } else if (totalIncome > 5000000) {
+    } else if (totalTaxableIncome > 5000000) {
       slabSurchargeRate = 0.10;
       specialSurchargeRate = 0.10;
       threshold = 5000000;
@@ -1365,15 +1435,22 @@ function internalSurchargeCalc(
 
   let marginalRelief = 0;
   if (threshold > 0 && slabSurchargeRate > 0) {
-    // Surcharge marginal relief: Total tax + surcharge on income cannot exceed
-    // (tax + surcharge on threshold) + (income - threshold)
-    const slabs = regime === "new" ? NEW_REGIME_SLABS : OLD_REGIME_SLABS;
-    const stdDed = regime === "new" ? STANDARD_DEDUCTION_NEW_REGIME : STANDARD_DEDUCTION_OLD_REGIME;
-    const thresholdTaxable = Math.max(0, threshold - stdDed);
-    const { rawTax: thresholdBaseTax } = internalSlabCalc(thresholdTaxable, slabs);
+    // High-income marginal relief: Total tax + surcharge on total taxable income cannot exceed
+    // (tax + surcharge at threshold) + (total taxable income - threshold)
+    let slabs = NEW_REGIME_SLABS;
+    if (regime === "old") {
+      slabs = ageCategory === "super_senior_80_plus"
+        ? OLD_REGIME_SLABS_SUPER_SENIOR
+        : ageCategory === "senior_60_to_79"
+          ? OLD_REGIME_SLABS_SENIOR
+          : OLD_REGIME_SLABS_GENERAL;
+    }
+
+    // Threshold tax calculation
+    const { rawTax: thresholdBaseTax } = internalSlabCalc(threshold, slabs);
     const thresholdTotalTaxAndSurcharge = thresholdBaseTax * (1 + thresholdSurchargeRate);
 
-    const extraIncome = totalIncome - threshold;
+    const extraIncome = totalTaxableIncome - threshold;
     const maxPermissibleTaxAndSurcharge = thresholdTotalTaxAndSurcharge + extraIncome;
 
     const baseTax = slabTax + specialRateTax;
@@ -1398,86 +1475,152 @@ function computeRegimeTax(
   input: TaxInput
 ): {
   totalTax: number;
-  taxableIncome: number;
+  salaryIncome: number;
+  otherIncome: number;
+  standardDeduction: number;
   totalDeductions: number;
+  ordinaryTaxableIncome: number;
+  specialRateTaxableIncome: number;
+  totalTaxableIncome: number;
+  taxableIncome: number;
   slabTaxBeforeRebate: number;
   rebateAmount: number;
   rebateSection: string;
+  isMarginalRebateApplied: boolean;
   specialRateTax: number;
   equityLtcgTax: number;
   equityStcgTax: number;
+  otherLtcgTax: number;
   taxBeforeCess: number;
   surcharge: number;
   marginalRelief: number;
   cess: number;
   breakdown: TaxSlabRow[];
 } {
-  let totalDeductions: number;
-  let taxableIncome: number;
+  const residency = input.residency ?? "resident_individual";
+  const ageCategory = input.ageCategory ?? "below_60";
+  const isResident = residency === "resident_individual";
+
+  // Income stream decomposition
+  const salaryGross = Math.max(0, input.salaryIncome ?? grossIncome ?? 0);
+  const otherGross = Math.max(0, (input.interestAndOtherIncome ?? 0) + (input.businessIncome ?? 0));
+
+  let stdDed = 0;
+  let totalDeductions = 0;
+  let ordinaryTaxableIncome = 0;
 
   if (regime === "new") {
-    const stdDed = STANDARD_DEDUCTION_NEW_REGIME;
+    // Standard deduction applies ONLY to salary income, capped at salary
+    stdDed = Math.min(salaryGross, STANDARD_DEDUCTION_NEW_REGIME);
     totalDeductions = stdDed;
-    taxableIncome = Math.max(0, grossIncome - stdDed);
+    const netSalary = Math.max(0, salaryGross - stdDed);
+    ordinaryTaxableIncome = netSalary + otherGross;
   } else {
-    const stdDed = STANDARD_DEDUCTION_OLD_REGIME;
-    const capped80C = Math.min(input.deduction80C ?? 0, 150000);
-    const capped80D = Math.min(input.deduction80D ?? 0, 100000);
-    totalDeductions = stdDed + capped80C + capped80D + (input.hraExemption ?? 0) + (input.otherDeductions ?? 0);
-    taxableIncome = Math.max(0, grossIncome - totalDeductions);
+    // Old regime standard deduction (capped at salary) + itemized Chapter VI-A deductions
+    stdDed = Math.min(salaryGross, STANDARD_DEDUCTION_OLD_REGIME);
+    const capped80C = Math.min(Math.max(0, input.deduction80C ?? 0), 150000);
+    const capped80D = Math.min(Math.max(0, input.deduction80D ?? 0), 100000);
+    const capped80CCD1B = Math.min(Math.max(0, input.deduction80CCD1B ?? 0), 50000);
+    const hra = Math.max(0, input.hraExemption ?? 0);
+    const other = Math.max(0, input.otherDeductions ?? 0);
+
+    const chapterVIA = capped80C + capped80D + capped80CCD1B + hra + other;
+    totalDeductions = stdDed + chapterVIA;
+
+    const totalOrdinaryGross = salaryGross + otherGross;
+    ordinaryTaxableIncome = Math.max(0, totalOrdinaryGross - totalDeductions);
   }
 
-  const slabs = regime === "new" ? NEW_REGIME_SLABS : OLD_REGIME_SLABS;
-  const { rawTax, breakdown } = internalSlabCalc(taxableIncome, slabs);
+  // Select slabs for regime and age
+  let slabs = NEW_REGIME_SLABS;
+  if (regime === "old") {
+    slabs = ageCategory === "super_senior_80_plus"
+      ? OLD_REGIME_SLABS_SUPER_SENIOR
+      : ageCategory === "senior_60_to_79"
+        ? OLD_REGIME_SLABS_SENIOR
+        : OLD_REGIME_SLABS_GENERAL;
+  }
 
-  // Special rate capital gains tax (Section 112A LTCG @ 12.5% above ₹1.25L, Section 111A STCG @ 20%)
+  const { rawTax, breakdown } = internalSlabCalc(ordinaryTaxableIncome, slabs);
+
+  // Special-rate capital gains (Section 112A LTCG @ 12.5% above ₹1.25L, Section 111A STCG @ 20%, Section 112 @ 12.5%)
   const equityLtcg = Math.max(0, input.equityLtcg ?? 0);
   const equityStcg = Math.max(0, input.equityStcg ?? 0);
+  const otherLtcg = Math.max(0, input.otherLtcg ?? 0);
 
   const equityLtcgTaxable = Math.max(0, equityLtcg - CAPITAL_GAINS_RATES.equityLTCG.exemptionThreshold);
   const equityLtcgTax = Math.round(equityLtcgTaxable * CAPITAL_GAINS_RATES.equityLTCG.rate);
   const equityStcgTax = Math.round(equityStcg * CAPITAL_GAINS_RATES.equitySTCG.rate);
-  const specialRateTax = equityLtcgTax + equityStcgTax;
+  const otherLtcgTax = Math.round(otherLtcg * 0.125);
+  const specialRateTax = equityLtcgTax + equityStcgTax + otherLtcgTax;
+  const specialRateTaxableIncome = equityLtcgTaxable + equityStcg + otherLtcg;
 
-  // Section 157 (formerly 87A) Rebate:
-  // Evaluated against TOTAL Taxable Income (Ordinary Taxable Income + Taxable Special Gains)
-  const totalTaxableIncome = taxableIncome + equityLtcgTaxable + equityStcg;
+  // Total Taxable Income for statutory thresholds (Section 156 and Surcharge)
+  const totalTaxableIncome = ordinaryTaxableIncome + specialRateTaxableIncome;
+
+  // ─── SECTION 156 (FORMERLY 87A) REBATE & MARGINAL RELIEF ─────────
   let rebateAmount = 0;
+  let isMarginalRebateApplied = false;
 
-  if (regime === "new" && totalTaxableIncome <= REBATE_SECTION_157.newRegimeIncomeLimit) {
-    // Rebate applies ONLY to normal slab tax (max ₹60,000); special-rate gains (112A/111A) are NOT reduced
-    rebateAmount = Math.min(rawTax, REBATE_SECTION_157.newRegimeMaxRebate);
-  } else if (regime === "old" && totalTaxableIncome <= REBATE_SECTION_157.oldRegimeIncomeLimit) {
-    rebateAmount = Math.min(rawTax, REBATE_SECTION_157.oldRegimeMaxRebate);
+  if (isResident) {
+    if (regime === "new") {
+      if (totalTaxableIncome <= REBATE_SECTION_156.newRegimeIncomeLimit) {
+        // Full standard rebate: wipes out up to ₹60,000 of ordinary slab tax. Special-rate gains are NOT rebated.
+        rebateAmount = Math.min(rawTax, REBATE_SECTION_156.newRegimeMaxRebate);
+      } else if (totalTaxableIncome > REBATE_SECTION_156.newRegimeIncomeLimit) {
+        // Section 156(2)(b) Marginal Rebate for total income exceeding ₹12 Lakhs:
+        // Eligible income tax payable on ordinary slab-rate income shall not exceed the amount by which total income exceeds ₹12,00,000.
+        const excessIncomeOver12L = totalTaxableIncome - REBATE_SECTION_156.newRegimeIncomeLimit;
+        const maxPermissibleSlabTax = Math.max(0, excessIncomeOver12L);
+
+        if (rawTax > maxPermissibleSlabTax) {
+          rebateAmount = rawTax - maxPermissibleSlabTax;
+          isMarginalRebateApplied = true;
+        }
+      }
+    } else {
+      // Old Regime rebate: up to ₹12,500 if total taxable income <= ₹5,00,000
+      if (totalTaxableIncome <= REBATE_SECTION_156.oldRegimeIncomeLimit) {
+        rebateAmount = Math.min(rawTax, REBATE_SECTION_156.oldRegimeMaxRebate);
+      }
+    }
   }
 
   const slabTaxAfterRebate = Math.max(0, rawTax - rebateAmount);
   const baseTax = slabTaxAfterRebate + specialRateTax;
 
-  // Surcharge and Marginal Relief
-  const totalCombinedGross = grossIncome + equityLtcg + equityStcg;
+  // High-income surcharge and marginal relief (computed on total taxable income after permitted deductions)
   const { marginalRelief, netSurcharge } = internalSurchargeCalc(
     slabTaxAfterRebate,
     specialRateTax,
-    totalCombinedGross,
-    regime
+    totalTaxableIncome,
+    regime,
+    ageCategory
   );
 
-  // Health & Education Cess: 4% on (Base Tax + Net Surcharge after Marginal Relief)
+  // Health & Education Cess: 4% on (Base Tax + Net Surcharge)
   const taxPlusNetSurcharge = baseTax + netSurcharge;
   const cess = taxPlusNetSurcharge * HEALTH_AND_EDUCATION_CESS_RATE;
   const totalTax = taxPlusNetSurcharge + cess;
 
   return {
     totalTax: Math.round(totalTax),
-    taxableIncome: Math.round(taxableIncome),
+    salaryIncome: Math.round(salaryGross),
+    otherIncome: Math.round(otherGross),
+    standardDeduction: Math.round(stdDed),
     totalDeductions: Math.round(totalDeductions),
+    ordinaryTaxableIncome: Math.round(ordinaryTaxableIncome),
+    specialRateTaxableIncome: Math.round(specialRateTaxableIncome),
+    totalTaxableIncome: Math.round(totalTaxableIncome),
+    taxableIncome: Math.round(totalTaxableIncome),
     slabTaxBeforeRebate: Math.round(rawTax),
     rebateAmount: Math.round(rebateAmount),
-    rebateSection: REBATE_SECTION_157.sectionName,
+    rebateSection: REBATE_SECTION_156.sectionName,
+    isMarginalRebateApplied,
     specialRateTax: Math.round(specialRateTax),
     equityLtcgTax: Math.round(equityLtcgTax),
     equityStcgTax: Math.round(equityStcgTax),
+    otherLtcgTax: Math.round(otherLtcgTax),
     taxBeforeCess: Math.round(baseTax),
     surcharge: Math.round(netSurcharge),
     marginalRelief: Math.round(marginalRelief),
@@ -1487,17 +1630,19 @@ function computeRegimeTax(
 }
 
 /**
- * Income Tax Calculator — Tax Year 2026-27 (Income Tax Act, 2025)
+ * Income Tax Calculator — Tax Year 2026-27 (Income-tax Act, 2025 as amended by Finance Act, 2026)
  *
- * Supports New Regime (default) and Old Regime.
- * New Regime Slabs: 0–4L nil, 4–8L 5%, 8–12L 10%, 12–16L 15%,
- *                   16–20L 20%, 20–24L 25%, 24L+ 30%.
- * Standard deduction: ₹75,000.
- * Rebate under Section 157 (formerly 87A) for taxable income ≤ ₹12L (wiping out up to ₹60,000 slab tax).
- * Special rate equity LTCG (12.5% above ₹1.25L) & STCG (20%) are isolated from rebate.
+ * Supports New Regime (default) and Old Regime with full statutory fidelity:
+ * - New Regime Slabs: 0–4L nil, 4–8L 5%, 8–12L 10%, 12–16L 15%, 16–20L 20%, 20–24L 25%, 24L+ 30%.
+ * - Standard deduction: ₹75,000 (New) / ₹50,000 (Old) applied exclusively to salary/pension income.
+ * - Section 156 (formerly 87A) Rebate: Full slab tax waiver for total income ≤ ₹12L (max ₹60,000).
+ * - Section 156(2)(b) Marginal Rebate: Tapers tax cliff for income above ₹12L up to ₹12,70,588.
+ * - Special-rate capital gains (111A, 112A, 112) are isolated and never rebated.
+ * - Surcharge capped at 25% in New Regime (NO 37% tier); 15% cap on equity LTCG/STCG & dividends.
  */
 export function calcTax(input: TaxInput): TaxOutput {
-  const { grossIncome, regime } = input;
+  const grossIncome = input.salaryIncome ?? input.grossIncome ?? 0;
+  const regime = input.regime;
 
   const current = computeRegimeTax(grossIncome, regime, input);
 
@@ -1511,7 +1656,14 @@ export function calcTax(input: TaxInput): TaxOutput {
     ? `New regime saves ₹${Math.round(savings).toLocaleString("en-IN")} under Tax Year 2026-27 slabs`
     : `Old regime saves ₹${Math.round(savings).toLocaleString("en-IN")} due to itemized deductions`;
 
-  const totalEffectiveGross = grossIncome + (input.equityLtcg ?? 0) + (input.equityStcg ?? 0);
+  const totalEffectiveGross =
+    (input.salaryIncome ?? input.grossIncome ?? 0) +
+    (input.interestAndOtherIncome ?? 0) +
+    (input.businessIncome ?? 0) +
+    (input.equityLtcg ?? 0) +
+    (input.equityStcg ?? 0) +
+    (input.otherLtcg ?? 0);
+
   const netAnnual = totalEffectiveGross - current.totalTax;
   const effectiveRate = totalEffectiveGross > 0
     ? (current.totalTax / totalEffectiveGross) * 100
@@ -1519,17 +1671,26 @@ export function calcTax(input: TaxInput): TaxOutput {
 
   return {
     taxYear: CURRENT_TAX_YEAR,
-    grossIncome: Math.round(grossIncome),
+    grossIncome: Math.round(totalEffectiveGross),
+    salaryIncome: current.salaryIncome,
+    otherIncome: current.otherIncome,
+    standardDeduction: current.standardDeduction,
     totalDeductions: current.totalDeductions,
-    taxableIncome: current.taxableIncome,
+    ordinaryTaxableIncome: current.ordinaryTaxableIncome,
+    specialRateTaxableIncome: current.specialRateTaxableIncome,
+    totalTaxableIncome: current.totalTaxableIncome,
+    taxableIncome: current.totalTaxableIncome,
     taxBeforeCess: current.taxBeforeCess,
     slabTaxBeforeRebate: current.slabTaxBeforeRebate,
     rebateAmount: current.rebateAmount,
     rebateSection: current.rebateSection,
+    isMarginalRebateApplied: current.isMarginalRebateApplied,
     specialRateTax: current.specialRateTax,
     equityLtcgTax: current.equityLtcgTax,
     equityStcgTax: current.equityStcgTax,
+    otherLtcgTax: current.otherLtcgTax,
     surcharge: current.surcharge,
+    marginalRelief: current.marginalRelief,
     cess: current.cess,
     totalTax: current.totalTax,
     effectiveRate: Math.round(effectiveRate * 100) / 100,
@@ -2285,15 +2446,19 @@ export function calcFIRE(input: FireInput): FireOutput {
 // ─── PART B — FEATURE 1: CAPITAL GAINS TAX CALCULATOR ─────────
 
 export type AssetClass = "equity" | "debt_mf" | "real_estate" | "gold_sgb";
+export type CapitalGainsTaxpayerCategory = "resident_individual" | "resident_huf" | "nri" | "other";
 
 export interface CapitalGainsInput {
   assetClass: AssetClass;
+  taxpayerCategory?: CapitalGainsTaxpayerCategory; // default: "resident_individual"
   purchaseDate?: string; // YYYY-MM-DD
   saleDate?: string;     // YYYY-MM-DD
   holdingMonths?: number;
   purchasePrice: number;
   salePrice: number;
   transferExpenses?: number;
+  costOfImprovement?: number;
+  improvementCiiYear?: number | string;
   purchaseCiiYear?: number | string;
   saleCiiYear?: number | string;
   isPurchasedBeforeCutoff?: boolean; // Cutoff: 23 July 2024
@@ -2304,11 +2469,13 @@ export interface CapitalGainsInput {
 export interface CapitalGainsOutput {
   taxYear: string;
   assetClass: AssetClass;
+  taxpayerCategory: CapitalGainsTaxpayerCategory;
   gainType: "LTCG" | "STCG" | "LOSS";
   holdingMonths: number;
   grossSaleValue: number;
   netSaleValue: number;
   purchasePrice: number;
+  costOfImprovement: number;
   transferExpenses: number;
   rawCapitalGain: number;
   isLoss: boolean;
@@ -2325,18 +2492,31 @@ export interface CapitalGainsOutput {
     indexedTax: number;
     recommendedOption: "unindexed_12_5" | "indexed_20";
     taxSavedByBestOption: number;
+    isGrandfatheringEligible: boolean;
   };
   explanation: string;
+}
+
+export function getCiiValue(year: number | string | undefined): number {
+  if (year === undefined) return CURRENT_CII_VALUE;
+  const num = typeof year === "number" ? year : parseInt(String(year), 10);
+  if (!isNaN(num) && CII_TABLE[num]) {
+    return CII_TABLE[num];
+  }
+  return CURRENT_CII_VALUE;
 }
 
 export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
   const {
     assetClass,
+    taxpayerCategory = "resident_individual",
     purchaseDate,
     saleDate,
     purchasePrice,
     salePrice,
     transferExpenses = 0,
+    costOfImprovement = 0,
+    improvementCiiYear = 2018,
     purchaseCiiYear = 2015,
     saleCiiYear = 2026,
     investorSlabRatePercent = 30,
@@ -2346,6 +2526,7 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
   const safeBuy = Math.max(0, purchasePrice || 0);
   const safeSale = Math.max(0, salePrice || 0);
   const safeExp = Math.max(0, transferExpenses || 0);
+  const safeImp = Math.max(0, costOfImprovement || 0);
   const safeSlab = Math.max(0, investorSlabRatePercent || 30);
   const safePriorExemption = Math.max(0, Math.min(125000, priorExemptionUsed || 0));
 
@@ -2366,12 +2547,13 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
       isPurchasedBeforeCutoff = pDate < cutoffDate;
     }
   } else if (isPurchasedBeforeCutoff === undefined) {
-    const pNum = typeof purchaseCiiYear === "number" ? purchaseCiiYear : parseInt(purchaseCiiYear, 10);
+    const pNum = typeof purchaseCiiYear === "number" ? purchaseCiiYear : parseInt(String(purchaseCiiYear), 10);
     isPurchasedBeforeCutoff = !isNaN(pNum) && pNum < 2024;
   }
 
   const netSaleValue = Math.max(0, safeSale - safeExp);
-  const rawCapitalGain = netSaleValue - safeBuy;
+  const totalCost = safeBuy + safeImp;
+  const rawCapitalGain = netSaleValue - totalCost;
   const isLoss = rawCapitalGain <= 0;
 
   let gainType: "LTCG" | "STCG" | "LOSS" = isLoss ? "LOSS" : "STCG";
@@ -2422,13 +2604,21 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
   } else if (assetClass === "real_estate") {
     if (isLtcg) {
       const unindexedTax = (taxableGain * 12.5) / 100;
+      const isGrandfatheringEligible =
+        Boolean(isPurchasedBeforeCutoff) &&
+        (taxpayerCategory === "resident_individual" || taxpayerCategory === "resident_huf");
 
-      if (isPurchasedBeforeCutoff) {
+      if (isGrandfatheringEligible) {
         // Grandfathering: Calculate both 12.5% without indexation and 20% with indexation
-        const buyCii = typeof purchaseCiiYear === "number" ? (CII_TABLE[purchaseCiiYear] || 254) : (CII_TABLE[purchaseCiiYear] || 254);
-        const sellCii = typeof saleCiiYear === "number" ? (CII_TABLE[saleCiiYear] || 384) : (CII_TABLE[saleCiiYear] || 384);
-        const indexedCost = safeBuy * (sellCii / buyCii);
-        const indexedGain = Math.max(0, netSaleValue - indexedCost);
+        const buyCii = getCiiValue(purchaseCiiYear);
+        const sellCii = getCiiValue(saleCiiYear);
+        const impCii = getCiiValue(improvementCiiYear);
+
+        const indexedCoa = safeBuy * (sellCii / buyCii);
+        const indexedCoi = safeImp > 0 ? safeImp * (sellCii / impCii) : 0;
+        const totalIndexedCost = indexedCoa + indexedCoi;
+
+        const indexedGain = Math.max(0, netSaleValue - totalIndexedCost);
         const indexedTax = (indexedGain * 20) / 100;
 
         const isUnindexedBetter = unindexedTax <= indexedTax;
@@ -2440,23 +2630,28 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
         realEstateComparison = {
           unindexedGain: Math.round(taxableGain),
           unindexedTax: Math.round(unindexedTax),
-          indexedCost: Math.round(indexedCost),
+          indexedCost: Math.round(totalIndexedCost),
           indexedGain: Math.round(indexedGain),
           indexedTax: Math.round(indexedTax),
           recommendedOption,
           taxSavedByBestOption: Math.round(taxSaved),
+          isGrandfatheringEligible: true,
         };
 
-        explanation = `Grandfathered property (bought before 23 July 2024): ${
+        explanation = `Grandfathered property (acquired before 23 July 2024 by ${taxpayerCategory === "resident_huf" ? "Resident HUF" : "Resident Individual"}): ${
           isUnindexedBetter
             ? `12.5% without indexation saves you ₹${Math.round(taxSaved).toLocaleString("en-IN")} compared to 20% with indexation.`
             : `20% with indexation saves you ₹${Math.round(taxSaved).toLocaleString("en-IN")} compared to 12.5% without indexation.`
         }`;
       } else {
-        // Purchased on or after 23 July 2024: Flat 12.5% without indexation only
+        // Purchased on or after 23 July 2024 or Non-Resident / Corporate: Flat 12.5% without indexation
         taxRatePercent = 12.5;
         totalTaxPayable = unindexedTax;
-        explanation = `Property purchased on/after 23 July 2024: Taxed at 12.5% LTCG (>24 months) without indexation benefit (Tax Year 2026-27).`;
+        if (!isPurchasedBeforeCutoff) {
+          explanation = `Property purchased on/after 23 July 2024: Taxed at 12.5% LTCG (>24 months) without indexation benefit (Tax Year 2026-27).`;
+        } else {
+          explanation = `Property acquired before 23 July 2024 by ${taxpayerCategory.toUpperCase()}: Indexation grandfathering is restricted to Resident Individuals/HUFs; taxed at flat 12.5% without indexation.`;
+        }
       }
     } else {
       // STCG: Slab rate
@@ -2484,11 +2679,13 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
   return {
     taxYear: CURRENT_TAX_YEAR,
     assetClass,
+    taxpayerCategory,
     gainType,
     holdingMonths,
     grossSaleValue: Math.round(safeSale),
     netSaleValue: Math.round(netSaleValue),
     purchasePrice: Math.round(safeBuy),
+    costOfImprovement: Math.round(safeImp),
     transferExpenses: Math.round(safeExp),
     rawCapitalGain: Math.round(rawCapitalGain),
     isLoss,
@@ -2505,7 +2702,12 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
 // ─── PART B — FEATURE 2: F&O BROKERAGE & BREAK-EVEN CALCULATOR ──
 
 export type FnOInstrument = "futures" | "options";
-export type FnOTaxYear = "tax_year_2026_27" | "pre_april_2026";
+export type FnOTaxYear =
+  | "period_c_from_apr_2026"
+  | "period_b_oct_2024_to_mar_2026"
+  | "period_a_pre_oct_2024"
+  | "tax_year_2026_27"
+  | "pre_april_2026";
 
 export interface FnOBreakevenInput {
   instrument: FnOInstrument;
@@ -2513,12 +2715,13 @@ export interface FnOBreakevenInput {
   sellPrice: number;
   quantity: number; // total shares / units (lots * lotSize)
   brokeragePerOrder?: number; // default ₹20 per executed order
-  taxYear?: FnOTaxYear; // default: "tax_year_2026_27" (STT: Futures 0.05%, Options 0.15%)
-  sttRatePercent?: number; // Options: 0.15% flat (Tax Year 2026-27) or custom; Futures: 0.05%
-  exchangeChargeRatePercent?: number; // Options: ~0.05% on premium; Futures: ~0.003% on turnover
+  taxYear?: FnOTaxYear; // default: "period_c_from_apr_2026" / "tax_year_2026_27"
+  sttRatePercent?: number; // Custom override if provided
+  exchangeChargeRatePercent?: number; // Custom override if provided
   sebiTurnoverFeePercent?: number; // 0.0001% (₹10 per Crore)
   gstRatePercent?: number; // 18% on (brokerage + exchange charges + sebi fee)
   stampDutyPercent?: number; // Buy side only: Options 0.003%, Futures 0.002%
+  isOptionExercised?: boolean; // When exercised, STT applies on settlement/intrinsic value
 }
 
 export interface FnOBreakevenOutput {
@@ -2555,8 +2758,9 @@ export function calcFnOBreakeven(input: FnOBreakevenInput): FnOBreakevenOutput {
     sellPrice,
     quantity,
     brokeragePerOrder = 20,
-    gstRatePercent = 18,
-    taxYear = "tax_year_2026_27",
+    gstRatePercent = TRANSACTION_CHARGES.gstRate * 100,
+    taxYear = "period_c_from_apr_2026",
+    isOptionExercised = false,
   } = input;
 
   const safeBuy = Math.max(0, buyPrice || 0);
@@ -2569,20 +2773,37 @@ export function calcFnOBreakeven(input: FnOBreakevenInput): FnOBreakevenOutput {
   const totalTurnover = round2(buyTurnover + sellTurnover);
   const grossPnl = round2(sellTurnover - buyTurnover);
 
-  // STT Rates: Tax Year 2026-27 (effective 1 April 2026: Futures 0.05%, Options 0.15% flat) vs Pre-April 2026
-  const isTaxYear2026_27 = taxYear === "tax_year_2026_27";
-  const defaultSttRate = isTaxYear2026_27
-    ? (instrument === "options" ? 0.15 : 0.05)
-    : (instrument === "options" ? 0.10 : 0.02);
 
-  const defaultExchangeRate = instrument === "options" ? 0.05 : 0.0032;
-  const defaultSebiRate = 0.0001; // ₹10 per crore
-  const defaultStampDuty = instrument === "options" ? 0.003 : 0.002;
+  // Versioned STT mapping from single source of truth
+  let sttConfig: {
+    readonly label: string;
+    readonly futures: number;
+    readonly optionsPremiumSell: number;
+    readonly optionsExercise: number;
+  } = STT_RATES_F_AND_O.period_c_from_apr_2026;
+  if (taxYear === "period_a_pre_oct_2024") {
+    sttConfig = STT_RATES_F_AND_O.period_a_pre_oct_2024;
+  } else if (taxYear === "period_b_oct_2024_to_mar_2026" || taxYear === "pre_april_2026") {
+    sttConfig = STT_RATES_F_AND_O.period_b_oct_2024_to_mar_2026;
+  }
 
-  const sttRate = input.sttRatePercent ?? defaultSttRate;
-  const exchangeRate = input.exchangeChargeRatePercent ?? defaultExchangeRate;
-  const sebiRate = input.sebiTurnoverFeePercent ?? defaultSebiRate;
-  const stampDutyRate = input.stampDutyPercent ?? defaultStampDuty;
+  const defaultSttRateDecimal = instrument === "options"
+    ? (isOptionExercised ? sttConfig.optionsExercise : sttConfig.optionsPremiumSell)
+    : sttConfig.futures;
+
+  const defaultSttRatePercent = defaultSttRateDecimal * 100;
+  const defaultExchangeRatePercent = instrument === "options"
+    ? TRANSACTION_CHARGES.nseExchangeTurnoverRateOptions * 100
+    : TRANSACTION_CHARGES.nseExchangeTurnoverRateFutures * 100;
+  const defaultSebiRatePercent = TRANSACTION_CHARGES.sebiTurnoverFee * 100;
+  const defaultStampDutyPercent = instrument === "options"
+    ? TRANSACTION_CHARGES.stampDutyOptions * 100
+    : TRANSACTION_CHARGES.stampDutyFutures * 100;
+
+  const sttRate = input.sttRatePercent ?? defaultSttRatePercent;
+  const exchangeRate = input.exchangeChargeRatePercent ?? defaultExchangeRatePercent;
+  const sebiRate = input.sebiTurnoverFeePercent ?? defaultSebiRatePercent;
+  const stampDutyRate = input.stampDutyPercent ?? defaultStampDutyPercent;
 
   // 1. Brokerage: 2 orders (buy + sell)
   const brokerage = safeQty > 0 ? round2(safeBrokerageOrder * 2) : 0;
@@ -2599,7 +2820,7 @@ export function calcFnOBreakeven(input: FnOBreakevenInput): FnOBreakevenOutput {
   // 5. Stamp duty: Applied ONLY on buy side
   const stampDuty = safeQty > 0 ? round2((buyTurnover * stampDutyRate) / 100) : 0;
 
-  // 6. GST: 18% applied strictly on (brokerage + exchangeCharges + sebiFees)
+  // 6. GST: 18% applied strictly on (Brokerage + Exchange Charges + SEBI Fees)
   const gstTaxable = round2(brokerage + exchangeCharges + sebiFees);
   const gst = safeQty > 0 ? round2((gstTaxable * gstRatePercent) / 100) : 0;
 
@@ -2614,7 +2835,7 @@ export function calcFnOBreakeven(input: FnOBreakevenInput): FnOBreakevenOutput {
   return {
     instrument,
     taxYear,
-    taxYearLabel: isTaxYear2026_27 ? "Tax Year 2026-27 (Current)" : "Pre-April 2026 (Historical)",
+    taxYearLabel: sttConfig.label,
     buyPrice: safeBuy,
     sellPrice: safeSell,
     quantity: safeQty,
@@ -4294,7 +4515,7 @@ export function calcRiskRatios(input: RiskRatiosInput): RiskRatiosOutput {
     sortinoRatio = round2(excessReturn / downsideDeviationAnnualized);
   } else if (excessReturn > 0) {
     isSortinoInfinite = true;
-    sortinoRatio = totalVolatilityAnnualized > 0 ? round2((excessReturn / totalVolatilityAnnualized) * 2) : round2(excessReturn);
+    sortinoRatio = undefined;
   } else {
     sortinoRatio = 0;
   }
@@ -4715,6 +4936,7 @@ export function calcBalanceTransfer(input: BalanceTransferInput): BalanceTransfe
     processingFeeType = "percentage",
     processingFeeValue = 0.5,
     otherSwitchingCharges = 15000,
+    discountRatePercent,
   } = input;
 
   const safePrincipal = safePositive(currentOutstandingPrincipal, 5000000);
@@ -4757,18 +4979,66 @@ export function calcBalanceTransfer(input: BalanceTransferInput): BalanceTransfe
 
   const netBenefit = grossInterestSavings - totalSwitchingCosts;
   const isBeneficial = netBenefit > 0;
+  const isTenureExtendedAndHarmful = safeNewTenure > safeCurTenure && newTotalInterest > curTotalInterest;
 
-  const breakevenMonths = (monthlyEmiSavings > 0 && totalSwitchingCosts > 0)
-    ? Math.ceil(totalSwitchingCosts / monthlyEmiSavings)
-    : 0;
+  // Month-by-month cumulative cashflow tracking
+  const maxSimMonths = Math.min(600, Math.max(safeCurTenure, safeNewTenure));
+  const timeline: BalanceTransferMonthPoint[] = [];
+  let breakevenMonths = 0;
+  let hasBrokenEven = false;
+
+  let cumOld = 0;
+  let cumNew = totalSwitchingCosts;
+
+  for (let m = 1; m <= maxSimMonths; m++) {
+    if (m <= safeCurTenure) {
+      cumOld += curEmi;
+    }
+    if (m <= safeNewTenure) {
+      cumNew += newEmi;
+    }
+    const netSavings = cumOld - cumNew;
+
+    if (!hasBrokenEven && netSavings >= 0) {
+      breakevenMonths = m;
+      hasBrokenEven = true;
+    }
+
+    if (m <= 12 || m % 12 === 0 || m === safeCurTenure || m === safeNewTenure) {
+      timeline.push({
+        month: m,
+        cumulativeOldPayment: Math.round(cumOld),
+        cumulativeNewPayment: Math.round(cumNew),
+        netSavings: Math.round(netSavings),
+      });
+    }
+  }
+
+  // NPV calculation if discount rate provided
+  let npvSavings: number | undefined = undefined;
+  if (discountRatePercent !== undefined && discountRatePercent > 0) {
+    const monthlyDiscRate = discountRatePercent / 100 / 12;
+    let npvSum = -totalSwitchingCosts;
+    for (let m = 1; m <= maxSimMonths; m++) {
+      const oldCf = m <= safeCurTenure ? curEmi : 0;
+      const newCf = m <= safeNewTenure ? newEmi : 0;
+      const netMonthlyCf = oldCf - newCf;
+      npvSum += netMonthlyCf / Math.pow(1 + monthlyDiscRate, m);
+    }
+    npvSavings = Math.round(npvSum);
+  }
 
   let recommendation = "";
-  if (!isBeneficial) {
-    recommendation = `Balance transfer is NOT recommended. Switching fees (₹${Math.round(totalSwitchingCosts).toLocaleString("en-IN")} exceed interest savings by ₹${Math.abs(Math.round(netBenefit)).toLocaleString("en-IN")}.`;
-  } else if (breakevenMonths > safeCurTenure) {
-    recommendation = `Marginal benefit. Breakeven period (${breakevenMonths} months) is longer than remaining tenure (${safeCurTenure} months).`;
+  if (isTenureExtendedAndHarmful) {
+    recommendation = `CAUTION: Extending tenure from ${safeCurTenure} to ${safeNewTenure} months reduces EMI by ₹${Math.round(monthlyEmiSavings).toLocaleString("en-IN")}, but increases total interest paid by ₹${Math.round(newTotalInterest - curTotalInterest).toLocaleString("en-IN")}. Refinancing is NOT recommended on total cost basis.`;
+  } else if (!isBeneficial) {
+    recommendation = `Balance transfer is NOT recommended. Switching fees (₹${Math.round(totalSwitchingCosts).toLocaleString("en-IN")}) exceed interest savings by ₹${Math.abs(Math.round(netBenefit)).toLocaleString("en-IN")}.`;
+  } else if (hasBrokenEven && breakevenMonths > safeCurTenure) {
+    recommendation = `Marginal benefit. Cumulative breakeven period (${breakevenMonths} months) is longer than remaining tenure (${safeCurTenure} months).`;
+  } else if (hasBrokenEven) {
+    recommendation = `Highly recommended! You achieve true cashflow breakeven in Month ${breakevenMonths} and save ₹${Math.round(netBenefit).toLocaleString("en-IN")} net after switching fees.`;
   } else {
-    recommendation = `Highly recommended! You save ₹${Math.round(netBenefit).toLocaleString("en-IN")} net after recovering switching fees in ${breakevenMonths} months.`;
+    recommendation = `Balance transfer does not achieve positive cumulative savings within the loan tenure.`;
   }
 
   return {
@@ -4787,8 +5057,11 @@ export function calcBalanceTransfer(input: BalanceTransferInput): BalanceTransfe
     grossInterestSavings: Math.round(grossInterestSavings),
     totalSwitchingCosts: Math.round(totalSwitchingCosts),
     netBenefit: Math.round(netBenefit),
-    isBeneficial,
+    npvSavings,
+    isBeneficial: isBeneficial && !isTenureExtendedAndHarmful,
+    isTenureExtendedAndHarmful,
     breakevenMonths,
+    timeline,
     recommendation,
     summary: `Net Refinancing Savings: ₹${Math.round(netBenefit).toLocaleString("en-IN")} | Breakeven in ${breakevenMonths} months | Monthly EMI drops by ₹${Math.round(monthlyEmiSavings).toLocaleString("en-IN")}`,
   };
@@ -4911,7 +5184,7 @@ export function calcMarginalRelief(input: MarginalReliefInput): MarginalReliefOu
   };
 }
 
-// 11. LRS TCS & Remittance Calculator
+// 11. LRS TCS & Remittance Calculator (Section 394 / Finance Act, 2026)
 export function calcLRSTCS(input: LrsTcsInput): LrsTcsOutput {
   const {
     category = "general_investment",
@@ -4922,66 +5195,97 @@ export function calcLRSTCS(input: LrsTcsInput): LrsTcsOutput {
   const safeAmount = safePositive(remittanceAmountInr, 1000000);
   const threshold = LRS_TCS_CONSTANTS.exemptionThreshold; // Statutory ₹10,00,000 threshold
 
-  let tier1Rate = 0;
-  let tier2Rate = 0;
+  let tier1Amount = 0;
+  let tier1RatePercent = 0;
+  let tier1Tcs = 0;
+
+  let tier2Amount = 0;
+  let tier2RatePercent = 0;
+  let tier2Tcs = 0;
+
   let categoryLabel = "";
 
   switch (category) {
     case "overseas_tour_package":
       categoryLabel = LRS_TCS_CONSTANTS.categories.overseas_tour_package.label;
-      tier1Rate = 5.0;
-      tier2Rate = 20.0;
+      // Flat 2% on entire consideration (Finance Act, 2026) without ₹10L exemption split
+      tier1Amount = safeAmount;
+      tier1RatePercent = panAvailable ? 2.0 : 5.0; // Higher rate without PAN: 5%
+      tier1Tcs = (tier1Amount * tier1RatePercent) / 100;
+      tier2Amount = 0;
+      tier2RatePercent = 0;
+      tier2Tcs = 0;
       break;
+
     case "education_loan":
       categoryLabel = LRS_TCS_CONSTANTS.categories.education_loan.label;
-      tier1Rate = 0.0;
-      tier2Rate = 0.0; // 0% TCS (Exempt under Section 206C(1G))
+      // 0% Nil TCS on entire remittance funded by Section 80E loan
+      tier1Amount = Math.min(safeAmount, threshold);
+      tier1RatePercent = 0.0;
+      tier1Tcs = 0;
+      tier2Amount = Math.max(0, safeAmount - threshold);
+      tier2RatePercent = 0.0;
+      tier2Tcs = 0;
       break;
+
     case "education_self":
     case "medical_treatment":
       categoryLabel = category === "education_self"
         ? LRS_TCS_CONSTANTS.categories.education_self.label
         : LRS_TCS_CONSTANTS.categories.medical_treatment.label;
-      tier1Rate = 0.0;
-      tier2Rate = 5.0;
+      tier1Amount = Math.min(safeAmount, threshold);
+      tier1RatePercent = 0.0;
+      tier1Tcs = 0;
+      tier2Amount = Math.max(0, safeAmount - threshold);
+      tier2RatePercent = panAvailable ? 2.0 : 5.0; // Finance Act 2026 rate is 2% above ₹10L; 5% if no PAN
+      tier2Tcs = (tier2Amount * tier2RatePercent) / 100;
       break;
+
     case "general_investment":
     default:
       categoryLabel = LRS_TCS_CONSTANTS.categories.general_investment.label;
-      tier1Rate = 0.0;
-      tier2Rate = 20.0;
+      tier1Amount = Math.min(safeAmount, threshold);
+      tier1RatePercent = 0.0;
+      tier1Tcs = 0;
+      tier2Amount = Math.max(0, safeAmount - threshold);
+      tier2RatePercent = panAvailable ? 20.0 : 20.0; // 20% above ₹10L
+      tier2Tcs = (tier2Amount * tier2RatePercent) / 100;
       break;
   }
 
-  if (!panAvailable) {
-    tier1Rate = Math.max(tier1Rate, 20.0);
-    tier2Rate = 20.0;
+  const totalTcsDeducted = round2(tier1Tcs + tier2Tcs);
+  const totalOutflowInr = round2(safeAmount + totalTcsDeducted);
+
+  const tcsCreditNote =
+    totalTcsDeducted > 0
+      ? `TCS of ₹${Math.round(totalTcsDeducted).toLocaleString("en-IN")} collected under Section 394 (formerly 206C(1G)) is fully adjustable against your advance tax / self-assessment tax or refundable upon filing your ITR (Form 26AS/AIS credit).`
+      : "No TCS is applicable on this remittance.";
+
+  let summary = "";
+  if (category === "overseas_tour_package") {
+    summary = `Total Remittance: ₹${Math.round(safeAmount).toLocaleString("en-IN")} | TCS (${tier1RatePercent}% flat): ₹${Math.round(totalTcsDeducted).toLocaleString("en-IN")} | Total Outflow: ₹${Math.round(totalOutflowInr).toLocaleString("en-IN")}`;
+  } else if (tier2Amount > 0) {
+    summary = `Total Remittance: ₹${Math.round(safeAmount).toLocaleString("en-IN")} | Exemption (₹10L): ₹0 TCS | Excess (₹${Math.round(tier2Amount).toLocaleString("en-IN")}) @ ${tier2RatePercent}% TCS: ₹${Math.round(totalTcsDeducted).toLocaleString("en-IN")} | Total Outflow: ₹${Math.round(totalOutflowInr).toLocaleString("en-IN")}`;
+  } else {
+    summary = `Total Remittance: ₹${Math.round(safeAmount).toLocaleString("en-IN")} is within the ₹10 Lakh statutory threshold. ₹0 TCS applicable.`;
   }
-
-  const tier1Amount = Math.min(safeAmount, threshold);
-  const tier2Amount = Math.max(0, safeAmount - threshold);
-
-  const tier1Tcs = (tier1Amount * tier1Rate) / 100;
-  const tier2Tcs = (tier2Amount * tier2Rate) / 100;
-  const totalTcs = tier1Tcs + tier2Tcs;
-  const totalOutflow = safeAmount + totalTcs;
 
   return {
     category,
     categoryLabel,
     remittanceAmountInr: Math.round(safeAmount),
-    exemptionThreshold: threshold,
+    exemptionThreshold: category === "overseas_tour_package" ? 0 : threshold,
     tier1Amount: Math.round(tier1Amount),
-    tier1RatePercent: tier1Rate,
+    tier1RatePercent,
     tier1Tcs: Math.round(tier1Tcs),
     tier2Amount: Math.round(tier2Amount),
-    tier2RatePercent: tier2Rate,
+    tier2RatePercent,
     tier2Tcs: Math.round(tier2Tcs),
-    totalTcsDeducted: Math.round(totalTcs),
-    totalOutflowInr: Math.round(totalOutflow),
-    isTcsCreditClaimable: true,
-    tcsCreditNote: "TCS is not a permanent tax. 100% of TCS collected is reflected in Form 26AS / AIS and can be adjusted against income tax payable or claimed as a full refund when filing your annual ITR.",
-    summary: `Total TCS Deducted: ₹${Math.round(totalTcs).toLocaleString("en-IN")} | Total Bank Outflow: ₹${Math.round(totalOutflow).toLocaleString("en-IN")} (100% claimable in ITR)`,
+    totalTcsDeducted: Math.round(totalTcsDeducted),
+    totalOutflowInr: Math.round(totalOutflowInr),
+    isTcsCreditClaimable: totalTcsDeducted > 0,
+    tcsCreditNote,
+    summary,
   };
 }
 
@@ -5096,11 +5400,16 @@ export function calcNRIDepositReturns(input: NRIDepositInput): NRIDepositOutput 
 
   const compPerYear = compoundingFrequency === "quarterly" ? 4 : 1;
 
+  const homeRateDec = Math.max(0, safePositive(input.homeCountryTaxRatePercent, 0)) / 100;
+
   // 1. NRE Deposit
   const nreRateDec = safePositive(nreInterestRatePercent, 7.1) / 100;
   const nreMaturity = safePrincipal * Math.pow(1 + nreRateDec / compPerYear, compPerYear * tenureYears);
   const nreInterest = nreMaturity - safePrincipal;
   const nreYield = tenureYears > 0 ? (nreInterest / safePrincipal / tenureYears) * 100 : 0;
+  const nreHomeCountryTax = nreInterest * homeRateDec;
+  const nreFinalNetInterest = nreInterest - nreHomeCountryTax;
+  const nreFinalYield = tenureYears > 0 ? (nreFinalNetInterest / safePrincipal / tenureYears) * 100 : 0;
 
   const nreResult: SingleNRIDepositResult = {
     depositName: "NRE Fixed Deposit (Non-Resident External)",
@@ -5109,13 +5418,16 @@ export function calcNRIDepositReturns(input: NRIDepositInput): NRIDepositOutput 
     preTaxInterestRate: round2(nreRateDec * 100),
     interestEarnedPreTax: Math.round(nreInterest),
     taxDeducted: 0,
-    effectivePostTaxInterest: Math.round(nreInterest),
+    afterTdsYieldPercent: round2(nreYield),
+    homeCountryTaxAmount: Math.round(nreHomeCountryTax),
+    finalPostTaxReturnPercent: round2(nreFinalYield),
+    effectivePostTaxInterest: Math.round(nreFinalNetInterest),
     maturityAmount: Math.round(nreMaturity),
-    maturityAmountInrEquivalent: Math.round(nreMaturity),
-    effectivePostTaxAnnualYield: round2(nreYield),
+    maturityAmountInrEquivalent: Math.round(nreMaturity - nreHomeCountryTax),
+    effectivePostTaxAnnualYield: round2(nreFinalYield),
     isFullyRepatriable: true,
     isTaxFreeInIndia: true,
-    notes: "100% Tax-Free in India under Section 10(4)(ii). Principal & interest are freely and fully repatriable abroad without limits.",
+    notes: `100% Tax-Free in India under Section 10(4)(ii). Principal & interest are freely repatriable.${homeRateDec > 0 ? ` (Subject to ${(homeRateDec * 100).toFixed(0)}% tax in your country of residence).` : ""}`,
   };
 
   // 2. NRO Deposit
@@ -5125,8 +5437,14 @@ export function calcNRIDepositReturns(input: NRIDepositInput): NRIDepositOutput 
   const safeTdsRate = Math.min(100, safePositive(nroTdsRatePercent, 31.2)) / 100;
   const nroTds = nroPreTaxInterest * safeTdsRate;
   const nroNetInterest = nroPreTaxInterest - nroTds;
-  const nroNetMaturity = safePrincipal + nroNetInterest;
-  const nroYield = tenureYears > 0 ? (nroNetInterest / safePrincipal / tenureYears) * 100 : 0;
+  const nroAfterTdsYield = tenureYears > 0 ? (nroNetInterest / safePrincipal / tenureYears) * 100 : 0;
+
+  // DTAA FTC in country of residence: home tax minus Indian TDS credit
+  const grossHomeTax = nroPreTaxInterest * homeRateDec;
+  const nroHomeCountryTax = Math.max(0, grossHomeTax - nroTds);
+  const nroFinalNetInterest = nroNetInterest - nroHomeCountryTax;
+  const nroFinalYield = tenureYears > 0 ? (nroFinalNetInterest / safePrincipal / tenureYears) * 100 : 0;
+  const nroNetMaturity = safePrincipal + nroFinalNetInterest;
 
   const nroResult: SingleNRIDepositResult = {
     depositName: "NRO Fixed Deposit (Non-Resident Ordinary)",
@@ -5135,13 +5453,16 @@ export function calcNRIDepositReturns(input: NRIDepositInput): NRIDepositOutput 
     preTaxInterestRate: round2(nroRateDec * 100),
     interestEarnedPreTax: Math.round(nroPreTaxInterest),
     taxDeducted: Math.round(nroTds),
-    effectivePostTaxInterest: Math.round(nroNetInterest),
+    afterTdsYieldPercent: round2(nroAfterTdsYield),
+    homeCountryTaxAmount: Math.round(nroHomeCountryTax),
+    finalPostTaxReturnPercent: round2(nroFinalYield),
+    effectivePostTaxInterest: Math.round(nroFinalNetInterest),
     maturityAmount: Math.round(nroNetMaturity),
     maturityAmountInrEquivalent: Math.round(nroNetMaturity),
-    effectivePostTaxAnnualYield: round2(nroYield),
+    effectivePostTaxAnnualYield: round2(nroFinalYield),
     isFullyRepatriable: false,
     isTaxFreeInIndia: false,
-    notes: `Taxable in India. TDS deducted at ${round2(safeTdsRate * 100)}% (or lower DTAA rate with TRC). Repatriation limited to USD 1 Million/financial year under Form 15CA/CB.`,
+    notes: `Taxable in India. Indian TDS deducted at ${round2(safeTdsRate * 100)}%. Repatriation capped at USD 1 Million/FY under Form 15CA/CB. DTAA credit available against foreign tax.`,
   };
 
   // 3. FCNR(B) Deposit (USD based)
@@ -5155,6 +5476,11 @@ export function calcNRIDepositReturns(input: NRIDepositInput): NRIDepositOutput 
   const fcnrNetInrGain = fcnrMaturityInrEquivalent - safePrincipal;
   const fcnrYieldInr = tenureYears > 0 ? (fcnrNetInrGain / safePrincipal / tenureYears) * 100 : 0;
 
+  const fcnrHomeTaxUsd = fcnrInterestUsd * homeRateDec;
+  const fcnrHomeTaxInr = fcnrHomeTaxUsd * safeMaturityUsd;
+  const fcnrFinalGainInr = fcnrNetInrGain - fcnrHomeTaxInr;
+  const fcnrFinalYield = tenureYears > 0 ? (fcnrFinalGainInr / safePrincipal / tenureYears) * 100 : 0;
+
   const fcnrResult: SingleNRIDepositResult = {
     depositName: "FCNR(B) Deposit (Foreign Currency Non-Resident)",
     currency: "USD",
@@ -5162,22 +5488,25 @@ export function calcNRIDepositReturns(input: NRIDepositInput): NRIDepositOutput 
     preTaxInterestRate: round2(fcnrRateDec * 100),
     interestEarnedPreTax: round2(fcnrInterestUsd),
     taxDeducted: 0,
-    effectivePostTaxInterest: round2(fcnrInterestUsd),
+    afterTdsYieldPercent: round2(fcnrYieldInr),
+    homeCountryTaxAmount: Math.round(fcnrHomeTaxInr),
+    finalPostTaxReturnPercent: round2(fcnrFinalYield),
+    effectivePostTaxInterest: round2(fcnrInterestUsd - fcnrHomeTaxUsd),
     maturityAmount: round2(fcnrMaturityUsd),
-    maturityAmountInrEquivalent: Math.round(fcnrMaturityInrEquivalent),
-    effectivePostTaxAnnualYield: round2(fcnrYieldInr),
+    maturityAmountInrEquivalent: Math.round(fcnrMaturityInrEquivalent - fcnrHomeTaxInr),
+    effectivePostTaxAnnualYield: round2(fcnrFinalYield),
     isFullyRepatriable: true,
     isTaxFreeInIndia: true,
     notes: `100% Tax-Free in India. Held directly in foreign currency (USD/GBP/EUR) — eliminates INR currency depreciation risk (USD Principal: $${round2(fcnrPrincipalUsd).toLocaleString("en-US")} matures to $${round2(fcnrMaturityUsd).toLocaleString("en-US")}).`,
   };
 
   let bestOption = "NRE Deposit";
-  if (nreYield >= nroYield && nreMaturity >= fcnrMaturityInrEquivalent) {
-    bestOption = `NRE Fixed Deposit offers the highest post-tax return (${round2(nreYield)}% net yield) with zero tax and 100% foreign repatriability.`;
+  if (nreFinalYield >= nroFinalYield && nreMaturity >= fcnrMaturityInrEquivalent) {
+    bestOption = `NRE Fixed Deposit offers the highest post-tax return (${round2(nreFinalYield)}% net yield) with zero tax in India and 100% foreign repatriability.`;
   } else if (fcnrMaturityInrEquivalent > nreMaturity) {
-    bestOption = `FCNR(B) Deposit in USD provides higher INR return (${round2(fcnrYieldInr)}% net yield) assuming USD/INR moves from ₹${safeStartUsd} to ₹${safeMaturityUsd}.`;
+    bestOption = `FCNR(B) Deposit in USD provides higher INR return (${round2(fcnrFinalYield)}% net yield) assuming USD/INR moves from ₹${safeStartUsd} to ₹${safeMaturityUsd}.`;
   } else {
-    bestOption = `NRO Fixed Deposit yields ${round2(nroYield)}% post-tax vs NRE (${round2(nreYield)}%). Check if DTAA TRC allows lower TDS.`;
+    bestOption = `NRO Fixed Deposit yields ${round2(nroFinalYield)}% post-tax vs NRE (${round2(nreFinalYield)}%). Check if DTAA TRC allows lower TDS.`;
   }
 
   return {
@@ -5188,7 +5517,7 @@ export function calcNRIDepositReturns(input: NRIDepositInput): NRIDepositOutput 
     fcnrResult,
     bestOption,
     sideBySideComparison: [nreResult, nroResult, fcnrResult],
-    summary: `NRE Net Maturity: ₹${Math.round(nreMaturity).toLocaleString("en-IN")} (${round2(nreYield)}% Tax-Free) vs FCNR(B) INR-Eq: ₹${Math.round(fcnrMaturityInrEquivalent).toLocaleString("en-IN")}`,
+    summary: `NRE Net Maturity: ₹${Math.round(nreMaturity).toLocaleString("en-IN")} (${round2(nreFinalYield)}% Net Yield) vs FCNR(B) INR-Eq: ₹${Math.round(fcnrMaturityInrEquivalent).toLocaleString("en-IN")}`,
   };
 }
 
@@ -5208,16 +5537,18 @@ export function calcNPS(input: NPSInput): NPSOutput {
     expectedEquityReturnPercent = 12.0,
     expectedCorpDebtReturnPercent = 9.0,
     expectedGovtBondReturnPercent = 7.5,
-    lumpSumWithdrawalPercent = 60,
-    annuityReinvestmentPercent = 40,
     assumedAnnuityYieldPercent = 6.5,
     taxBracketPercent = 30,
     regime = "new",
+    employerMonthlyContribution = 0,
+    isPrematureExit = false,
   } = input;
 
   const safeAge = Math.max(18, safePositive(currentAge, 28));
   const safeRetirement = Math.max(safeAge + 1, safePositive(retirementAge, 60));
   const safeContribution = safePositive(monthlyContribution, 10000);
+  const safeEmployerContribution = Math.max(0, employerMonthlyContribution || 0);
+  const totalMonthlyInflow = safeContribution + safeEmployerContribution;
 
   const totalAlloc = equityAllocationPercent + corporateDebtAllocationPercent + govtBondsAllocationPercent;
   if (Math.abs(totalAlloc - 100) > 0.5) {
@@ -5230,13 +5561,18 @@ export function calcNPS(input: NPSInput): NPSOutput {
       blendedExpectedReturnPercent: 0,
       totalAccumulatedCorpus: 0,
       lumpSumWithdrawalPercent: 60,
+      permittedLumpSumAmount: 0,
       lumpSumTaxFreeAmount: 0,
+      taxableLumpSumAmount: 0,
       annuityReinvestmentPercent: 40,
       annuityPurchasedAmount: 0,
       assumedAnnuityYieldPercent: 6.5,
       estimatedMonthlyPension: 0,
       annualTaxSavedUnder80CCD: 0,
+      annualTaxSavedUnder80CCD1B: 0,
+      annualTaxSavedUnder80CCD2: 0,
       lifetimeTaxSaved: 0,
+      taxTreatmentNote: "",
       yearlyProgression: [],
       isValid: false,
       errorMessage: `Asset allocations must sum to exactly 100% (currently ${totalAlloc}%: Equity ${equityAllocationPercent}% + Corporate Debt ${corporateDebtAllocationPercent}% + Govt Bonds ${govtBondsAllocationPercent}%).`,
@@ -5252,39 +5588,65 @@ export function calcNPS(input: NPSInput): NPSOutput {
 
   const totalYears = safeRetirement - safeAge;
   const totalMonths = totalYears * 12;
-  const totalInvested = safeContribution * totalMonths;
+  const totalInvested = totalMonthlyInflow * totalMonths;
 
   const monthlyRate = blendedReturn / 12 / 100;
   const totalCorpus = monthlyRate > 0
-    ? safeContribution * ((Math.pow(1 + monthlyRate, totalMonths) - 1) / monthlyRate) * (1 + monthlyRate)
+    ? totalMonthlyInflow * ((Math.pow(1 + monthlyRate, totalMonths) - 1) / monthlyRate) * (1 + monthlyRate)
     : totalInvested;
 
-  // Small corpus exception (PFRDA Rule: total corpus <= ₹5 Lakh allows 100% lump sum exit)
-  const isSmallCorpus = totalCorpus <= NPS_CONSTANTS.smallCorpusFullWithdrawalLimit;
+  // Small corpus exception (PFRDA 2026 Rules: Normal retirement <= ₹8 Lakhs allows 100% lump sum; Premature exit <= ₹5 Lakhs allows 100% lump sum)
+  const smallCorpusLimit = isPrematureExit
+    ? NPS_CONSTANTS.smallCorpusPrematureExitLimit
+    : NPS_CONSTANTS.smallCorpusFullWithdrawalLimit;
+  const isSmallCorpus = totalCorpus <= smallCorpusLimit;
 
-  const safeLumpSumPct = isSmallCorpus ? 100 : Math.min(60, safePositive(lumpSumWithdrawalPercent, 60));
-  const safeAnnuityPct = isSmallCorpus ? 0 : Math.max(40, safePositive(annuityReinvestmentPercent, 40));
+  // Regulatory limits:
+  // Superannuation (All Citizen): Max 80% lump sum, Min 20% annuity. Default 60% lump sum, 40% annuity.
+  // Premature exit: Max 20% lump sum, Min 80% annuity.
+  const maxPermittedLumpSumPct = isSmallCorpus ? 100 : (isPrematureExit ? 20 : NPS_CONSTANTS.superannuationMaxLumpSumPercent);
+  const minPermittedAnnuityPct = isSmallCorpus ? 0 : (isPrematureExit ? 80 : NPS_CONSTANTS.superannuationMinAnnuityPercent);
 
-  const lumpSumAmount = (totalCorpus * safeLumpSumPct) / 100;
+  const defaultLumpSumPct = isSmallCorpus ? 100 : 60;
+  const userLumpSum = input.lumpSumWithdrawalPercent ?? defaultLumpSumPct;
+  const safeLumpSumPct = Math.min(maxPermittedLumpSumPct, Math.max(0, safePositive(userLumpSum, defaultLumpSumPct)));
+  const safeAnnuityPct = isSmallCorpus ? Math.max(0, 100 - safeLumpSumPct) : Math.max(minPermittedAnnuityPct, 100 - safeLumpSumPct);
+
+  const permittedLumpSumAmount = (totalCorpus * safeLumpSumPct) / 100;
   const annuityAmount = (totalCorpus * safeAnnuityPct) / 100;
+
+  // Tax treatment u/s 10(12A):
+  // Up to 60% of total corpus is strictly TAX-FREE.
+  // Any lump sum chosen above 60% (e.g. up to 80% under PFRDA All Citizen rules) is TAXABLE at slab rates.
+  const taxFreeLumpSumAmount = isSmallCorpus
+    ? permittedLumpSumAmount
+    : Math.min(permittedLumpSumAmount, (totalCorpus * NPS_CONSTANTS.taxFreeLumpSumPercent) / 100);
+  const taxableLumpSumAmount = Math.max(0, permittedLumpSumAmount - taxFreeLumpSumAmount);
 
   const safeAnnuityRate = safePositive(assumedAnnuityYieldPercent, 6.5) / 100;
   const estimatedMonthlyPension = (annuityAmount * safeAnnuityRate) / 12;
 
-  // Section 80CCD(1B) exclusive ₹50,000 deduction is ONLY available in Old Tax Regime
+  // Tax deductions:
+  // 1. Section 80CCD(1B): ₹50,000 self contribution deduction available ONLY under Old Regime.
+  // 2. Section 80CCD(2): Employer contribution deduction (available in BOTH regimes).
   const safeTaxBracket = safePositive(taxBracketPercent, 30) / 100;
-  const annualContribution = safeContribution * 12;
-  const annual80CcdSaved = regime === "old"
-    ? Math.min(annualContribution, NPS_CONSTANTS.sec80CCD1BMaxDeduction) * safeTaxBracket
+  const annualSelfContribution = safeContribution * 12;
+  const annualEmployerContribution = safeEmployerContribution * 12;
+
+  const annual80Ccd1bSaved = regime === "old"
+    ? Math.min(annualSelfContribution, NPS_CONSTANTS.sec80CCD1BMaxDeduction) * safeTaxBracket
     : 0;
-  const lifetimeTaxSaved = annual80CcdSaved * totalYears;
+
+  const annual80Ccd2Saved = annualEmployerContribution * safeTaxBracket;
+  const totalAnnualTaxSaved = annual80Ccd1bSaved + annual80Ccd2Saved;
+  const lifetimeTaxSaved = totalAnnualTaxSaved * totalYears;
 
   const yearlyProgression: NPSYearRow[] = [];
   for (let y = 1; y <= totalYears; y++) {
     const m = y * 12;
-    const inv = safeContribution * m;
+    const inv = totalMonthlyInflow * m;
     const corp = monthlyRate > 0
-      ? safeContribution * ((Math.pow(1 + monthlyRate, m) - 1) / monthlyRate) * (1 + monthlyRate)
+      ? totalMonthlyInflow * ((Math.pow(1 + monthlyRate, m) - 1) / monthlyRate) * (1 + monthlyRate)
       : inv;
 
     yearlyProgression.push({
@@ -5297,9 +5659,11 @@ export function calcNPS(input: NPSInput): NPSOutput {
     });
   }
 
-  const taxSavedSummary = regime === "new"
-    ? "₹0 (Section 80CCD(1B) personal contribution deduction is not available under New Tax Regime)"
-    : `₹${Math.round(annual80CcdSaved).toLocaleString("en-IN")}/yr (under Section 80CCD(1B) Old Regime)`;
+  const taxTreatmentNote = isSmallCorpus
+    ? `Small corpus (≤ ₹${(smallCorpusLimit / 100000).toFixed(0)} Lakh): 100% lump sum exit permitted under PFRDA guidelines.`
+    : taxableLumpSumAmount > 0
+      ? `Statutory Note: PFRDA permits up to ${safeLumpSumPct}% lump sum withdrawal. Section 10(12A) exempts up to 60% of total corpus (₹${Math.round(taxFreeLumpSumAmount).toLocaleString("en-IN")}). The remaining ₹${Math.round(taxableLumpSumAmount).toLocaleString("en-IN")} is added to your taxable income at retirement.`
+      : `Statutory Note: ${safeLumpSumPct}% lump sum (₹${Math.round(taxFreeLumpSumAmount).toLocaleString("en-IN")}) is 100% tax-free u/s 10(12A). Annuity income (₹${Math.round(estimatedMonthlyPension).toLocaleString("en-IN")}/mo) is taxable as salary/other income in the year of receipt.`;
 
   return {
     currentAge: safeAge,
@@ -5310,16 +5674,21 @@ export function calcNPS(input: NPSInput): NPSOutput {
     blendedExpectedReturnPercent: round2(blendedReturn),
     totalAccumulatedCorpus: Math.round(totalCorpus),
     lumpSumWithdrawalPercent: safeLumpSumPct,
-    lumpSumTaxFreeAmount: Math.round(lumpSumAmount),
+    permittedLumpSumAmount: Math.round(permittedLumpSumAmount),
+    lumpSumTaxFreeAmount: Math.round(taxFreeLumpSumAmount),
+    taxableLumpSumAmount: Math.round(taxableLumpSumAmount),
     annuityReinvestmentPercent: safeAnnuityPct,
     annuityPurchasedAmount: Math.round(annuityAmount),
     assumedAnnuityYieldPercent: round2(safeAnnuityRate * 100),
     estimatedMonthlyPension: Math.round(estimatedMonthlyPension),
-    annualTaxSavedUnder80CCD: Math.round(annual80CcdSaved),
+    annualTaxSavedUnder80CCD: Math.round(totalAnnualTaxSaved),
+    annualTaxSavedUnder80CCD1B: Math.round(annual80Ccd1bSaved),
+    annualTaxSavedUnder80CCD2: Math.round(annual80Ccd2Saved),
     lifetimeTaxSaved: Math.round(lifetimeTaxSaved),
+    taxTreatmentNote,
     yearlyProgression,
     isValid: true,
-    summary: `NPS Retirement Corpus: ₹${Math.round(totalCorpus).toLocaleString("en-IN")} at Age ${safeRetirement} | 60% Tax-Free Lump Sum: ₹${Math.round(lumpSumAmount).toLocaleString("en-IN")} | Monthly Pension: ₹${Math.round(estimatedMonthlyPension).toLocaleString("en-IN")}/mo | Tax Saved: ${taxSavedSummary}`,
+    summary: `NPS Corpus: ₹${Math.round(totalCorpus).toLocaleString("en-IN")} at Age ${safeRetirement} | Tax-Free Lump Sum: ₹${Math.round(taxFreeLumpSumAmount).toLocaleString("en-IN")} | Monthly Pension: ₹${Math.round(estimatedMonthlyPension).toLocaleString("en-IN")}/mo`,
   };
 }
 
