@@ -1,0 +1,70 @@
+[
+  {
+    "description": "₹12,00,000 Salary under New Regime (Std Ded ₹75k -> Taxable ₹11.25L -> Slab Tax ₹52.5k -> Section 156 Rebate ₹52.5k -> Final Tax ₹0)",
+    "inputs": {
+      "salaryIncome": 1200000,
+      "residency": "resident_individual",
+      "regime": "new"
+    },
+    "expected": {
+      "standardDeduction": 75000,
+      "taxableIncome": 1125000,
+      "grossSlabTax": 52500,
+      "rebateAmount": 52500,
+      "netTaxBeforeCess": 0,
+      "cess": 0,
+      "totalTax": 0
+    }
+  },
+  {
+    "description": "₹12,75,000 Salary under New Regime (Std Ded ₹75k -> Taxable ₹12.00L -> Slab Tax ₹60k -> Section 156 Rebate ₹60k -> Final Tax ₹0)",
+    "inputs": {
+      "salaryIncome": 1275000,
+      "residency": "resident_individual",
+      "regime": "new"
+    },
+    "expected": {
+      "standardDeduction": 75000,
+      "taxableIncome": 1200000,
+      "grossSlabTax": 60000,
+      "rebateAmount": 60000,
+      "netTaxBeforeCess": 0,
+      "cess": 0,
+      "totalTax": 0
+    }
+  },
+  {
+    "description": "₹12,75,100 Salary under New Regime (Std Ded ₹75k -> Taxable ₹12,00,100 -> Excess ₹100 -> Section 156(2)(b) Marginal Relief -> Net Tax ₹100 -> Cess ₹4 -> Total Tax ₹104)",
+    "inputs": {
+      "salaryIncome": 1275100,
+      "residency": "resident_individual",
+      "regime": "new"
+    },
+    "expected": {
+      "standardDeduction": 75000,
+      "taxableIncome": 1200100,
+      "grossSlabTax": 60015,
+      "rebateAmount": 59915,
+      "netTaxBeforeCess": 100,
+      "cess": 4,
+      "totalTax": 104
+    }
+  },
+  {
+    "description": "₹15,75,000 Salary under New Regime (Std Ded ₹75k -> Taxable ₹15.00L -> Slab Tax ₹1,05,000 -> Cess ₹4,200 -> Total Tax ₹1,09,200)",
+    "inputs": {
+      "salaryIncome": 1575000,
+      "residency": "resident_individual",
+      "regime": "new"
+    },
+    "expected": {
+      "standardDeduction": 75000,
+      "taxableIncome": 1500000,
+      "grossSlabTax": 105000,
+      "rebateAmount": 0,
+      "netTaxBeforeCess": 105000,
+      "cess": 4200,
+      "totalTax": 109200
+    }
+  }
+]

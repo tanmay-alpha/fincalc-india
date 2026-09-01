@@ -24,9 +24,9 @@ const RiskChart = dynamic(
 export default function PortfolioRiskCalculator() {
   const [mounted, setMounted] = useState(false);
   const [returnsInput, setReturnsInput] = useState("12, -4, 18, 8, -2, 22, 14, -6, 16, 10, 5, -1");
+  const [benchmarkReturnsInput, setBenchmarkReturnsInput] = useState("10, -2, 14, 6, -1, 18, 11, -4, 13, 8, 4, 0");
   const [periodFrequency, setPeriodFrequency] = useState<"monthly" | "annual">("monthly");
   const [riskFreeRate, setRiskFreeRate] = useState(6.5);
-  const benchmarkReturn = 12.0;
   const [shareId, setShareId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -40,14 +40,26 @@ export default function PortfolioRiskCalculator() {
       .filter((n) => !isNaN(n));
   }, [returnsInput]);
 
+  const parsedBenchmarkReturns = useMemo(() => {
+    if (!benchmarkReturnsInput.trim()) return undefined;
+    const arr = benchmarkReturnsInput
+      .split(",")
+      .map((s) => parseFloat(s.trim()))
+      .filter((n) => !isNaN(n));
+    return arr.length > 0 ? arr : undefined;
+  }, [benchmarkReturnsInput]);
+
+  const isSeriesLengthMatched =
+    !parsedBenchmarkReturns || parsedBenchmarkReturns.length === parsedReturns.length;
+
   const inputs: RiskRatiosInput = useMemo(
     () => ({
       returns: parsedReturns,
+      benchmarkReturns: isSeriesLengthMatched ? parsedBenchmarkReturns : undefined,
       periodFrequency,
       riskFreeRate,
-      benchmarkReturn,
     }),
-    [parsedReturns, periodFrequency, riskFreeRate, benchmarkReturn]
+    [parsedReturns, parsedBenchmarkReturns, isSeriesLengthMatched, periodFrequency, riskFreeRate]
   );
 
   const debouncedInputs = useDebounce(inputs, 150);
@@ -63,28 +75,56 @@ export default function PortfolioRiskCalculator() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Return Series Inputs */}
         <div className="lg:col-span-6 space-y-5 bg-card/60 backdrop-blur border border-border/60 rounded-2xl p-5 md:p-6 shadow-sm">
-          <div className="flex items-center gap-2 pb-2 border-b border-border/40">
-            <ShieldCheck className="w-5 h-5 text-primary" />
-            <h2 className="font-semibold text-foreground text-base">
-              Portfolio Return Stream & Benchmarks
-            </h2>
+          <div className="flex items-center justify-between pb-2 border-b border-border/40">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-primary" />
+              <h2 className="font-semibold text-foreground text-base">
+                Portfolio & Benchmark Return Streams
+              </h2>
+            </div>
+            <span className="text-[11px] font-medium bg-primary/10 text-primary border border-primary/20 rounded-full px-2.5 py-0.5">
+              Modern Portfolio Theory
+            </span>
           </div>
 
           <div className="space-y-4">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-foreground">
-                Historical Periodic Returns (% comma-separated)
+                Portfolio Periodic Returns (% comma-separated)
               </label>
               <textarea
                 value={returnsInput}
                 onChange={(e) => setReturnsInput(e.target.value)}
-                rows={3}
+                rows={2}
                 className="w-full bg-card border border-border/60 rounded-xl p-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono leading-relaxed"
                 placeholder="e.g. 12, -4, 18, 8, -2, 22"
               />
               <span className="text-[11px] text-muted-foreground block">
                 Parsed {parsedReturns.length} observation periods
               </span>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">
+                Benchmark Returns (Optional, % comma-separated for Beta & Treynor)
+              </label>
+              <textarea
+                value={benchmarkReturnsInput}
+                onChange={(e) => setBenchmarkReturnsInput(e.target.value)}
+                rows={2}
+                className="w-full bg-card border border-border/60 rounded-xl p-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono leading-relaxed"
+                placeholder="e.g. 10, -2, 14, 6, -1, 18 (e.g. Nifty 50 TRI)"
+              />
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-muted-foreground">
+                  Parsed {parsedBenchmarkReturns ? parsedBenchmarkReturns.length : 0} benchmark periods
+                </span>
+                {!isSeriesLengthMatched && parsedBenchmarkReturns && (
+                  <span className="text-rose-400 font-medium">
+                    ⚠️ Mismatched: Needs {parsedReturns.length} points
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -104,7 +144,7 @@ export default function PortfolioRiskCalculator() {
 
               <HybridInput
                 label="Risk-Free Rate (Rf % p.a.)"
-                hint="Baseline risk-free yield (10-Yr G-Sec ~6.5% - 7.0%)"
+                hint="Benchmark 10-Yr Indian G-Sec yield (~6.5%)"
                 value={riskFreeRate}
                 onChange={setRiskFreeRate}
                 min={0}
@@ -123,8 +163,8 @@ export default function PortfolioRiskCalculator() {
             value={result.sharpeRatio}
             formatValue={(val) => val.toFixed(2)}
             breakdown={[
-              { label: "Annualized Return", value: Math.max(0, result.meanReturnAnnualized), color: "green" },
-              { label: "Annual Volatility", value: result.totalVolatilityAnnualized, color: "red" },
+              { label: "Annualized Return", value: result.meanReturnAnnualized, color: result.meanReturnAnnualized >= 0 ? "green" : "red" },
+              { label: "Annual Volatility (σ)", value: result.totalVolatilityAnnualized, color: "red" },
             ]}
           />
 
@@ -132,7 +172,19 @@ export default function PortfolioRiskCalculator() {
             <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
               <p className="text-[11px] text-muted-foreground">Sortino Ratio</p>
               <p className="text-base font-bold text-emerald-400 mt-0.5">
-                {result.sortinoRatio !== undefined ? result.sortinoRatio.toFixed(2) : (result.isSortinoInfinite ? "∞ (Zero downside)" : "N/A")}
+                {result.isSortinoInfinite ? "∞ (Zero downside)" : (result.sortinoRatio !== undefined ? result.sortinoRatio.toFixed(2) : "N/A")}
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
+              <p className="text-[11px] text-muted-foreground">Portfolio Beta (β)</p>
+              <p className="text-base font-bold text-foreground mt-0.5">
+                {result.portfolioBeta !== undefined ? result.portfolioBeta.toFixed(2) : "—"}
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
+              <p className="text-[11px] text-muted-foreground">Treynor Ratio</p>
+              <p className="text-base font-bold text-primary mt-0.5">
+                {result.treynorRatio !== undefined ? result.treynorRatio.toFixed(2) : "—"}
               </p>
             </div>
             <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
@@ -142,8 +194,14 @@ export default function PortfolioRiskCalculator() {
               </p>
             </div>
             <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
+              <p className="text-[11px] text-muted-foreground">Downside Dev (σd)</p>
+              <p className="text-base font-bold text-foreground mt-0.5">
+                {result.downsideDeviationAnnualized.toFixed(2)}%
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
               <p className="text-[11px] text-muted-foreground">Positive Periods</p>
-              <p className="text-base font-bold text-primary mt-0.5">
+              <p className="text-base font-bold text-emerald-400 mt-0.5">
                 {result.positivePeriodsPercent}%
               </p>
             </div>

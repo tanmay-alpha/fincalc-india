@@ -1,0 +1,58 @@
+[
+  {
+    "description": "Overseas Tour Package: ₹5,00,000 under Finance Act 2026 (Flat 2% on entire ₹5L -> TCS ₹10,000)",
+    "inputs": {
+      "category": "overseas_tour_package",
+      "remittanceAmountInr": 500000,
+      "panAvailable": true
+    },
+    "expected": {
+      "tier1Tcs": 10000,
+      "tier2Tcs": 0,
+      "totalTcsDeducted": 10000,
+      "totalOutflowInr": 510000
+    }
+  },
+  {
+    "description": "Education via Loan: ₹20,00,000 under Finance Act 2026 (0% rate -> TCS ₹0)",
+    "inputs": {
+      "category": "education_loan",
+      "remittanceAmountInr": 2000000,
+      "panAvailable": true
+    },
+    "expected": {
+      "tier1Tcs": 0,
+      "tier2Tcs": 0,
+      "totalTcsDeducted": 0,
+      "totalOutflowInr": 2000000
+    }
+  },
+  {
+    "description": "Medical Treatment / Education (Self): ₹15,00,000 (0% up to ₹10L, 2% on excess ₹5L -> TCS ₹10,000)",
+    "inputs": {
+      "category": "medical_treatment",
+      "remittanceAmountInr": 1500000,
+      "panAvailable": true
+    },
+    "expected": {
+      "tier1Tcs": 0,
+      "tier2Tcs": 10000,
+      "totalTcsDeducted": 10000,
+      "totalOutflowInr": 1510000
+    }
+  },
+  {
+    "description": "General Overseas Investment: ₹15,00,000 (0% up to ₹10L, 20% on excess ₹5L -> TCS ₹1,00,000)",
+    "inputs": {
+      "category": "general_investment",
+      "remittanceAmountInr": 1500000,
+      "panAvailable": true
+    },
+    "expected": {
+      "tier1Tcs": 0,
+      "tier2Tcs": 100000,
+      "totalTcsDeducted": 100000,
+      "totalOutflowInr": 1600000
+    }
+  }
+]
