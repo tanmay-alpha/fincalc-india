@@ -2465,6 +2465,62 @@ export function calcFIRE(input: FireInput): FireOutput {
   };
 }
 
+export interface SwpInput {
+  startingCorpus: number;
+  annualReturn: number;
+  monthlyWithdrawal: number;
+  years: number;
+}
+
+export interface SwpMonthRow {
+  month: number;
+  openingBalance: number;
+  withdrawal: number;
+  returnEarned: number;
+  endingBalance: number;
+}
+
+export interface SwpOutput {
+  monthlyRows: SwpMonthRow[];
+  endingCorpus: number;
+  totalWithdrawn: number;
+  totalReturnEarned: number;
+  depletionMonth: number | null;
+  isPerpetual: boolean;
+}
+
+export function calcSWP(input: SwpInput): SwpOutput {
+  const months = Math.max(0, Math.round(Math.max(0, input.years) * 12));
+  const monthlyRate = Math.max(0, input.annualReturn || 0) / 1200;
+  const requestedWithdrawal = Math.max(0, input.monthlyWithdrawal || 0);
+  let balance = Math.max(0, input.startingCorpus || 0);
+  let totalWithdrawn = 0;
+  let totalReturnEarned = 0;
+  let depletionMonth: number | null = null;
+  const monthlyRows: SwpMonthRow[] = [];
+
+  for (let month = 1; month <= months; month++) {
+    const openingBalance = balance;
+    const withdrawal = Math.min(requestedWithdrawal, openingBalance);
+    const afterWithdrawal = openingBalance - withdrawal;
+    const returnEarned = afterWithdrawal * monthlyRate;
+    balance = afterWithdrawal + returnEarned;
+    totalWithdrawn += withdrawal;
+    totalReturnEarned += returnEarned;
+    monthlyRows.push({ month, openingBalance: round2(openingBalance), withdrawal: round2(withdrawal), returnEarned: round2(returnEarned), endingBalance: round2(balance) });
+    if (requestedWithdrawal > 0 && afterWithdrawal === 0) { depletionMonth = month; balance = 0; monthlyRows[monthlyRows.length - 1].endingBalance = 0; break; }
+  }
+
+  return {
+    monthlyRows,
+    endingCorpus: round2(balance),
+    totalWithdrawn: round2(totalWithdrawn),
+    totalReturnEarned: round2(totalReturnEarned),
+    depletionMonth,
+    isPerpetual: depletionMonth === null && requestedWithdrawal > 0 && balance > Math.max(0, input.startingCorpus || 0),
+  };
+}
+
 // ─── PART B — FEATURE 1: CAPITAL GAINS TAX CALCULATOR ─────────
 
 export type AssetClass = "equity" | "debt_mf" | "real_estate" | "gold_sgb";
@@ -5713,8 +5769,6 @@ export function calcNPS(input: NPSInput): NPSOutput {
     summary: `NPS Corpus: ₹${Math.round(totalCorpus).toLocaleString("en-IN")} at Age ${safeRetirement} | Tax-Free Lump Sum: ₹${Math.round(taxFreeLumpSumAmount).toLocaleString("en-IN")} | Monthly Pension: ₹${Math.round(estimatedMonthlyPension).toLocaleString("en-IN")}/mo`,
   };
 }
-
-
 
 
 

@@ -17,6 +17,7 @@ import {
   calcPrepaymentVsInvest,
   calcNoCostEMITruth,
   calcFIRE,
+  calcSWP,
   calcCapitalGains,
   calcFnOBreakeven,
   calcOptionPayoff,
@@ -3619,6 +3620,25 @@ describe('calcFIRE Coast mode', () => {
   })
 })
 
+describe('calcSWP', () => {
+  it('identifies the precise month when withdrawals deplete the corpus', () => {
+    const result = calcSWP({ startingCorpus: 100000, annualReturn: 0, monthlyWithdrawal: 10000, years: 2 })
+    expect(result.depletionMonth).toBe(10)
+    expect(result.monthlyRows.at(-1)?.endingBalance).toBe(0)
+  })
+
+  it('recognises a corpus that grows while withdrawals continue', () => {
+    const result = calcSWP({ startingCorpus: 1000000, annualReturn: 12, monthlyWithdrawal: 1000, years: 10 })
+    expect(result.isPerpetual).toBe(true)
+    expect(result.endingCorpus).toBeGreaterThan(1000000)
+  })
+
+  it('reduces zero withdrawal to pure compounding', () => {
+    const result = calcSWP({ startingCorpus: 100000, annualReturn: 12, monthlyWithdrawal: 0, years: 1 })
+    expect(result.totalWithdrawn).toBe(0)
+    expect(result.endingCorpus).toBeCloseTo(112682.5, 0)
+  })
+})
 
 
 
