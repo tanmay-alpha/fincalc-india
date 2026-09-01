@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   AlertCircle,
+  Gem,
 } from "lucide-react";
 
 const Section54Chart = dynamic(
@@ -31,6 +32,8 @@ const Section54Chart = dynamic(
 export default function Section54Calculator() {
   const [mounted, setMounted] = useState(false);
   const [capitalGainsAmount, setCapitalGainsAmount] = useState(6000000); // 60 Lakhs
+  const [netSaleConsideration, setNetSaleConsideration] = useState(10000000); // 1 Cr
+  const [existingHousesCount, setExistingHousesCount] = useState(0); // For 54F
   const [sectionType, setSectionType] = useState<Section54Type>("compare_both");
   const [propertyInvestmentAmount, setPropertyInvestmentAmount] = useState(6000000);
   const [propertyMode, setPropertyMode] = useState<Section54PropertyMode>("purchase");
@@ -46,6 +49,8 @@ export default function Section54Calculator() {
   const inputs: Section54ExemptionInput = useMemo(
     () => ({
       capitalGainsAmount,
+      netSaleConsideration,
+      existingResidentialHousesCount: existingHousesCount,
       sectionType,
       propertyInvestmentAmount,
       propertyMode,
@@ -56,6 +61,8 @@ export default function Section54Calculator() {
     }),
     [
       capitalGainsAmount,
+      netSaleConsideration,
+      existingHousesCount,
       sectionType,
       propertyInvestmentAmount,
       propertyMode,
@@ -83,14 +90,14 @@ export default function Section54Calculator() {
           {/* Capital Gains Input */}
           <div className="surface-card p-5 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-foreground">Real Estate Capital Gain</h3>
+              <h3 className="text-sm font-bold text-foreground">Capital Asset Sale & Gain Details</h3>
               <span className="text-xs text-muted-foreground font-medium">
                 Tax @ {result.effectiveTaxRateBeforeExemption}%: {formatINR(result.taxBeforeExemption)}
               </span>
             </div>
 
             <HybridInput
-              label="Real Estate Long-Term Capital Gain (LTCG)"
+              label="Long-Term Capital Gain (LTCG Amount)"
               value={capitalGainsAmount}
               onChange={setCapitalGainsAmount}
               min={0}
@@ -98,6 +105,19 @@ export default function Section54Calculator() {
               step={100000}
               prefix="₹"
             />
+
+            {sectionType === "section_54f_property" && (
+              <HybridInput
+                label="Net Sale Consideration (Sale Price - Transfer Expenses)"
+                hint="Required for Section 54F proportionate exemption calculation"
+                value={netSaleConsideration}
+                onChange={setNetSaleConsideration}
+                min={capitalGainsAmount}
+                max={500000000}
+                step={500000}
+                prefix="₹"
+              />
+            )}
 
             {/* Presets */}
             <div className="flex flex-wrap gap-2 pt-1">
@@ -108,6 +128,7 @@ export default function Section54Calculator() {
                   onClick={() => {
                     setCapitalGainsAmount(amt);
                     setPropertyInvestmentAmount(amt);
+                    setNetSaleConsideration(Math.round(amt * 1.6));
                   }}
                   className="px-2.5 py-1 text-xs rounded-lg border border-border bg-muted/50 hover:bg-accent text-muted-foreground hover:text-foreground font-medium transition-colors"
                 >
@@ -120,9 +141,9 @@ export default function Section54Calculator() {
           {/* Exemption Section Selector */}
           <div className="surface-card p-5 space-y-3">
             <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Select Exemption Route
+              Select Statutory Exemption Route
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <button
                 type="button"
                 onClick={() => setSectionType("section_54_property")}
@@ -135,7 +156,7 @@ export default function Section54Calculator() {
               >
                 <Building className="w-5 h-5 mx-auto mb-1 text-blue-500" />
                 <div className="text-xs font-bold">Section 54</div>
-                <div className="text-[10px] text-muted-foreground">Residential House</div>
+                <div className="text-[10px] text-muted-foreground">House → House</div>
               </button>
 
               <button
@@ -155,6 +176,21 @@ export default function Section54Calculator() {
 
               <button
                 type="button"
+                onClick={() => setSectionType("section_54f_property")}
+                className={clsx(
+                  "p-3 rounded-xl border text-center transition-all",
+                  sectionType === "section_54f_property"
+                    ? "border-primary bg-primary/10 text-primary font-semibold shadow-sm"
+                    : "border-border text-muted-foreground hover:border-primary/40 hover:bg-accent/40"
+                )}
+              >
+                <Gem className="w-5 h-5 mx-auto mb-1 text-amber-500" />
+                <div className="text-xs font-bold">Section 54F</div>
+                <div className="text-[10px] text-muted-foreground">Plot/Gold → House</div>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setSectionType("compare_both")}
                 className={clsx(
                   "p-3 rounded-xl border text-center transition-all",
@@ -164,20 +200,22 @@ export default function Section54Calculator() {
                 )}
               >
                 <Scale className="w-5 h-5 mx-auto mb-1 text-purple-500" />
-                <div className="text-xs font-bold">Compare Both</div>
+                <div className="text-xs font-bold">Compare All</div>
                 <div className="text-[10px] text-muted-foreground">Side-by-Side</div>
               </button>
             </div>
           </div>
 
-          {/* Section 54 Inputs */}
-          {(sectionType === "section_54_property" || sectionType === "compare_both") && (
+          {/* Section 54 / 54F Property Inputs */}
+          {(sectionType === "section_54_property" || sectionType === "section_54f_property" || sectionType === "compare_both") && (
             <div className="surface-card p-5 space-y-4 border border-blue-500/20 bg-blue-50/10 dark:bg-blue-950/10">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Building className="w-4 h-4 text-blue-500" />
                   <h3 className="text-sm font-bold text-foreground">
-                    Section 54: Residential Property Reinvestment
+                    {sectionType === "section_54f_property"
+                      ? "Section 54F: Residential House Reinvestment"
+                      : "Section 54: Residential Property Reinvestment"}
                   </h3>
                 </div>
                 <span className="text-[10px] font-bold text-blue-600 bg-blue-100 dark:bg-blue-900/50 px-2 py-0.5 rounded">
@@ -186,7 +224,7 @@ export default function Section54Calculator() {
               </div>
 
               <HybridInput
-                label="Amount Reinvested in New House"
+                label="Amount Reinvested in New Residential House"
                 value={propertyInvestmentAmount}
                 onChange={setPropertyInvestmentAmount}
                 min={0}
@@ -194,6 +232,23 @@ export default function Section54Calculator() {
                 step={100000}
                 prefix="₹"
               />
+
+              {sectionType === "section_54f_property" && (
+                <div className="space-y-1.5 pt-2 border-t border-border/40">
+                  <label className="text-xs font-medium text-foreground block">
+                    Existing Residential Houses Owned on Sale Date
+                  </label>
+                  <select
+                    value={existingHousesCount}
+                    onChange={(e) => setExistingHousesCount(parseInt(e.target.value, 10) || 0)}
+                    className="w-full bg-card border border-border/60 rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value={0}>0 houses (Fully Eligible)</option>
+                    <option value={1}>1 house (Fully Eligible u/s 54F)</option>
+                    <option value={2}>2 or more houses (Disqualified u/s 54F)</option>
+                  </select>
+                </div>
+              )}
 
               {/* Mode & Timeline */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border/60">
@@ -309,6 +364,9 @@ export default function Section54Calculator() {
               <div className="text-base font-bold text-emerald-600 dark:text-emerald-400 mt-1">
                 {formatINR(result.activeResult.exemptionAllowed)}
               </div>
+              {result.activeResult.proportionateExemptionApplied && (
+                <span className="text-[10px] text-amber-500 font-medium block">Proportionate u/s 54F</span>
+              )}
             </div>
 
             <div className="surface-card p-3.5 text-center">
@@ -322,20 +380,43 @@ export default function Section54Calculator() {
             </div>
 
             <div className="surface-card p-3.5 text-center col-span-2 sm:col-span-1">
-              <div className="text-xs text-muted-foreground">Timeline Validity</div>
+              <div className="text-xs text-muted-foreground">Eligibility & Timeline</div>
               <div className="text-xs font-bold mt-1.5 flex items-center justify-center gap-1">
-                {result.activeResult.isValidTimeline ? (
+                {result.activeResult.disqualified ? (
+                  <span className="text-destructive flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5" /> Disqualified
+                  </span>
+                ) : result.activeResult.isValidTimeline ? (
                   <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                     <CheckCircle2 className="w-3.5 h-3.5" /> Valid Window
                   </span>
                 ) : (
                   <span className="text-destructive flex items-center gap-1">
-                    <AlertCircle className="w-3.5 h-3.5" /> Expired / Invalid
+                    <AlertCircle className="w-3.5 h-3.5" /> Expired Window
                   </span>
                 )}
               </div>
             </div>
           </div>
+
+          {/* Disqualification / Timeline Alerts */}
+          {result.activeResult.disqualified && (
+            <div className="surface-card p-4 rounded-xl border border-destructive/40 bg-destructive/10 flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+              <p className="text-xs text-destructive leading-relaxed">
+                {result.activeResult.disqualificationReason}
+              </p>
+            </div>
+          )}
+
+          {!result.activeResult.isValidTimeline && !result.activeResult.disqualified && (
+            <div className="surface-card p-4 rounded-xl border border-destructive/40 bg-destructive/5 flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+              <p className="text-xs text-destructive leading-relaxed">
+                {result.activeResult.timelineMessage}
+              </p>
+            </div>
+          )}
 
           {/* Side-by-Side Comparison Card */}
           {result.comparison && (
@@ -343,7 +424,7 @@ export default function Section54Calculator() {
               <div className="flex items-center gap-2">
                 <Scale className="w-4 h-4 text-purple-600" />
                 <h3 className="text-sm font-bold text-foreground">
-                  Section 54 (House) vs Section 54EC (Bonds) Comparison
+                  Section 54 vs 54EC vs 54F Comparison
                 </h3>
               </div>
 
@@ -352,8 +433,9 @@ export default function Section54Calculator() {
                   <thead>
                     <tr className="border-b border-border text-muted-foreground text-left">
                       <th className="py-2 pr-2">Feature</th>
-                      <th className="py-2 px-2">Section 54 (Property)</th>
-                      <th className="py-2 pl-2">Section 54EC (Bonds)</th>
+                      <th className="py-2 px-2">Section 54 (House)</th>
+                      <th className="py-2 px-2">Section 54EC (Bonds)</th>
+                      {result.comparison.section54f && <th className="py-2 pl-2">Section 54F (Plot/Gold)</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/50">
@@ -362,33 +444,26 @@ export default function Section54Calculator() {
                       <td className="py-2 px-2 font-bold text-emerald-600">
                         {formatINR(result.comparison.section54.exemptionAllowed)}
                       </td>
-                      <td className="py-2 pl-2 font-bold text-emerald-600">
+                      <td className="py-2 px-2 font-bold text-emerald-600">
                         {formatINR(result.comparison.section54ec.exemptionAllowed)}
                       </td>
-                    </tr>
-                    <tr>
-                      <td className="py-2 pr-2 text-muted-foreground">Tax Payable</td>
-                      <td className="py-2 px-2 font-bold">
-                        {formatINR(result.comparison.section54.taxAfterExemption)}
-                      </td>
-                      <td className="py-2 pl-2 font-bold">
-                        {formatINR(result.comparison.section54ec.taxAfterExemption)}
-                      </td>
+                      {result.comparison.section54f && (
+                        <td className="py-2 pl-2 font-bold text-emerald-600">
+                          {formatINR(result.comparison.section54f.exemptionAllowed)}
+                        </td>
+                      )}
                     </tr>
                     <tr>
                       <td className="py-2 pr-2 text-muted-foreground">Statutory Cap</td>
                       <td className="py-2 px-2">₹10 Crore</td>
-                      <td className="py-2 pl-2">₹50 Lakh / year</td>
-                    </tr>
-                    <tr>
-                      <td className="py-2 pr-2 text-muted-foreground">Prescribed Window</td>
-                      <td className="py-2 px-2">-1 to +2 yrs (Buy), 3 yrs (Build)</td>
-                      <td className="py-2 pl-2">Within 6 months</td>
+                      <td className="py-2 px-2">₹50 Lakh / year</td>
+                      {result.comparison.section54f && <td className="py-2 pl-2">₹10 Cr (Proportionate)</td>}
                     </tr>
                     <tr>
                       <td className="py-2 pr-2 text-muted-foreground">Lock-in Period</td>
                       <td className="py-2 px-2">3 Years (House)</td>
-                      <td className="py-2 pl-2">5 Years (Bonds)</td>
+                      <td className="py-2 px-2">5 Years (Bonds)</td>
+                      {result.comparison.section54f && <td className="py-2 pl-2">3 Years (House)</td>}
                     </tr>
                   </tbody>
                 </table>
@@ -397,16 +472,6 @@ export default function Section54Calculator() {
               <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/20 text-xs text-purple-950 dark:text-purple-200 leading-relaxed border border-purple-200 dark:border-purple-800">
                 {result.comparison.recommendation}
               </div>
-            </div>
-          )}
-
-          {/* Timeline & Condition Alerts */}
-          {!result.activeResult.isValidTimeline && (
-            <div className="surface-card p-4 rounded-xl border border-destructive/40 bg-destructive/5 flex items-start gap-2.5">
-              <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-              <p className="text-xs text-destructive leading-relaxed">
-                {result.activeResult.timelineMessage}
-              </p>
             </div>
           )}
 

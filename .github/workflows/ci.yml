@@ -1,4 +1,4 @@
-name: FinCalc India CI / CD Quality Gate
+name: FinCalc India Quality & Regulatory Assurance Gate
 
 on:
   push:
@@ -6,32 +6,44 @@ on:
   pull_request:
     branches: [main, master]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build-and-test:
-    name: Type-Check, Test & Production Build
+  validate-and-build:
+    name: Lint, Type-Check, Test Suite & Production Build
     runs-on: ubuntu-latest
 
+    env:
+      NEXTAUTH_SECRET: "ci-testing-secret-at-least-32-characters-long"
+      NEXTAUTH_URL: "http://localhost:3000"
+      DATABASE_URL: "file:./dev.db"
+
     steps:
-      - name: Checkout Repository
+      - name: Checkout Source Code
         uses: actions/checkout@v5
 
-      - name: Setup Node.js
+      - name: Setup Node.js 24.x
         uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: "npm"
 
-      - name: Install Dependencies
+      - name: Clean Install Dependencies
         run: npm ci
 
       - name: Generate Prisma Client
         run: npx prisma generate
 
-      - name: TypeScript Type-Check
+      - name: ESLint Code Quality Check
+        run: npm run lint
+
+      - name: Strict TypeScript Compilation Check
         run: npx tsc --noEmit
 
-      - name: Run Vitest Regulatory & Unit Test Suite
+      - name: Run Vitest Regulatory & Invariant Test Suite
         run: npm test
 
-      - name: Production Next.js Build
+      - name: Production Next.js Bundle Build
         run: npm run build
