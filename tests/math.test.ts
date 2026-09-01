@@ -3652,6 +3652,13 @@ describe('calcHumanLifeValue', () => {
   it('handles income growth above the discount rate without non-finite output', () => {
     expect(Number.isFinite(calcHumanLifeValue({ ...base, incomeGrowthRate: 12, discountRate: 6 }).presentValueOfIncome)).toBe(true)
   })
+  it('reduces to income replacement without liabilities or goals', () => {
+    const result = calcHumanLifeValue({ ...base, existingLiabilities: 0, futureGoals: 0, existingAssets: 0 })
+    expect(result.grossProtectionNeed).toBe(result.presentValueOfIncome)
+  })
+  it('offsets protection need with existing assets', () => {
+    const before = calcHumanLifeValue(base).grossProtectionNeed
+    expect(calcHumanLifeValue({ ...base, existingAssets: 200000 }).grossProtectionNeed).toBe(before - 200000)
+  })
 })
-
 
