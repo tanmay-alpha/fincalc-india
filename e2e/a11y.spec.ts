@@ -3,19 +3,21 @@ import AxeBuilder from "@axe-core/playwright";
 
 const PRIMARY_SAMPLE_ROUTES = [
   "/",
-  "/calculators/tax",
-  "/calculators/sip",
-  "/calculators/emi",
-  "/calculators/nps",
-  "/calculators/lrs-tcs",
-  "/calculators/section-54",
-  "/calculators/xirr",
+  "/tax",
+  "/sip",
+  "/emi",
+  "/nps",
+  "/lrs-tcs",
+  "/section-54-exemption",
+  "/xirr-cagr-twrr",
 ];
 
 test.describe("Accessibility Audits (Axe)", () => {
   for (const route of PRIMARY_SAMPLE_ROUTES) {
     test(`Accessibility compliance for ${route}`, async ({ page }) => {
-      await page.goto(route, { waitUntil: "domcontentloaded" });
+      const response = await page.goto(route, { waitUntil: "domcontentloaded" });
+      expect(response?.status()).toBe(200);
+      await expect(page.locator("h1")).toBeVisible();
 
       const accessibilityScanResults = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa"])

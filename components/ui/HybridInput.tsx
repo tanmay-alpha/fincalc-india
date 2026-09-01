@@ -7,6 +7,7 @@ import { clampSafe, formatINR } from "@/lib/format";
 
 interface HybridInputProps {
   label: string;
+  ariaLabel?: string;
   value: number;
   onChange: (...args: [number]) => void;
   min: number;
@@ -62,6 +63,7 @@ function formatDisplayValue(value: number, prefix?: string): string {
 
 export default function HybridInput({
   label,
+  ariaLabel,
   value,
   onChange,
   min,
@@ -153,7 +155,7 @@ export default function HybridInput({
           step={step || 1}
           value={value}
           disabled={disabled}
-          aria-label={label}
+          aria-label={(ariaLabel ?? label) || "value"}
           onPointerDown={() => setIsDragging(true)}
           onPointerUp={() => setIsDragging(false)}
           onPointerCancel={() => setIsDragging(false)}

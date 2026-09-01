@@ -1,41 +1,15 @@
 import { test, expect } from "@playwright/test";
 
 const CALCULATOR_ROUTES = [
-  "/calculators/sip",
-  "/calculators/step-up-sip",
-  "/calculators/goal-sip",
-  "/calculators/lumpsum",
-  "/calculators/fd",
-  "/calculators/ppf",
-  "/calculators/fire",
-  "/calculators/nps",
-  "/calculators/emi",
-  "/calculators/prepayment-vs-invest",
-  "/calculators/no-cost-emi",
-  "/calculators/car-tco",
-  "/calculators/balance-transfer",
-  "/calculators/tax",
-  "/calculators/marginal-relief",
-  "/calculators/capital-gains",
-  "/calculators/hra",
-  "/calculators/presumptive-tax",
-  "/calculators/section-54",
-  "/calculators/lrs-tcs",
-  "/calculators/us-stock-return",
-  "/calculators/nri-deposit",
-  "/calculators/fno-brokerage",
-  "/calculators/option-payoff",
-  "/calculators/black-scholes",
-  "/calculators/position-size",
-  "/calculators/margin-required",
-  "/calculators/portfolio-risk",
-  "/calculators/dcf",
-  "/calculators/wacc",
-  "/calculators/dupont",
-  "/calculators/xirr",
+  "/sip", "/step-up-sip", "/lumpsum", "/fd", "/ppf", "/fire", "/xirr-cagr-twrr",
+  "/tax", "/capital-gains-tax", "/hra-exemption", "/presumptive-tax", "/section-54-exemption",
+  "/marginal-relief", "/lrs-tcs", "/fno-brokerage", "/option-payoff", "/black-scholes",
+  "/position-size", "/margin-calculator", "/emi", "/loan-prepayment", "/no-cost-emi",
+  "/car-loan-tco", "/balance-transfer", "/dcf-valuation", "/wacc", "/dupont-analysis",
+  "/us-stock-tax", "/nre-nro-fcnr", "/nps", "/portfolio-risk",
 ];
 
-test.describe("All 31+ Calculator Pages Smoke Tests", () => {
+test.describe("All Calculator Pages Smoke Tests", () => {
   for (const route of CALCULATOR_ROUTES) {
     test(`Route ${route} renders HTTP 200 without console errors or NaN text`, async ({ page }) => {
       const consoleErrors: string[] = [];
@@ -56,6 +30,8 @@ test.describe("All 31+ Calculator Pages Smoke Tests", () => {
       // Verify page has heading
       const heading = page.locator("h1");
       await expect(heading).toBeVisible();
+
+      expect(consoleErrors, `Console errors on ${route}`).toEqual([]);
     });
   }
 });
