@@ -14,7 +14,6 @@ interface SaveCalculationPayload {
 interface SaveCalculationButtonProps {
   calcType: string;
   data: SaveCalculationPayload;
-  // eslint-disable-next-line no-unused-vars
   onSaved?: (_id: string) => void;
   className?: string;
 }

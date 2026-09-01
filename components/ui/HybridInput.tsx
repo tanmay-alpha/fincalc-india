@@ -8,7 +8,6 @@ import { clampSafe, formatINR } from "@/lib/format";
 interface HybridInputProps {
   label: string;
   value: number;
-  // eslint-disable-next-line no-unused-vars
   onChange: (...args: [number]) => void;
   min: number;
   max: number;

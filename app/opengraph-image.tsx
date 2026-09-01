@@ -1,7 +1,5 @@
 import { ImageResponse } from 'next/og'
 
-export const runtime = 'edge'
-
 export const alt = 'FinCalc India — Free Financial Calculators'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
@@ -58,7 +56,7 @@ export default function Image() {
 
         {/* Calculator pills */}
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '40px' }}>
-          {['SIP', 'EMI', 'FD', 'PPF', 'Lumpsum', 'Tax FY 2025-26'].map((label) => (
+          {['SIP', 'EMI', 'FD', 'PPF', 'Lumpsum', 'Tax FY 2026-27'].map((label) => (
             <div
               key={label}
               style={{

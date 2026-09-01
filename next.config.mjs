@@ -31,8 +31,7 @@ const nextConfig = {
   // Headers here apply to static assets; pages get headers via middleware.ts.
 
   // ─── Build hygiene ──────────────────────────────────────
-  // Fail the build on lint or type errors instead of shipping a broken bundle.
-  eslint: { ignoreDuringBuilds: false },
+  // Type errors fail the build. ESLint is executed explicitly in CI.
   typescript: { ignoreBuildErrors: false },
 
   // ─── React strict mode ──────────────────────────────────
