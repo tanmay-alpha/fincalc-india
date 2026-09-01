@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import React from "react";
 import LrsTcsCalculator from "../../components/calculators/lrs-tcs/LrsTcsCalculator";
 import NpsCalculator from "../../components/calculators/nps/NpsCalculator";
@@ -27,6 +27,18 @@ describe("Calculator Component Suite UI Tests", () => {
       expect(screen.getByText(/Education Abroad self-funded/i)).toBeDefined();
       expect(screen.getByText(/Foreign Stocks \/ Real Estate/i)).toBeDefined();
     });
+
+    it("displays flat 2% TCS tier 1 rate for Overseas Tour Packages", async () => {
+      render(<LrsTcsCalculator />);
+
+      const select = screen.getByRole("combobox");
+      fireEvent.change(select, { target: { value: "overseas_tour_package" } });
+
+      await waitFor(() => {
+        expect(screen.getByText(/TCS Rate \(Flat\)/i)).toBeDefined();
+        expect(screen.getByText("2%")).toBeDefined();
+      });
+    });
   });
 
   describe("NpsCalculator UI", () => {
@@ -36,6 +48,16 @@ describe("Calculator Component Suite UI Tests", () => {
       expect(screen.getByText(/NPS Contribution & Allocation/i)).toBeDefined();
       expect(screen.getByText(/PFRDA 2026 Rules/i)).toBeDefined();
       expect(screen.getByText(/Configure Tax Regime & Corporate NPS/i)).toBeDefined();
+    });
+
+    it("toggles advanced tax options and displays 80CCD(2) salary ceiling fields", () => {
+      render(<NpsCalculator />);
+
+      const toggleBtn = screen.getByText(/Configure Tax Regime & Corporate NPS/i);
+      fireEvent.click(toggleBtn);
+
+      expect(screen.getByText(/Annual Basic Salary \+ Eligible DA/i)).toBeDefined();
+      expect(screen.getByText(/Applicable Tax Regime/i)).toBeDefined();
     });
   });
 
@@ -60,3 +82,4 @@ describe("Calculator Component Suite UI Tests", () => {
     });
   });
 });
+

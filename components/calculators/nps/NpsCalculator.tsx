@@ -39,7 +39,9 @@ export default function NpsCalculator() {
   const [taxBracketPercent, setTaxBracketPercent] = useState(30.0);
   const [regime, setRegime] = useState<TaxRegime>("new");
   const [employerMonthlyContribution, setEmployerMonthlyContribution] = useState(0);
+  const [eligibleSalaryFor80CCD2, setEligibleSalaryFor80CCD2] = useState(1200000);
   const [isGovtEmployee, setIsGovtEmployee] = useState(false);
+  const [exitOptionChoice, setExitOptionChoice] = useState<"standard" | "sur_6yr_split">("standard");
   const [showAdvancedTax, setShowAdvancedTax] = useState(false);
   const [shareId, setShareId] = useState<string | null>(null);
 
@@ -66,7 +68,9 @@ export default function NpsCalculator() {
       taxBracketPercent,
       regime,
       employerMonthlyContribution,
+      eligibleSalaryFor80CCD2,
       isGovtEmployee,
+      exitOptionChoice,
     }),
     [
       currentAge,
@@ -83,7 +87,9 @@ export default function NpsCalculator() {
       taxBracketPercent,
       regime,
       employerMonthlyContribution,
+      eligibleSalaryFor80CCD2,
       isGovtEmployee,
+      exitOptionChoice,
     ]
   );
 
@@ -239,6 +245,32 @@ export default function NpsCalculator() {
                   suffix="%"
                 />
               </div>
+
+              {result.exitOptionsAvailable.length > 1 && (
+                <div className="p-3 bg-muted/40 border border-border/60 rounded-xl space-y-2">
+                  <label className="text-xs font-semibold text-foreground block">
+                    PFRDA 2026 Exit Mode (Corpus ₹8L – ₹12L)
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {result.exitOptionsAvailable.map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setExitOptionChoice(opt.id as "standard" | "sur_6yr_split")}
+                        className={clsx(
+                          "p-2.5 rounded-lg border text-left text-xs transition",
+                          exitOptionChoice === opt.id
+                            ? "border-primary bg-primary/10 text-primary font-semibold"
+                            : "border-border/60 bg-card text-muted-foreground hover:border-primary/40"
+                        )}
+                      >
+                        <div className="text-foreground font-medium">{opt.name}</div>
+                        <div className="text-[11px] text-muted-foreground mt-0.5">{opt.description}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Advanced Tax & Employer Options Toggle */}
@@ -292,6 +324,19 @@ export default function NpsCalculator() {
                   />
 
                   <HybridInput
+                    label="Annual Basic Salary + Eligible DA"
+                    hint="Base salary used for 80CCD(2) percentage ceiling"
+                    value={eligibleSalaryFor80CCD2}
+                    onChange={setEligibleSalaryFor80CCD2}
+                    min={100000}
+                    max={100000000}
+                    step={50000}
+                    prefix="₹"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <HybridInput
                     label="Assumed Marginal Tax Bracket"
                     hint="For computing annual Section 80CCD tax savings"
                     value={taxBracketPercent}
@@ -301,19 +346,42 @@ export default function NpsCalculator() {
                     step={1}
                     suffix="%"
                   />
+
+                  <div className="flex items-center pt-5">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isGovtEmployee}
+                        onChange={(e) => setIsGovtEmployee(e.target.checked)}
+                        className="rounded border-border text-primary focus:ring-primary w-4 h-4"
+                      />
+                      <span className="text-xs font-medium text-foreground">
+                        Government Employee (14% limit in Old Regime)
+                      </span>
+                    </label>
+                  </div>
                 </div>
 
-                <label className="flex items-center gap-2 cursor-pointer pt-1">
-                  <input
-                    type="checkbox"
-                    checked={isGovtEmployee}
-                    onChange={(e) => setIsGovtEmployee(e.target.checked)}
-                    className="rounded border-border text-primary focus:ring-primary w-4 h-4"
-                  />
-                  <span className="text-xs font-medium text-foreground">
-                    Central / State Government Employee (14% employer deduction limit u/s 80CCD(2))
-                  </span>
-                </label>
+                {employerMonthlyContribution > 0 && (
+                  <div className="p-2.5 rounded-lg bg-card border border-border/60 text-xs space-y-1 text-muted-foreground">
+                    <div className="flex justify-between">
+                      <span>Statutory 80CCD(2) Cap ({result.salaryCap80CCD2Percent}% of salary):</span>
+                      <span className="font-semibold text-foreground">
+                        {formatINR((result.eligibleSalaryFor80CCD2 * result.salaryCap80CCD2Percent) / 100)}/yr
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Eligible 80CCD(2) Deduction:</span>
+                      <span className="font-semibold text-emerald-500">{formatINR(result.eligibleDeduction80CCD2)}/yr</span>
+                    </div>
+                    {result.excessEmployerContributionNotDeductible > 0 && (
+                      <div className="flex justify-between text-amber-500">
+                        <span>Excess Employer Contribution (Non-Deductible):</span>
+                        <span className="font-semibold">{formatINR(result.excessEmployerContributionNotDeductible)}/yr</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

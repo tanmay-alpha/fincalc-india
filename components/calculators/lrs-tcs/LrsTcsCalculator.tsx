@@ -146,7 +146,7 @@ export default function LrsTcsCalculator() {
                 {category === "overseas_tour_package" ? "TCS Rate (Flat)" : "TCS Rate (> ₹10L)"}
               </p>
               <p className="text-base font-bold text-foreground mt-0.5">
-                {result.tier2RatePercent}%
+                {category === "overseas_tour_package" ? result.tier1RatePercent : result.tier2RatePercent}%
               </p>
             </div>
             <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
