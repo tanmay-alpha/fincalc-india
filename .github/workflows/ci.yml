@@ -24,10 +24,10 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20.x
+      - name: Setup Node.js 22.x
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: "npm"
 
       - name: Clean Install Dependencies
@@ -59,10 +59,10 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20.x
+      - name: Setup Node.js 22.x
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: "npm"
 
       - name: Clean Install Dependencies
@@ -77,6 +77,9 @@ jobs:
       - name: Install Playwright Chromium Browser
         run: npx playwright install --with-deps chromium
 
-      - name: Run E2E Smoke & Accessibility Suite
+      - name: Run Desktop Chromium E2E Suite
         run: npm run test:e2e:chromium
+
+      - name: Run Mobile Chrome E2E Suite
+        run: npm run test:e2e:mobile
 
