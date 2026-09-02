@@ -57,7 +57,7 @@ export default function EMIInfo() {
             text-blue-700 dark:text-blue-400">
             Monthly EMI ≈ ₹26,035
           </p>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-700 dark:text-slate-300 mt-1">
             Total Payment: ₹62,48,400 |
             Total Interest: ₹32,48,400
           </p>
@@ -108,8 +108,8 @@ export default function EMIInfo() {
         </div>
       </section>
 
-      <p className="text-xs text-slate-400
-        dark:text-slate-500 italic border-t
+      <p className="text-xs text-slate-600
+        dark:text-slate-400 italic border-t
         border-slate-100 dark:border-slate-800 pt-4">
         ⚠️ Disclaimer: EMI calculations are estimates
         based on the reducing balance method. Actual EMI

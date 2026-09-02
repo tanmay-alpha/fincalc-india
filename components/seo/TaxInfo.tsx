@@ -196,8 +196,8 @@ export default function TaxInfo() {
         </div>
       </section>
 
-      <p className="text-xs text-slate-400
-        dark:text-slate-500 italic border-t
+      <p className="text-xs text-slate-600
+        dark:text-slate-400 italic border-t
         border-slate-100 dark:border-slate-800 pt-4">
         ⚠️ Disclaimer: Tax calculations are estimates
         based on Tax Year 2026-27 slabs under the Income Tax Act, 2025. This tool does not

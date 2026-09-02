@@ -28,31 +28,31 @@ export default function Section54Info() {
         >
           <table className="w-full text-xs text-left">
             <thead>
-              <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 font-semibold">
+              <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-semibold">
                 <th className="py-2 pr-3">Original Asset Transferred</th>
                 <th className="py-2 px-3">Section 82 (formerly 54)</th>
                 <th className="py-2 px-3">Section 85 (formerly 54EC)</th>
                 <th className="py-2 pl-3">Section 86 (formerly 54F)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
               <tr>
                 <td className="py-2.5 pr-3 font-medium">Residential House Property</td>
-                <td className="py-2.5 px-3 text-emerald-600 font-bold">Eligible (House → House)</td>
-                <td className="py-2.5 px-3 text-emerald-600 font-bold">Eligible (Max ₹50L Bonds)</td>
-                <td className="py-2.5 pl-3 text-rose-500 font-medium">Ineligible (Excludes residential house)</td>
+                <td className="py-2.5 px-3 text-emerald-800 dark:text-emerald-300 font-bold">Eligible (House → House)</td>
+                <td className="py-2.5 px-3 text-emerald-800 dark:text-emerald-300 font-bold">Eligible (Max ₹50L Bonds)</td>
+                <td className="py-2.5 pl-3 text-rose-800 dark:text-rose-300 font-semibold">Ineligible (Excludes residential house)</td>
               </tr>
               <tr>
                 <td className="py-2.5 pr-3 font-medium">Commercial Property / Land / Plot</td>
-                <td className="py-2.5 px-3 text-rose-500 font-medium">Ineligible (House transfer only)</td>
-                <td className="py-2.5 px-3 text-emerald-600 font-bold">Eligible (Land/Building → Bonds)</td>
-                <td className="py-2.5 pl-3 text-emerald-600 font-bold">Eligible (Plot/Office → House)</td>
+                <td className="py-2.5 px-3 text-rose-800 dark:text-rose-300 font-semibold">Ineligible (House transfer only)</td>
+                <td className="py-2.5 px-3 text-emerald-800 dark:text-emerald-300 font-bold">Eligible (Land/Building → Bonds)</td>
+                <td className="py-2.5 pl-3 text-emerald-800 dark:text-emerald-300 font-bold">Eligible (Plot/Office → House)</td>
               </tr>
               <tr>
                 <td className="py-2.5 pr-3 font-medium">Other LTCG Assets (Shares, Gold, Mutual Funds)</td>
-                <td className="py-2.5 px-3 text-rose-500 font-medium">Ineligible</td>
-                <td className="py-2.5 px-3 text-rose-500 font-medium">Ineligible (Land/Building only)</td>
-                <td className="py-2.5 pl-3 text-emerald-600 font-bold">Eligible (Non-house asset → House)</td>
+                <td className="py-2.5 px-3 text-rose-800 dark:text-rose-300 font-semibold">Ineligible</td>
+                <td className="py-2.5 px-3 text-rose-800 dark:text-rose-300 font-semibold">Ineligible (Land/Building only)</td>
+                <td className="py-2.5 pl-3 text-emerald-800 dark:text-emerald-300 font-bold">Eligible (Non-house asset → House)</td>
               </tr>
             </tbody>
           </table>
@@ -65,7 +65,7 @@ export default function Section54Info() {
             <p className="font-semibold text-slate-900 dark:text-white mb-1">
               🏠 Section 82 — Residential House Exemption
             </p>
-            <p className="text-xs text-slate-500 mb-2">
+            <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
               Formerly Section 54 (Transfer of residential house property)
             </p>
             <ul className="text-xs space-y-1.5 text-slate-600 dark:text-slate-400">
@@ -84,7 +84,7 @@ export default function Section54Info() {
             <p className="font-semibold text-slate-900 dark:text-white mb-1">
               📜 Section 85 — Specified Bonds
             </p>
-            <p className="text-xs text-slate-500 mb-2">
+            <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
               Formerly Section 54EC (Transfer of land or building or both)
             </p>
             <ul className="text-xs space-y-1.5 text-slate-600 dark:text-slate-400">
@@ -100,7 +100,7 @@ export default function Section54Info() {
             <p className="font-semibold text-slate-900 dark:text-white mb-1">
               💎 Section 86 — Other LTCG Asset → House
             </p>
-            <p className="text-xs text-slate-500 mb-2">
+            <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
               Formerly Section 54F (Transfer of any asset other than residential house)
             </p>
             <ul className="text-xs space-y-1.5 text-slate-600 dark:text-slate-400">
@@ -122,23 +122,22 @@ export default function Section54Info() {
         </h3>
         <p className="leading-relaxed">
           This calculator evaluates statutory exemption at the <strong>transaction and initial reinvestment stage</strong>.
-          Under Section 86 (formerly Section 54F) and Section 82 (formerly Section 54), exemptions granted will be revoked and taxed as Long-Term Capital Gains in future assessment years if any of the following statutory disqualifications occur:
+          Under the Income-tax Act, 2025, future compliance and revocation conditions are strictly separated:
         </p>
         <ul className="list-disc list-inside space-y-1 pl-1">
-          <li><strong>Purchasing an additional residential house:</strong> The taxpayer purchases any residential house, other than the new house, within 1 year before or 2 years after the date of transfer.</li>
-          <li><strong>Constructing an additional residential house:</strong> The taxpayer constructs any residential house, other than the new house, within 3 years after the date of transfer.</li>
-          <li><strong>Premature transfer of new house:</strong> The newly acquired or constructed residential house is transferred or sold within 3 years of acquisition or completion of construction.</li>
+          <li><strong>Section 86 (formerly 54F) Exclusive Restrictions:</strong> Purchasing an additional residential house (within 1 year before or 2 years after transfer) or constructing another house (within 3 years) revokes the Section 86 exemption. Section 82 (formerly 54) has no such future purchase bar.</li>
+          <li><strong>Common 3-Year Holding Period:</strong> For both Section 82 and Section 86, transferring or selling the newly acquired or constructed residential house within 3 years of acquisition revokes the exemption and taxes it as capital gains in the year of resale.</li>
           <li><strong>Non-utilization of CGAS balance:</strong> Amounts deposited into a designated Capital Gains Account Scheme that remain unutilized at the expiry of the 3-year statutory window are treated as capital gains of the year in which the period expires.</li>
         </ul>
       </section>
 
       <section>
         <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-3">
-          Capital Gains Account Scheme (CGAS) 1988 Compliance
+          Capital Gains Account Scheme (CGAS) Compliance
         </h2>
         <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 text-xs space-y-2 text-slate-600 dark:text-slate-400">
           <p>
-            If you have not purchased or completed construction of the new residential property before the due date for furnishing your Income Tax Return under Section 139(1), you must deposit unutilized capital gains (Section 82 / formerly Section 54) or unutilized net consideration (Section 86 / formerly Section 54F) into an authorized <strong>Capital Gains Account Scheme (Type A Savings or Type B Term Deposit)</strong> with an authorized public sector bank before filing your return.
+            If you have not purchased or completed construction of the new residential property before the statutory due date for furnishing your Income Tax Return under <strong>Section 263 of the Income-tax Act, 2025 (legacy Section 139(1))</strong>, you must deposit unutilized capital gains (Section 82 / formerly Section 54) or unutilized net consideration (Section 86 / formerly Section 54F) into an authorized <strong>Capital Gains Account Scheme (Type A Savings or Type B Term Deposit)</strong> with an authorized bank before filing your return.
           </p>
         </div>
       </section>

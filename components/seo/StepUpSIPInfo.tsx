@@ -17,9 +17,9 @@ export default function StepUpSIPInfo() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 text-sm">
             <p className="font-semibold text-slate-900 dark:text-white mb-2">Standard Flat SIP</p>
-            <p className="text-xs text-slate-500">₹10,000/month for 15 years @ 12%</p>
+            <p className="text-xs text-slate-700 dark:text-slate-300">₹10,000/month for 15 years @ 12%</p>
             <p className="text-lg font-bold text-slate-900 dark:text-white mt-2">Corpus: ≈ ₹50.45 Lakhs</p>
-            <p className="text-xs text-slate-500 mt-1">Invested: ₹18.00 Lakhs · Returns: ₹32.45 Lakhs</p>
+            <p className="text-xs text-slate-700 dark:text-slate-300 mt-1">Invested: ₹18.00 Lakhs · Returns: ₹32.45 Lakhs</p>
           </div>
           <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl p-4 border border-blue-200 dark:border-blue-900 text-sm">
             <p className="font-semibold text-blue-900 dark:text-blue-300 mb-2">Step-Up SIP (+10%/year)</p>

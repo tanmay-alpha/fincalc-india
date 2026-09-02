@@ -213,7 +213,7 @@ export default function Navbar() {
                                   <div className="text-xs font-medium group-hover:text-blue-600 dark:group-hover:text-blue-400">
                                     {item.label}
                                   </div>
-                                  <div className="text-[10px] text-slate-400 dark:text-slate-500 line-clamp-1">
+                                  <div className="text-[10px] text-slate-600 dark:text-slate-400 line-clamp-1">
                                     {item.desc}
                                   </div>
                                 </Link>
@@ -357,7 +357,7 @@ export default function Navbar() {
                         )}
                       >
                         <span>{item.label}</span>
-                        <span className="text-[10px] text-slate-400 dark:text-slate-500">{item.desc}</span>
+                        <span className="text-[10px] text-slate-600 dark:text-slate-400">{item.desc}</span>
                       </Link>
                     );
                   })}

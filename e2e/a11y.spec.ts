@@ -16,13 +16,14 @@ const PRIMARY_SAMPLE_ROUTES = [
 ];
 
 test.describe("Accessibility Audits (Axe Core WCAG 2A / 2AA)", () => {
+  test.describe.configure({ retries: 0 });
+
   for (const route of PRIMARY_SAMPLE_ROUTES) {
     test(`Accessibility compliance for ${route}`, async ({ page }) => {
       await page.goto(route, { waitUntil: "domcontentloaded" });
 
       const accessibilityScanResults = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa"])
-        .disableRules(["color-contrast"]) // Disabled for custom theme & dark gradients
         .analyze();
 
       expect(accessibilityScanResults.violations).toEqual([]);

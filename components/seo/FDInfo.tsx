@@ -28,7 +28,7 @@ export default function FDInfo() {
           <p className="mt-2 font-semibold text-blue-700 dark:text-blue-400">
             Result: Maturity Amount ≈ ₹1,23,144
           </p>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-700 dark:text-slate-300 mt-1">
             (Interest Earned: ₹23,144 | Effective Yield: 7.19%)
           </p>
         </div>
@@ -67,7 +67,7 @@ export default function FDInfo() {
         </div>
       </section>
 
-      <p className="text-xs text-slate-400 dark:text-slate-500 italic border-t border-slate-100 dark:border-slate-800 pt-4">
+      <p className="text-xs text-slate-600 dark:text-slate-400 italic border-t border-slate-100 dark:border-slate-800 pt-4">
         {'\u26A0\uFE0F'} Disclaimer: FD rates vary by bank and change periodically. This calculator provides estimates based on the entered rate. Verify current rates with your bank. Senior citizens typically get 0.25-0.50% extra.
       </p>
     </div>

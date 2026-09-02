@@ -28,7 +28,7 @@ export default function SIPInfo() {
           <p className="mt-2 font-semibold text-blue-700 dark:text-blue-400">
             Result: Total Corpus ≈ ₹11,61,695
           </p>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-700 dark:text-slate-300 mt-1">
             (₹6,00,000 invested + ₹5,61,695 returns)
           </p>
         </div>
@@ -67,7 +67,7 @@ export default function SIPInfo() {
         </div>
       </section>
 
-      <p className="text-xs text-slate-400 dark:text-slate-500 italic border-t border-slate-100 dark:border-slate-800 pt-4">
+      <p className="text-xs text-slate-600 dark:text-slate-400 italic border-t border-slate-100 dark:border-slate-800 pt-4">
         {'\u26A0\uFE0F'} Disclaimer: This calculator is for informational purposes only. Results are estimates based on the assumed rate of return. Actual mutual fund returns vary and are not guaranteed. Consult a SEBI-registered financial advisor before investing.
       </p>
     </div>

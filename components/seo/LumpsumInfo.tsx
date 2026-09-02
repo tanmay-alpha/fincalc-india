@@ -36,7 +36,7 @@ export default function LumpsumInfo() {
           ))}
         </div>
       </section>
-      <p className="text-xs text-slate-400 dark:text-slate-500 italic border-t border-slate-100 dark:border-slate-800 pt-4">{'\u26A0\uFE0F'} Disclaimer: Returns shown are estimates based on constant CAGR. Actual market returns fluctuate and are not guaranteed.</p>
+      <p className="text-xs text-slate-600 dark:text-slate-400 italic border-t border-slate-100 dark:border-slate-800 pt-4">{'\u26A0\uFE0F'} Disclaimer: Returns shown are estimates based on constant CAGR. Actual market returns fluctuate and are not guaranteed.</p>
     </div>
   );
 }
