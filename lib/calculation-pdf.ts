@@ -30,6 +30,14 @@ export function generateCalculationPdf(options: PdfExportOptions): jsPDF {
     format: "a4",
   });
 
+  doc.setDocumentProperties({
+    title: `${options.calculatorTitle} - FinCalc India Calculation Summary`,
+    subject: options.statutoryReference || `${options.calculatorTitle} summary`,
+    author: "FinCalc India (fincalc-india.in)",
+    keywords: `fincalc, india, tax, finance, ${options.calculatorTitle.toLowerCase()}`,
+    creator: "FinCalc India Financial Engine (Income-tax Act, 2025)",
+  });
+
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 15;
   const contentWidth = pageWidth - 2 * margin;

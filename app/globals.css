@@ -193,3 +193,39 @@
 html, body {
   min-height: 100%;
 }
+
+@media print {
+  nav,
+  header,
+  footer,
+  aside,
+  .sticky,
+  .fixed,
+  button,
+  [role="dialog"],
+  .theme-toggle {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .surface-card,
+  .calc-card,
+  .table-surface {
+    border: 1px solid #cccccc !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    break-inside: avoid;
+  }
+
+  .text-muted-foreground,
+  .text-slate-500,
+  .text-slate-400 {
+    color: #222222 !important;
+  }
+}
+

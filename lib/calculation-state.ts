@@ -5,12 +5,21 @@
  * with validation, Unicode preservation (including ₹ symbol), and protection against malformed payloads.
  */
 
+import { z } from "zod";
+
 export interface SerializedCalculationState<T = Record<string, unknown>> {
   v: number; // Schema version
   id: string; // Calculator route / identifier e.g. "sip", "tax"
   ts: number; // Generation timestamp
   data: T; // Input parameters
 }
+
+const serializedCalculationStateSchema = z.object({
+  v: z.number().int().min(1),
+  id: z.string().min(1).max(100),
+  ts: z.number().positive(),
+  data: z.record(z.string(), z.any()),
+});
 
 const CURRENT_SCHEMA_VERSION = 1;
 const MAX_DECODED_BYTES = 64 * 1024; // 64 KB safety ceiling
@@ -94,15 +103,12 @@ export function decodeCalculationState<T = Record<string, unknown>>(
     }
 
     const parsed = JSON.parse(jsonString);
-    if (!parsed || typeof parsed !== "object") {
+    const validated = serializedCalculationStateSchema.safeParse(parsed);
+    if (!validated.success) {
       return null;
     }
 
-    if (typeof parsed.v !== "number" || typeof parsed.id !== "string" || !parsed.data) {
-      return null;
-    }
-
-    return parsed as SerializedCalculationState<T>;
+    return validated.data as unknown as SerializedCalculationState<T>;
   } catch {
     return null;
   }
