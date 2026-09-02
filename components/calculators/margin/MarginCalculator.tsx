@@ -10,12 +10,12 @@ import { ChartSkeleton } from "@/components/ui/Skeleton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import ShareButton from "@/components/ui/ShareButton";
 import InsightCard from "@/components/ui/InsightCard";
-import { calcMarginRequired } from "@/lib/math";
+import { calcMarginRequired, FNO_CONTRACT_DEFAULTS } from "@/lib/math";
 import type { MarginRequiredInput, MarginInstrumentCategory } from "@/lib/math";
 import { getMarginRequiredInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
-import { Shield, PieChart as PieIcon } from "lucide-react";
+import { Shield, PieChart as PieIcon, AlertCircle } from "lucide-react";
 
 const MarginChart = dynamic(
   () => import("@/components/calculators/margin/MarginChart"),
@@ -25,35 +25,53 @@ const MarginChart = dynamic(
 export default function MarginCalculator() {
   const [mounted, setMounted] = useState(false);
   const [instrumentCategory, setInstrumentCategory] = useState<MarginInstrumentCategory>("nifty_futures");
-  const [lotSize, setLotSize] = useState(50);
+  const [lotSize, setLotSize] = useState<number>(FNO_CONTRACT_DEFAULTS.nifty.lotSize);
   const [numberOfLots, setNumberOfLots] = useState(2);
   const [price, setPrice] = useState(24000);
   const [isMtfHolding, setIsMtfHolding] = useState(false);
   const [mtfHoldingDays, setMtfHoldingDays] = useState(30);
   const [mtfAnnualInterestRate, setMtfAnnualInterestRate] = useState(12.0);
-  const [customSpanPercent, setCustomSpanPercent] = useState(15.0);
-  const [customExposurePercent, setCustomExposurePercent] = useState(3.5);
+  const [customSpanPercent, setCustomSpanPercent] = useState(10.5);
+  const [customExposurePercent, setCustomExposurePercent] = useState(2.0);
   const [shareId, setShareId] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Update default lot sizes based on category
+  // Update default lot sizes and educational margin rates based on category
   const handleCategoryChange = (cat: MarginInstrumentCategory) => {
     setInstrumentCategory(cat);
     if (cat === "nifty_futures") {
-      setLotSize(50);
+      setLotSize(FNO_CONTRACT_DEFAULTS.nifty.lotSize);
       setPrice(24000);
+      setCustomSpanPercent(10.5);
+      setCustomExposurePercent(2.0);
     } else if (cat === "banknifty_futures") {
-      setLotSize(15);
+      setLotSize(FNO_CONTRACT_DEFAULTS.banknifty.lotSize);
       setPrice(50000);
+      setCustomSpanPercent(12.5);
+      setCustomExposurePercent(2.5);
     } else if (cat === "finnifty_futures") {
-      setLotSize(25);
+      setLotSize(FNO_CONTRACT_DEFAULTS.finnifty.lotSize);
       setPrice(23000);
-    } else if (cat === "tier1_equity" || cat === "tier2_equity" || cat === "intraday_equity") {
+      setCustomSpanPercent(11.0);
+      setCustomExposurePercent(2.0);
+    } else if (cat === "tier1_equity") {
       setLotSize(100);
       setPrice(1500);
+      setCustomSpanPercent(14.0);
+      setCustomExposurePercent(3.5);
+    } else if (cat === "tier2_equity") {
+      setLotSize(100);
+      setPrice(1500);
+      setCustomSpanPercent(20.0);
+      setCustomExposurePercent(5.0);
+    } else if (cat === "intraday_equity") {
+      setLotSize(100);
+      setPrice(1500);
+      setCustomSpanPercent(15.0);
+      setCustomExposurePercent(5.0);
     }
   };
 
@@ -95,10 +113,18 @@ export default function MarginCalculator() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Trade Details */}
         <div className="lg:col-span-6 space-y-5 bg-card/60 backdrop-blur border border-border/60 rounded-2xl p-5 md:p-6 shadow-sm">
+          {/* Statutory Estimator Disclaimer */}
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-muted-foreground leading-relaxed flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+            <span>
+              <strong className="text-amber-500 font-semibold">F&O Margin Estimator:</strong> Illustrative SPAN/exposure assumptions. Actual exchange/broker margin varies with contract, volatility and current risk parameters.
+            </span>
+          </div>
+
           <div className="flex items-center gap-2 pb-2 border-b border-border/40">
             <Shield className="w-5 h-5 text-primary" />
             <h2 className="font-semibold text-foreground text-base">
-              Instrument & Trade Parameters
+              F&O Margin Estimator Parameters
             </h2>
           </div>
 
@@ -155,31 +181,29 @@ export default function MarginCalculator() {
               />
             </div>
 
-            {/* Custom Segment Parameters */}
-            {instrumentCategory === "custom" && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 bg-muted/20 border border-border/40 rounded-xl">
-                <HybridInput
-                  label="Custom SPAN Margin (%)"
-                  hint="SPAN volatility requirement"
-                  value={customSpanPercent}
-                  onChange={setCustomSpanPercent}
-                  min={1}
-                  max={50}
-                  step={0.5}
-                  suffix="%"
-                />
-                <HybridInput
-                  label="Custom Exposure Margin (%)"
-                  hint="Extreme loss exposure buffer"
-                  value={customExposurePercent}
-                  onChange={setCustomExposurePercent}
-                  min={0.5}
-                  max={20}
-                  step={0.25}
-                  suffix="%"
-                />
-              </div>
-            )}
+            {/* Editable SPAN & Exposure Margin Parameters */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 bg-muted/20 border border-border/40 rounded-xl">
+              <HybridInput
+                label="SPAN Margin (%)"
+                hint="Volatility margin requirement (editable)"
+                value={customSpanPercent}
+                onChange={setCustomSpanPercent}
+                min={1}
+                max={50}
+                step={0.5}
+                suffix="%"
+              />
+              <HybridInput
+                label="Exposure Margin (%)"
+                hint="Extreme loss buffer (editable)"
+                value={customExposurePercent}
+                onChange={setCustomExposurePercent}
+                min={0.5}
+                max={20}
+                step={0.25}
+                suffix="%"
+              />
+            </div>
 
             {/* MTF Leverage Toggle */}
             <div className="pt-2 border-t border-border/40 space-y-3">

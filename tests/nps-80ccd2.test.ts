@@ -151,4 +151,93 @@ describe("NPS 80CCD(2) Salary Caps & PFRDA Exit Options", () => {
       expect(res.annuityReinvestmentPercent).toBeGreaterThanOrEqual(80);
     });
   });
+
+  describe("PFRDA Corpus Threshold Boundaries & Unbundled Tax Exemption Suite (8 Cases)", () => {
+    const baseInput = {
+      currentAge: 30,
+      retirementAge: 60,
+      monthlyContribution: 10000,
+      equityAllocationPercent: 50,
+      corporateDebtAllocationPercent: 30,
+      govtBondsAllocationPercent: 20,
+      isPrematureExit: false,
+    };
+
+    it("1. ₹5L corpus (Superannuation <= ₹8L): 100% permitted withdrawal, unbundled 60% tax-free / 40% taxable", () => {
+      const res = calcNPS({ ...baseInput, accumulatedCorpus: 500000 });
+      expect(res.totalAccumulatedCorpus).toBe(500000);
+      expect(res.regulatoryExitCategory).toBe("small_corpus_full_payout");
+      expect(res.exitOptionsAvailable[0].maxLumpSumPercent).toBe(100);
+      expect(res.permittedLumpSumAmount).toBe(500000);
+      // Section 10(12A) exempts only up to 60%
+      expect(res.lumpSumTaxFreeAmount).toBe(300000); // 60% of 5L
+      expect(res.taxableLumpSumAmount).toBe(200000); // 40% of 5L
+      expect(res.annuityPurchasedAmount).toBe(0);
+    });
+
+    it("2. ₹8L corpus (Superannuation exact limit <= ₹8L): 100% permitted withdrawal, 60% tax-free / 40% taxable", () => {
+      const res = calcNPS({ ...baseInput, accumulatedCorpus: 800000 });
+      expect(res.totalAccumulatedCorpus).toBe(800000);
+      expect(res.regulatoryExitCategory).toBe("small_corpus_full_payout");
+      expect(res.exitOptionsAvailable[0].maxLumpSumPercent).toBe(100);
+      expect(res.permittedLumpSumAmount).toBe(800000);
+      expect(res.lumpSumTaxFreeAmount).toBe(480000); // 60% of 8L
+      expect(res.taxableLumpSumAmount).toBe(320000); // 40% of 8L
+      expect(res.annuityPurchasedAmount).toBe(0);
+    });
+
+    it("3. ₹8,00,001 corpus (Crossed boundary > ₹8L): categorized as corpus_8L_to_12L_special", () => {
+      const res = calcNPS({ ...baseInput, accumulatedCorpus: 800001 });
+      expect(res.totalAccumulatedCorpus).toBe(800001);
+      expect(res.regulatoryExitCategory).toBe("corpus_8L_to_12L_special");
+      expect(res.exitOptionsAvailable.length).toBe(2);
+      expect(res.exitOptionsAvailable.map((o) => o.id)).toContain("sur_6yr_split");
+      expect(res.exitOptionsAvailable.map((o) => o.id)).toContain("standard");
+    });
+
+    it("4. ₹10L corpus (Special bracket ₹8L–₹12L): supports ₹6L split and up to 80% standard option", () => {
+      const res = calcNPS({ ...baseInput, accumulatedCorpus: 1000000 });
+      expect(res.totalAccumulatedCorpus).toBe(1000000);
+      expect(res.regulatoryExitCategory).toBe("corpus_8L_to_12L_special");
+      const surOption = res.exitOptionsAvailable.find((o) => o.id === "sur_6yr_split");
+      expect(surOption?.fixedLumpSumCap).toBe(600000);
+      expect(surOption?.maxLumpSumPercent).toBe(60); // 6L / 10L = 60%
+    });
+
+    it("5. ₹12L corpus (Upper boundary of special bracket <= ₹12L): still in corpus_8L_to_12L_special", () => {
+      const res = calcNPS({ ...baseInput, accumulatedCorpus: 1200000 });
+      expect(res.totalAccumulatedCorpus).toBe(1200000);
+      expect(res.regulatoryExitCategory).toBe("corpus_8L_to_12L_special");
+    });
+
+    it("6. > ₹12L corpus (e.g. ₹15L): standard superannuation (up to 80% lump sum, min 20% annuity)", () => {
+      const res = calcNPS({ ...baseInput, accumulatedCorpus: 1500000 });
+      expect(res.totalAccumulatedCorpus).toBe(1500000);
+      expect(res.regulatoryExitCategory).toBe("standard_superannuation");
+      expect(res.exitOptionsAvailable.length).toBe(1);
+      expect(res.exitOptionsAvailable[0].maxLumpSumPercent).toBe(80);
+      expect(res.exitOptionsAvailable[0].minAnnuityPercent).toBe(20);
+    });
+
+    it("7. Premature exit <= ₹5L (e.g. ₹4L): allows 100% lump sum payout under PFRDA premature small corpus limit", () => {
+      const res = calcNPS({ ...baseInput, isPrematureExit: true, accumulatedCorpus: 400000 });
+      expect(res.totalAccumulatedCorpus).toBe(400000);
+      expect(res.regulatoryExitCategory).toBe("small_corpus_full_payout");
+      expect(res.exitOptionsAvailable[0].maxLumpSumPercent).toBe(100);
+      expect(res.permittedLumpSumAmount).toBe(400000);
+      expect(res.lumpSumTaxFreeAmount).toBe(240000); // 60% of 4L
+      expect(res.taxableLumpSumAmount).toBe(160000); // 40% of 4L
+      expect(res.annuityPurchasedAmount).toBe(0);
+    });
+
+    it("8. Premature exit > ₹5L (e.g. ₹7L): restricted to max 20% lump sum, min 80% mandatory annuity", () => {
+      const res = calcNPS({ ...baseInput, isPrematureExit: true, accumulatedCorpus: 700000 });
+      expect(res.totalAccumulatedCorpus).toBe(700000);
+      expect(res.regulatoryExitCategory).toBe("premature_exit");
+      expect(res.exitOptionsAvailable[0].maxLumpSumPercent).toBe(20);
+      expect(res.exitOptionsAvailable[0].minAnnuityPercent).toBe(80);
+      expect(res.lumpSumWithdrawalPercent).toBeLessThanOrEqual(20);
+      expect(res.annuityReinvestmentPercent).toBeGreaterThanOrEqual(80);
+    });
+  });
 });

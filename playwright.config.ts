@@ -27,5 +27,10 @@ export default defineConfig({
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
+    env: {
+      NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || "ci-testing-secret-at-least-32-characters-long",
+      NEXTAUTH_URL: process.env.NEXTAUTH_URL || "http://localhost:3000",
+      DATABASE_URL: process.env.DATABASE_URL || "file:./dev.db",
+    },
   },
 });

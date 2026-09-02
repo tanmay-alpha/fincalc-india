@@ -380,3 +380,28 @@ export const MAX_INPUT_LIMITS = {
   propertyCost: 1000000000,     // ₹100 Crore property
   tenureYears: 50,              // 50 years max tenure
 } as const;
+
+// ─── 14. CANONICAL F&O CONTRACT DEFAULTS ─────────────────────────
+/**
+ * Canonical contract lot sizes based on official NSE revisions
+ * (NSE Circular Ref. No: NSE/FAOP/64516 under SEBI index derivatives framework).
+ * Note: SPAN and Exposure margins are dynamic exchange parameters.
+ */
+export const FNO_CONTRACT_DEFAULTS = {
+  nifty: {
+    lotSize: 65,
+    effectiveFrom: "November 20, 2024",
+    source: "NSE Circular Ref. No: NSE/FAOP/64516 (SEBI Index Derivatives Framework)",
+  },
+  banknifty: {
+    lotSize: 30,
+    effectiveFrom: "November 20, 2024",
+    source: "NSE Circular Ref. No: NSE/FAOP/64516 (SEBI Index Derivatives Framework)",
+  },
+  finnifty: {
+    lotSize: 60,
+    effectiveFrom: "November 20, 2024",
+    source: "NSE Circular Ref. No: NSE/FAOP/64516 (SEBI Index Derivatives Framework)",
+  },
+} as const;
+

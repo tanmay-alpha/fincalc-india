@@ -22,11 +22,10 @@ describe("XIRR Multi-Root Detection & TWRR Precision Hardening", () => {
     ]);
 
     expect(res.isValid).toBe(true);
-    if (res.multipleRootsDetected) {
-      expect(res.rootCount).toBeGreaterThan(1);
-      expect(res.candidateRoots?.length).toBeGreaterThan(1);
-      expect(res.warning).toContain("Multiple Internal Rates of Return detected");
-    }
+    expect(res.multipleRootsDetected).toBe(true);
+    expect(res.rootCount).toBeGreaterThan(1);
+    expect(res.candidateRoots?.length).toBeGreaterThan(1);
+    expect(res.warning).toContain("Multiple Internal Rates of Return detected");
   });
 
   it("correctly computes negative XIRR for loss-making portfolios without masking", () => {
