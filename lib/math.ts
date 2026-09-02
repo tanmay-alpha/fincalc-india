@@ -418,7 +418,12 @@ export interface PositionSizeOutput {
   summary: string;
 }
 
-// ─── SECTION 54 / 54EC / 54F CAPITAL GAINS EXEMPTION PLANNER ──
+// ─── SECTION 82 / 85 / 86 (FORMERLY SECTIONS 54 / 54EC / 54F) CAPITAL GAINS EXEMPTION PLANNER ──
+// Statutory Authority: Income-tax Act, 2025 as amended by Finance Act, 2026
+// - Section 82 = legacy Section 54 (Residential house reinvestment)
+// - Section 85 = legacy Section 54EC (Specified bonds: REC/NHAI/PFC/IRFC up to ₹50L)
+// - Section 86 = legacy Section 54F (Other LTCG assets reinvested in residential house)
+
 export type Section54Type = "section_54_property" | "section_54ec_bonds" | "section_54f_property" | "compare_both";
 export type Section54PropertyMode = "purchase" | "construction";
 export type Section54OriginalAssetType =
@@ -437,8 +442,8 @@ export interface Section54ExemptionInput {
   bondsInvestmentAmount?: number;
   bondsTimelineMonths?: number; // months from sale date (0 to 6)
   taxRatePercent?: number; // default 12.5 (plus 4% cess = 13%)
-  netSaleConsideration?: number; // For Section 54F proportionate calculation
-  existingResidentialHousesCount?: number; // For Section 54F ownership restriction (<= 1 allowed)
+  netSaleConsideration?: number; // For Section 86 (formerly 54F) proportionate calculation
+  existingResidentialHousesCount?: number; // For Section 86 (formerly 54F) ownership restriction (<= 1 allowed)
   // Section-specific overrides for granular comparisons & multi-strategy simulations
   section54InvestmentAmount?: number;
   section54PropertyMode?: Section54PropertyMode;
@@ -446,10 +451,15 @@ export interface Section54ExemptionInput {
   section54fInvestmentAmount?: number;
   section54fPropertyMode?: Section54PropertyMode;
   section54fTimelineMonths?: number;
+  // Section 82 once-in-a-lifetime two-house option (LTCG <= ₹2 Crore)
+  useTwoResidentialHousesOption?: boolean;
+  twoHousesOptionExercisedPreviously?: boolean;
+  secondPropertyInvestmentAmount?: number;
 }
 
 export interface Section54SingleExemptionResult {
   section: "54" | "54EC" | "54F";
+  currentActSection?: "82" | "85" | "86";
   investmentAmount: number;
   statutoryCap: number;
   isStatutorilyEligible: boolean;
@@ -467,6 +477,8 @@ export interface Section54SingleExemptionResult {
   disqualified?: boolean;
   disqualificationReason?: string;
   proportionateExemptionApplied?: boolean;
+  twoHousesOptionApplied?: boolean;
+  twoHousesOptionMessage?: string;
 }
 
 export type Section54StrategyType = "54" | "54EC" | "54F";
@@ -3828,43 +3840,69 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
       ? "land_or_building_non_residential"
       : undefined);
 
-  // Statutory Asset Eligibility Definitions
-  // Section 54: Eligible ONLY when original asset is residential house
+  // Statutory Asset Eligibility Definitions under Income-tax Act, 2025 as amended by Finance Act, 2026:
+  // Section 82 (formerly Section 54): Eligible ONLY when original asset is residential house
   const isS54Eligible = originalAssetType === "residential_house";
   const s54IneligibilityReason = isS54Eligible
     ? undefined
     : originalAssetType === undefined
-    ? "Original asset type must be specified in Compare mode to determine statutory eligibility."
-    : `Ineligible: Section 54 is statutorily restricted to LTCG from the transfer of a residential house property. It is not available for ${
+    ? "Original asset type must be specified in Compare mode to determine statutory eligibility under Section 82 (formerly Section 54)."
+    : `Ineligible: Section 82 (formerly Section 54) is statutorily restricted to LTCG from the transfer of a residential house property. It is not available for ${
         originalAssetType === "land_or_building_non_residential" ? "commercial property or land/plot" : "shares, gold, or other non-residential assets"
       }.`;
 
-  // Section 54EC: Eligible ONLY when original asset is land or building or both
+  // Section 85 (formerly Section 54EC): Eligible ONLY when original asset is land or building or both
   const isS54ECEligible =
     originalAssetType === "residential_house" ||
     originalAssetType === "land_or_building_non_residential";
   const s54ecIneligibilityReason = isS54ECEligible
     ? undefined
     : originalAssetType === undefined
-    ? "Original asset type must be specified in Compare mode to determine statutory eligibility."
-    : "Ineligible: Section 54EC is statutorily restricted to capital gains arising from the transfer of land or building or both. It is not available for shares, gold, mutual funds, or other non-land/building assets.";
+    ? "Original asset type must be specified in Compare mode to determine statutory eligibility under Section 85 (formerly Section 54EC)."
+    : "Ineligible: Section 85 (formerly Section 54EC) is statutorily restricted to capital gains arising from the transfer of land or building or both. It is not available for shares, gold, mutual funds, or other non-land/building assets.";
 
-  // Section 54F: Eligible ONLY when original asset is long-term capital asset OTHER THAN residential house
+  // Section 86 (formerly Section 54F): Eligible ONLY when original asset is long-term capital asset OTHER THAN residential house
   const isS54FEligible =
     originalAssetType === "land_or_building_non_residential" ||
     originalAssetType === "other_long_term_asset";
   const s54fIneligibilityReason = isS54FEligible
     ? undefined
     : originalAssetType === undefined
-    ? "Original asset type must be specified in Compare mode to determine statutory eligibility."
-    : "Ineligible: Section 54F is statutorily restricted to long-term capital assets other than a residential house. It cannot be claimed on the sale of a residential house property.";
+    ? "Original asset type must be specified in Compare mode to determine statutory eligibility under Section 86 (formerly Section 54F)."
+    : "Ineligible: Section 86 (formerly Section 54F) is statutorily restricted to long-term capital assets other than a residential house. It cannot be claimed on the sale of a residential house property.";
 
-  // Helper to compute Section 54 (Residential Property)
+  // Helper to compute Section 82 (formerly Section 54 — Residential House)
   function computeSection54(): Section54SingleExemptionResult {
     const invAmount = Math.max(0, input.section54InvestmentAmount ?? propertyInvestmentAmount ?? 0);
+    const secondInvAmount = Math.max(0, input.secondPropertyInvestmentAmount ?? 0);
     const mode = input.section54PropertyMode ?? propertyMode;
     const timeline = input.section54TimelineMonths ?? propertyTimelineMonths;
-    const statutoryCap = 100000000; // ₹10 Crore
+    const statutoryCap = 100000000; // ₹10 Crore cap (Finance Act 2023 / 2026)
+
+    const useTwoHouses = Boolean(input.useTwoResidentialHousesOption);
+    const previouslyExercised = Boolean(input.twoHousesOptionExercisedPreviously);
+
+    let twoHousesOptionApplied = false;
+    let twoHousesOptionMessage: string | undefined = undefined;
+
+    if (useTwoHouses) {
+      if (previouslyExercised) {
+        twoHousesOptionApplied = false;
+        twoHousesOptionMessage =
+          "The Section 82 (formerly Section 54) two-residential-house option is strictly once-in-a-lifetime. Because this option was exercised in a prior tax year, only one residential house qualifies.";
+      } else if (initialLtcgGains > 20000000) {
+        twoHousesOptionApplied = false;
+        twoHousesOptionMessage = `The Section 82 two-house option is statutorily restricted to cases where Long-Term Capital Gains do not exceed ₹2 Crore (current LTCG: ₹${initialLtcgGains.toLocaleString("en-IN")}). Only one residential house qualifies.`;
+      } else {
+        twoHousesOptionApplied = true;
+        twoHousesOptionMessage =
+          "Once-in-a-lifetime Section 82 option applied: Combined qualifying cost of both residential houses in India qualifies for statutory exemption.";
+      }
+    }
+
+    const totalEligibleInvestment = twoHousesOptionApplied
+      ? invAmount + secondInvAmount
+      : invAmount;
 
     let isValidTimeline = false;
     let timelineMessage = "";
@@ -3873,17 +3911,17 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
       isValidTimeline = timeline >= -12 && timeline <= 24;
       timelineMessage = isValidTimeline
         ? `Valid purchase timeline (${timeline} months relative to sale date. Prescribed window: 1 year before to 2 years after sale).`
-        : `Invalid purchase timeline (${timeline} months). Section 54 requires property purchase between 1 year before and 2 years after transfer date.`;
+        : `Invalid purchase timeline (${timeline} months). Section 82 (formerly Section 54) requires property purchase between 1 year before and 2 years after transfer date.`;
     } else {
       isValidTimeline = timeline >= 0 && timeline <= 36;
       timelineMessage = isValidTimeline
         ? `Valid construction timeline (${timeline} months from sale date. Prescribed window: within 3 years after sale).`
-        : `Invalid construction timeline (${timeline} months). Section 54 requires construction completion within 3 years from transfer date.`;
+        : `Invalid construction timeline (${timeline} months). Section 82 (formerly Section 54) requires construction completion within 3 years from transfer date.`;
     }
 
     let exemptionAllowed = 0;
-    if (isS54Eligible && isValidTimeline && initialLtcgGains > 0 && invAmount > 0) {
-      exemptionAllowed = Math.min(initialLtcgGains, Math.min(invAmount, statutoryCap));
+    if (isS54Eligible && isValidTimeline && initialLtcgGains > 0 && totalEligibleInvestment > 0) {
+      exemptionAllowed = Math.min(initialLtcgGains, Math.min(totalEligibleInvestment, statutoryCap));
     }
 
     const taxableGainsRemaining = Math.max(0, initialLtcgGains - exemptionAllowed);
@@ -3893,7 +3931,8 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
 
     return {
       section: "54",
-      investmentAmount: invAmount,
+      currentActSection: "82",
+      investmentAmount: totalEligibleInvestment,
       statutoryCap,
       isStatutorilyEligible: isS54Eligible,
       ineligibilityReason: s54IneligibilityReason,
@@ -3906,25 +3945,27 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
       taxSaved,
       effectiveTaxRate,
       lockInPeriod: "3 Years (from date of purchase/construction)",
+      twoHousesOptionApplied,
+      twoHousesOptionMessage,
       conditions: [
-        "Transferred original asset must be a residential house property situated in India.",
-        "Reinvestment must be in a residential house property situated in India.",
-        "Unutilized capital gains before ITR filing due date must be deposited into a Capital Gains Account Scheme (CGAS).",
+        "Transferred original asset must be a residential house property (income chargeable under the head 'Income from house property').",
+        "Reinvestment must be in a residential house property situated in India (or up to two residential houses if LTCG <= ₹2 Crore and once-in-a-lifetime option is exercised under Section 82).",
+        "Unutilized capital gains before ITR filing due date (Section 139(1)) must be deposited into a Capital Gains Account Scheme (CGAS).",
         "If the new house is sold within 3 years of purchase/construction, the exemption is revoked and taxed.",
-        "Maximum statutory exemption limit is ₹10 Crore (Finance Act 2023 / 2026).",
+        "Maximum statutory exemption limit is ₹10 Crore per assessee (Income-tax Act, 2025 as amended by Finance Act, 2026).",
       ],
     };
   }
 
-  // Helper to compute Section 54EC (Bonds: REC, NHAI, PFC, IRFC)
+  // Helper to compute Section 85 (formerly Section 54EC — Bonds: REC, NHAI, PFC, IRFC)
   function computeSection54EC(): Section54SingleExemptionResult {
     const invAmount = Math.max(0, bondsInvestmentAmount || 0);
-    const statutoryCap = 5000000; // ₹50 Lakhs per financial year
+    const statutoryCap = 5000000; // ₹50 Lakhs statutory limit
 
     const isValidTimeline = bondsTimelineMonths >= 0 && bondsTimelineMonths <= 6;
     const timelineMessage = isValidTimeline
       ? `Valid investment timeline (${bondsTimelineMonths} months from transfer date. Prescribed window: within 6 months of sale).`
-      : `Invalid timeline (${bondsTimelineMonths} months). Section 54EC requires bond investment within strictly 6 months from the date of property transfer.`;
+      : `Invalid timeline (${bondsTimelineMonths} months). Section 85 (formerly Section 54EC) requires bond investment within strictly 6 months from the date of property transfer.`;
 
     let exemptionAllowed = 0;
     if (isS54ECEligible && isValidTimeline && initialLtcgGains > 0 && invAmount > 0) {
@@ -3938,6 +3979,7 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
 
     return {
       section: "54EC",
+      currentActSection: "85",
       investmentAmount: invAmount,
       statutoryCap,
       isStatutorilyEligible: isS54ECEligible,
@@ -3954,14 +3996,14 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
       conditions: [
         "Transferred original asset must be land or building or both (residential, commercial, or plot).",
         "Invest in eligible 54EC bonds issued by NHAI, REC, PFC, or IRFC.",
-        "Maximum statutory investment cap is ₹50 Lakhs per investor in a financial year.",
+        "Under Section 85(2) (formerly Section 54EC(1)), aggregate investment from capital gains arising from original asset(s) must not exceed ₹50 Lakh across the tax year of transfer and the subsequent tax year.",
         "Must be invested within 6 months from the date of property transfer.",
-        "Bonds have a 5-year lock-in period at ~5.25% p.a. interest (interest is taxable annually).",
+        "Bonds have a mandatory 5-year lock-in period at ~5.25% p.a. interest (interest is taxable annually).",
       ],
     };
   }
 
-  // Helper to compute Section 54F (Long-term asset other than residential house -> Residential House)
+  // Helper to compute Section 86 (formerly Section 54F — Long-term asset other than residential house -> Residential House)
   function computeSection54F(): Section54SingleExemptionResult {
     const invAmount = Math.max(0, input.section54fInvestmentAmount ?? propertyInvestmentAmount ?? 0);
     const mode = input.section54fPropertyMode ?? propertyMode;
@@ -3975,13 +4017,13 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
 
     if (existingHouses > 1) {
       disqualified = true;
-      disqualificationReason = `Disqualified: Section 54F is not available if the taxpayer owns more than one residential house (currently owns ${existingHouses}) on the date of transfer.`;
+      disqualificationReason = `Disqualified: Section 86 (formerly Section 54F) is not available if the taxpayer owns more than one residential house (currently owns ${existingHouses}) on the date of transfer.`;
     } else if (rawNetSale !== undefined && rawNetSale > 0 && rawNetSale < initialLtcgGains) {
       disqualified = true;
       disqualificationReason = `Invalid Input: Net Sale Consideration (₹${rawNetSale.toLocaleString("en-IN")}) cannot be less than Long-Term Capital Gains (₹${initialLtcgGains.toLocaleString("en-IN")}).`;
     } else if (sectionType === "compare_both" && isS54FEligible && (rawNetSale === undefined || rawNetSale <= 0)) {
       disqualified = true;
-      disqualificationReason = "Net Sale Consideration is required for Section 54F proportionate exemption calculation in Compare mode.";
+      disqualificationReason = "Net Sale Consideration is required for Section 86 (formerly Section 54F) proportionate exemption calculation in Compare mode.";
     }
 
     const netSale = Math.max(initialLtcgGains, rawNetSale && rawNetSale > 0 ? rawNetSale : initialLtcgGains);
@@ -3993,12 +4035,12 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
       isValidTimeline = timeline >= -12 && timeline <= 24;
       timelineMessage = isValidTimeline
         ? `Valid purchase timeline (${timeline} months relative to sale date. Prescribed window: 1 year before to 2 years after sale).`
-        : `Invalid purchase timeline (${timeline} months). Section 54F requires property purchase between 1 year before and 2 years after transfer date.`;
+        : `Invalid purchase timeline (${timeline} months). Section 86 (formerly Section 54F) requires property purchase between 1 year before and 2 years after transfer date.`;
     } else {
       isValidTimeline = timeline >= 0 && timeline <= 36;
       timelineMessage = isValidTimeline
         ? `Valid construction timeline (${timeline} months from sale date. Prescribed window: within 3 years after sale).`
-        : `Invalid construction timeline (${timeline} months). Section 54F requires construction completion within 3 years from transfer date.`;
+        : `Invalid construction timeline (${timeline} months). Section 86 (formerly Section 54F) requires construction completion within 3 years from transfer date.`;
     }
 
     let exemptionAllowed = 0;
@@ -4019,6 +4061,7 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
 
     return {
       section: "54F",
+      currentActSection: "86",
       investmentAmount: invAmount,
       statutoryCap,
       isStatutorilyEligible: isS54FEligible,
@@ -4040,11 +4083,11 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
       disqualificationReason,
       proportionateExemptionApplied: isS54FEligible && !disqualified && invAmount < netSale && invAmount > 0,
       conditions: [
-        "Transferred asset must be a long-term capital asset other than a residential house (e.g. plot, gold, commercial property, shares).",
+        "Income-tax Act, 2025 Section 86 (formerly Section 54F): Transferred asset must be a long-term capital asset other than a residential house (e.g. plot, gold, commercial property, shares).",
         "Taxpayer must not own more than ONE residential house (other than the new house) on the date of transfer.",
         "Proportionate statutory exemption: LTCG × (Cost of New House / Net Sale Consideration).",
         "Statutory cost of new residential house recognized is capped at ₹10 Crore (Finance Act 2023 / 2026).",
-        "3-year lock-in period on new house. Sale within 3 years revokes the exemption, taxing it as LTCG in that year.",
+        "Post-reinvestment compliance: Exemption is revoked and taxed as LTCG if taxpayer buys another house within 1yr before/2yrs after transfer, or constructs another house within 3yrs, or sells the new house within 3yrs.",
       ],
     };
   }
@@ -4082,13 +4125,13 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
     };
     const eligibleStrategies: RankedStrategy[] = [
       ...(s54Result.isStatutorilyEligible && s54Result.isValidTimeline
-        ? [{ id: "54" as const, label: "Section 54 (Residential House)", result: s54Result }]
+        ? [{ id: "54" as const, label: "Section 82 (formerly Section 54 — Residential House)", result: s54Result }]
         : []),
       ...(s54ecResult.isStatutorilyEligible && s54ecResult.isValidTimeline
-        ? [{ id: "54EC" as const, label: "Section 54EC Bonds (NHAI/REC/PFC/IRFC)", result: s54ecResult }]
+        ? [{ id: "54EC" as const, label: "Section 85 (formerly Section 54EC Bonds (NHAI/REC/PFC/IRFC))", result: s54ecResult }]
         : []),
       ...(s54fResult.isStatutorilyEligible && !s54fResult.disqualified && s54fResult.isValidTimeline
-        ? [{ id: "54F" as const, label: "Section 54F (Reinvestment in House)", result: s54fResult }]
+        ? [{ id: "54F" as const, label: "Section 86 (formerly Section 54F (Reinvestment in House))", result: s54fResult }]
         : []),
     ];
 
@@ -4106,7 +4149,7 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
       bestVsSecondBestTaxDifference = 0;
       bestVsWorstTaxDifference = 0;
       if (!originalAssetType) {
-        rec = "Please select the original asset sold (Residential House, Commercial/Land, or Other LTCG Asset) to determine statutory eligibility under Sections 54, 54EC, and 54F.";
+        rec = "Please select the original asset sold (Residential House, Commercial/Land, or Other LTCG Asset) to determine statutory eligibility under Sections 82, 85, and 86 (formerly Sections 54, 54EC, and 54F).";
       } else {
         const assetLabel =
           originalAssetType === "residential_house"
@@ -4159,34 +4202,34 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
 
         rec = `${best.label} saves ₹${bestVsSecondBestTaxDifference.toLocaleString("en-IN")} more than the next-best option (${secondBest.label}). `;
         if (best.id === "54EC") {
-          rec += "Bond investment is simpler than buying a new property and avoids real-estate execution risk.";
+          rec += "Section 85 (formerly Section 54EC) bond investment is simpler than buying a new property and avoids real-estate execution risk.";
         } else if (best.id === "54F") {
-          rec += "Section 54F provides proportionate exemption on non-residential asset transfers when net sale consideration is reinvested in a residential house.";
+          rec += "Section 86 (formerly Section 54F) provides proportionate exemption on non-residential asset transfers when net sale consideration is reinvested in a residential house.";
         } else {
-          rec += "Section 54 covers gains beyond the ₹50 Lakh statutory cap of Section 54EC bonds.";
+          rec += "Section 82 (formerly Section 54) covers gains beyond the ₹50 Lakh statutory cap of Section 85 (formerly Section 54EC) bonds.";
         }
       }
     }
 
     // Append informative notes for disqualified or ineligible options
     if (!s54Result.isStatutorilyEligible && s54Result.ineligibilityReason) {
-      rec += ` Note (54): ${s54Result.ineligibilityReason}`;
+      rec += ` Note (54 / Section 82): ${s54Result.ineligibilityReason}`;
     } else if (!s54Result.isValidTimeline) {
-      rec += ` Note (54): ${s54Result.timelineMessage}`;
+      rec += ` Note (54 / Section 82): ${s54Result.timelineMessage}`;
     }
 
     if (!s54ecResult.isStatutorilyEligible && s54ecResult.ineligibilityReason) {
-      rec += ` Note (54EC): ${s54ecResult.ineligibilityReason}`;
+      rec += ` Note (54EC / Section 85): ${s54ecResult.ineligibilityReason}`;
     } else if (!s54ecResult.isValidTimeline) {
-      rec += ` Note (54EC): ${s54ecResult.timelineMessage}`;
+      rec += ` Note (54EC / Section 85): ${s54ecResult.timelineMessage}`;
     }
 
     if (!s54fResult.isStatutorilyEligible && s54fResult.ineligibilityReason) {
-      rec += ` Note (54F): ${s54fResult.ineligibilityReason}`;
+      rec += ` Note (54F / Section 86): ${s54fResult.ineligibilityReason}`;
     } else if (s54fResult.disqualified && s54fResult.disqualificationReason) {
-      rec += ` Note (54F): ${s54fResult.disqualificationReason}`;
+      rec += ` Note (54F / Section 86): ${s54fResult.disqualificationReason}`;
     } else if (!s54fResult.isValidTimeline) {
-      rec += ` Note (54F): ${s54fResult.timelineMessage}`;
+      rec += ` Note (54F / Section 86): ${s54fResult.timelineMessage}`;
     }
 
     comparison = {

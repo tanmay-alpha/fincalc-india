@@ -41,20 +41,24 @@ export default function Section54Calculator() {
     useState<Section54OriginalAssetType>("residential_house");
   const [capitalGainsAmount, setCapitalGainsAmount] = useState(6000000); // 60 Lakhs
   const [netSaleConsideration, setNetSaleConsideration] = useState(10000000); // 1 Cr
-  const [existingHousesCount, setExistingHousesCount] = useState(0); // For 54F
+  const [existingHousesCount, setExistingHousesCount] = useState(0); // For 54F / 86
   const [sectionType, setSectionType] = useState<Section54Type>("compare_both");
 
-  // Section 54 specific state
+  // Section 82 (formerly 54) specific state
   const [section54InvestmentAmount, setSection54InvestmentAmount] = useState(6000000);
   const [section54PropertyMode, setSection54PropertyMode] =
     useState<Section54PropertyMode>("purchase");
   const [section54TimelineMonths, setSection54TimelineMonths] = useState(6);
+  // Section 82 once-in-a-lifetime two-house option
+  const [useTwoResidentialHousesOption, setUseTwoResidentialHousesOption] = useState(false);
+  const [twoHousesOptionExercisedPreviously, setTwoHousesOptionExercisedPreviously] = useState(false);
+  const [secondPropertyInvestmentAmount, setSecondPropertyInvestmentAmount] = useState(0);
 
-  // Section 54EC specific state
+  // Section 85 (formerly 54EC) specific state
   const [bondsInvestmentAmount, setBondsInvestmentAmount] = useState(5000000);
   const [bondsTimelineMonths, setBondsTimelineMonths] = useState(3);
 
-  // Section 54F specific state
+  // Section 86 (formerly 54F) specific state
   const [section54fInvestmentAmount, setSection54fInvestmentAmount] = useState(6000000);
   const [section54fPropertyMode, setSection54fPropertyMode] =
     useState<Section54PropertyMode>("purchase");
@@ -78,12 +82,17 @@ export default function Section54Calculator() {
       sectionType,
       originalAssetType,
       taxRatePercent: 12.5,
-      // Section-specific parameters
+      // Section 82 parameters
       section54InvestmentAmount,
       section54PropertyMode,
       section54TimelineMonths,
+      useTwoResidentialHousesOption,
+      twoHousesOptionExercisedPreviously,
+      secondPropertyInvestmentAmount: useTwoResidentialHousesOption ? secondPropertyInvestmentAmount : undefined,
+      // Section 85 parameters
       bondsInvestmentAmount,
       bondsTimelineMonths,
+      // Section 86 parameters
       section54fInvestmentAmount,
       section54fPropertyMode,
       section54fTimelineMonths,
@@ -111,6 +120,9 @@ export default function Section54Calculator() {
       section54InvestmentAmount,
       section54PropertyMode,
       section54TimelineMonths,
+      useTwoResidentialHousesOption,
+      twoHousesOptionExercisedPreviously,
+      secondPropertyInvestmentAmount,
       bondsInvestmentAmount,
       bondsTimelineMonths,
       section54fInvestmentAmount,
@@ -141,11 +153,11 @@ export default function Section54Calculator() {
                 Original Capital Asset Transferred (Sold)
               </label>
               <span className="text-[10px] bg-primary/10 text-primary font-semibold px-2 py-0.5 rounded">
-                Statutory Eligibility Gate
+                Income-tax Act, 2025 Gate
               </span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Under the Income Tax Act, available tax exemption routes depend strictly on the type of long-term asset you sold.
+              Under the Income-tax Act, 2025, available statutory exemption routes depend strictly on the type of long-term asset transferred.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
@@ -169,7 +181,7 @@ export default function Section54Calculator() {
                   Residential House
                 </div>
                 <div className="text-[10px] text-muted-foreground mt-1">
-                  Eligible: <strong className="text-foreground">Sec 54 & 54EC</strong>
+                  Eligible: <strong className="text-foreground">Sec 82 & 85</strong> (formerly 54 & 54EC)
                 </div>
               </button>
 
@@ -193,7 +205,7 @@ export default function Section54Calculator() {
                   Commercial / Plot
                 </div>
                 <div className="text-[10px] text-muted-foreground mt-1">
-                  Eligible: <strong className="text-foreground">Sec 54EC & 54F</strong>
+                  Eligible: <strong className="text-foreground">Sec 85 & 86</strong> (formerly 54EC & 54F)
                 </div>
               </button>
 
@@ -217,7 +229,7 @@ export default function Section54Calculator() {
                   Shares, Gold, etc.
                 </div>
                 <div className="text-[10px] text-muted-foreground mt-1">
-                  Eligible: <strong className="text-foreground">Sec 54F Only</strong>
+                  Eligible: <strong className="text-foreground">Sec 86 Only</strong> (formerly 54F)
                 </div>
               </button>
             </div>
@@ -245,7 +257,7 @@ export default function Section54Calculator() {
             {is54FApplicable && (
               <HybridInput
                 label="Net Sale Consideration (Sale Price - Transfer Expenses)"
-                hint="Statutorily required for Section 54F proportionate exemption calculation"
+                hint="Statutorily required for Section 86 (formerly Section 54F) proportionate exemption calculation"
                 value={netSaleConsideration}
                 onChange={setNetSaleConsideration}
                 min={capitalGainsAmount}
@@ -278,7 +290,7 @@ export default function Section54Calculator() {
           {/* Exemption Section Selector */}
           <div className="surface-card p-5 space-y-3">
             <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Select Exemption Mode
+              Select Exemption Route
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <button
@@ -297,8 +309,9 @@ export default function Section54Calculator() {
                 )}
               >
                 <Building className="w-5 h-5 mx-auto mb-1 text-blue-500" />
-                <div className="text-xs font-bold">Section 54</div>
-                <div className="text-[10px] text-muted-foreground">House → House</div>
+                <div className="text-xs font-bold">Section 82</div>
+                <div className="text-[10px] text-muted-foreground">formerly Sec 54</div>
+                <div className="text-[9px] text-primary/80 font-medium">House → House</div>
               </button>
 
               <button
@@ -317,8 +330,9 @@ export default function Section54Calculator() {
                 )}
               >
                 <Landmark className="w-5 h-5 mx-auto mb-1 text-emerald-500" />
-                <div className="text-xs font-bold">Section 54EC</div>
-                <div className="text-[10px] text-muted-foreground">REC / NHAI Bonds</div>
+                <div className="text-xs font-bold">Section 85</div>
+                <div className="text-[10px] text-muted-foreground">formerly Sec 54EC</div>
+                <div className="text-[9px] text-primary/80 font-medium">REC / NHAI Bonds</div>
               </button>
 
               <button
@@ -337,8 +351,9 @@ export default function Section54Calculator() {
                 )}
               >
                 <Gem className="w-5 h-5 mx-auto mb-1 text-amber-500" />
-                <div className="text-xs font-bold">Section 54F</div>
-                <div className="text-[10px] text-muted-foreground">Plot/Gold → House</div>
+                <div className="text-xs font-bold">Section 86</div>
+                <div className="text-[10px] text-muted-foreground">formerly Sec 54F</div>
+                <div className="text-[9px] text-primary/80 font-medium">Other → House</div>
               </button>
 
               <button
@@ -353,21 +368,27 @@ export default function Section54Calculator() {
               >
                 <Scale className="w-5 h-5 mx-auto mb-1 text-purple-500" />
                 <div className="text-xs font-bold">Compare All</div>
-                <div className="text-[10px] text-muted-foreground">Eligible Routes</div>
+                <div className="text-[10px] text-muted-foreground">Sec 82, 85, 86</div>
+                <div className="text-[9px] text-primary/80 font-medium">Eligible Routes</div>
               </button>
             </div>
           </div>
 
-          {/* Section 54 Inputs (Residential House -> Residential House) */}
+          {/* Section 82 Inputs (Residential House -> Residential House) */}
           {(sectionType === "section_54_property" ||
             (sectionType === "compare_both" && originalAssetType === "residential_house")) && (
             <div className="surface-card p-5 space-y-4 border border-blue-500/20 bg-blue-50/10 dark:bg-blue-950/10">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Building className="w-4 h-4 text-blue-500" />
-                  <h3 className="text-sm font-bold text-foreground">
-                    Section 54: Residential House Reinvestment
-                  </h3>
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">
+                      Section 82 — Residential House Exemption
+                    </h3>
+                    <div className="text-[10px] text-muted-foreground">
+                      Formerly Section 54 of Income-tax Act, 1961
+                    </div>
+                  </div>
                 </div>
                 <span className="text-[10px] font-bold text-blue-600 bg-blue-100 dark:bg-blue-900/50 px-2 py-0.5 rounded">
                   Max Cap: ₹10 Cr
@@ -375,7 +396,7 @@ export default function Section54Calculator() {
               </div>
 
               <HybridInput
-                label="Amount Reinvested in New Residential House (Section 54)"
+                label={useTwoResidentialHousesOption ? "Reinvestment in First Residential House" : "Amount Reinvested in New Residential House"}
                 value={section54InvestmentAmount}
                 onChange={setSection54InvestmentAmount}
                 min={0}
@@ -434,10 +455,69 @@ export default function Section54Calculator() {
                   />
                 </div>
               </div>
+
+              {/* Section 82 Two-House Option */}
+              <div className="pt-3 border-t border-border/60 space-y-2.5">
+                <div className="flex items-start gap-2">
+                  <input
+                    id="two-house-opt"
+                    type="checkbox"
+                    checked={useTwoResidentialHousesOption}
+                    onChange={(e) => setUseTwoResidentialHousesOption(e.target.checked)}
+                    className="mt-0.5 rounded border-border text-primary focus:ring-primary h-4 w-4"
+                  />
+                  <div>
+                    <label htmlFor="two-house-opt" className="text-xs text-foreground font-semibold cursor-pointer block">
+                      Use once-in-a-lifetime two-residential-house option (Section 82 proviso)
+                    </label>
+                    <span className="text-[11px] text-muted-foreground block mt-0.5">
+                      Section 82 proviso allows purchasing/constructing two residential houses in India when LTCG does not exceed ₹2 Crore. Strictly once-in-a-lifetime.
+                    </span>
+                  </div>
+                </div>
+
+                {useTwoResidentialHousesOption && (
+                  <div className="pl-6 space-y-3 pt-1">
+                    {capitalGainsAmount > 20000000 ? (
+                      <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs text-amber-700 dark:text-amber-400">
+                        ⚠️ Long-Term Capital Gains ({formatINR(capitalGainsAmount)}) exceed the statutory ₹2 Crore limit. The two-house option cannot be exercised; statutory exemption is restricted to one residential house.
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <input
+                            id="two-house-prev"
+                            type="checkbox"
+                            checked={twoHousesOptionExercisedPreviously}
+                            onChange={(e) => setTwoHousesOptionExercisedPreviously(e.target.checked)}
+                            className="rounded border-border text-primary focus:ring-primary h-3.5 w-3.5"
+                          />
+                          <label htmlFor="two-house-prev" className="text-xs text-muted-foreground cursor-pointer">
+                            I have previously exercised this option in a prior tax year (option revoked)
+                          </label>
+                        </div>
+
+                        {!twoHousesOptionExercisedPreviously && (
+                          <HybridInput
+                            label="Reinvestment in Second Residential House"
+                            hint="Combined qualifying cost of both houses is exempt up to statutory limit"
+                            value={secondPropertyInvestmentAmount}
+                            onChange={setSecondPropertyInvestmentAmount}
+                            min={0}
+                            max={100000000}
+                            step={100000}
+                            prefix="₹"
+                          />
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
-          {/* Section 54EC Inputs (Specified Bonds) */}
+          {/* Section 85 Inputs (Specified Bonds) */}
           {(sectionType === "section_54ec_bonds" ||
             (sectionType === "compare_both" &&
               (originalAssetType === "residential_house" ||
@@ -446,12 +526,17 @@ export default function Section54Calculator() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Landmark className="w-4 h-4 text-emerald-500" />
-                  <h3 className="text-sm font-bold text-foreground">
-                    Section 54EC: Capital Gains Bonds (REC / NHAI / PFC)
-                  </h3>
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">
+                      Section 85 — Specified Bonds
+                    </h3>
+                    <div className="text-[10px] text-muted-foreground">
+                      Formerly Section 54EC (REC / NHAI / PFC / IRFC)
+                    </div>
+                  </div>
                 </div>
                 <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-0.5 rounded">
-                  Max Cap: ₹50 Lakh
+                  Max Cap: ₹50 Lakh (Sec 85(2))
                 </span>
               </div>
 
@@ -467,7 +552,9 @@ export default function Section54Calculator() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border/60">
                 <div className="text-xs text-muted-foreground flex items-center">
-                  <span>5-Year lock-in at ~5.25% taxable interest p.a.</span>
+                  <span>
+                    Under Section 85(2), aggregate investment across year of transfer and subsequent year cannot exceed ₹50 Lakh. 5-Year lock-in (~5.25% taxable interest).
+                  </span>
                 </div>
                 <div>
                   <HybridInput
@@ -484,23 +571,28 @@ export default function Section54Calculator() {
             </div>
           )}
 
-          {/* Section 54F Inputs (Non-Residential Asset -> Residential House) */}
+          {/* Section 86 Inputs (Non-Residential Asset -> Residential House) */}
           {is54FApplicable && (
             <div className="surface-card p-5 space-y-4 border border-amber-500/20 bg-amber-50/10 dark:bg-amber-950/10">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Gem className="w-4 h-4 text-amber-500" />
-                  <h3 className="text-sm font-bold text-foreground">
-                    Section 54F: Residential House Reinvestment
-                  </h3>
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">
+                      Section 86 — Other LTCG Asset → House
+                    </h3>
+                    <div className="text-[10px] text-muted-foreground">
+                      Formerly Section 54F (Plot/Gold/Shares → Residential House)
+                    </div>
+                  </div>
                 </div>
                 <span className="text-[10px] font-bold text-amber-600 bg-amber-100 dark:bg-amber-900/50 px-2 py-0.5 rounded">
-                  Max Cap: ₹10 Cr
+                  Max Cap: ₹10 Cr (Proportionate)
                 </span>
               </div>
 
               <HybridInput
-                label="Amount Reinvested in New House (Section 54F)"
+                label="Amount Reinvested in New House"
                 value={section54fInvestmentAmount}
                 onChange={setSection54fInvestmentAmount}
                 min={0}
@@ -518,9 +610,9 @@ export default function Section54Calculator() {
                   onChange={(e) => setExistingHousesCount(parseInt(e.target.value, 10) || 0)}
                   className="w-full bg-card border border-border/60 rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 >
-                  <option value={0}>0 houses (Fully Eligible u/s 54F)</option>
-                  <option value={1}>1 house (Eligible u/s 54F)</option>
-                  <option value={2}>2 or more houses (Disqualified u/s 54F)</option>
+                  <option value={0}>0 houses (Fully Eligible u/s 86)</option>
+                  <option value={1}>1 house (Eligible u/s 86)</option>
+                  <option value={2}>2 or more houses (Disqualified u/s 86)</option>
                 </select>
               </div>
 
@@ -577,30 +669,22 @@ export default function Section54Calculator() {
             </div>
           )}
 
-          {/* Ineligibility Explanatory Banner in Compare All mode */}
-          {sectionType === "compare_both" && (
-            <div className="surface-card p-4 rounded-xl border border-border/60 bg-muted/30 text-xs text-muted-foreground space-y-1.5">
-              <div className="flex items-center gap-1.5 font-semibold text-foreground">
-                <Info className="w-3.5 h-3.5 text-primary" />
-                Statutory Routing Summary
-              </div>
-              {originalAssetType === "residential_house" && (
-                <p>
-                  Selling a <strong>Residential House</strong>: Evaluating <strong>Section 54</strong> (new house) vs <strong>Section 54EC</strong> (bonds). Section 54F is statutorily unavailable.
-                </p>
-              )}
-              {originalAssetType === "land_or_building_non_residential" && (
-                <p>
-                  Selling <strong>Commercial Property or Plot</strong>: Evaluating <strong>Section 54EC</strong> (bonds) vs <strong>Section 54F</strong> (new house). Section 54 is statutorily unavailable.
-                </p>
-              )}
-              {originalAssetType === "other_long_term_asset" && (
-                <p>
-                  Selling <strong>Shares, Gold, or Other Capital Assets</strong>: Evaluating <strong>Section 54F</strong> (new house). Sections 54 and 54EC are statutorily unavailable.
-                </p>
-              )}
+          {/* Scope & Post-Reinvestment Compliance Disclosure */}
+          <div className="surface-card p-4 rounded-xl border border-border/70 bg-muted/20 text-xs space-y-2">
+            <div className="flex items-center gap-1.5 font-bold text-foreground">
+              <Info className="w-4 h-4 text-primary shrink-0" />
+              Statutory Scope & Post-Reinvestment Compliance Disclosure
             </div>
-          )}
+            <p className="text-muted-foreground leading-relaxed text-[11px]">
+              This planner evaluates statutory eligibility at the <strong>transaction and initial reinvestment stage</strong>.
+              Under the Income-tax Act, 2025, exemptions claimed under Section 86 (formerly 54F) and Section 82 (formerly 54) will be revoked and taxed as LTCG in future years if:
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-muted-foreground text-[11px] pl-1">
+              <li><strong>Ownership restriction:</strong> Purchasing another residential house within 1 year before or 2 years after transfer, or constructing another house within 3 years.</li>
+              <li><strong>Holding restriction:</strong> Transferring or selling the newly acquired residential house within 3 years of acquisition or construction.</li>
+              <li><strong>CGAS compliance:</strong> Failing to utilize funds deposited in the Capital Gains Account Scheme (CGAS) within the prescribed 3-year statutory period.</li>
+            </ul>
+          </div>
         </div>
 
         {/* Right Output Column */}
@@ -623,8 +707,11 @@ export default function Section54Calculator() {
               <div className="text-base font-bold text-emerald-600 dark:text-emerald-400 mt-1">
                 {formatINR(result.activeResult.exemptionAllowed)}
               </div>
+              {result.activeResult.twoHousesOptionApplied && (
+                <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium block">2 Houses (Sec 82 Proviso)</span>
+              )}
               {result.activeResult.proportionateExemptionApplied && (
-                <span className="text-[10px] text-amber-500 font-medium block">Proportionate u/s 54F</span>
+                <span className="text-[10px] text-amber-500 font-medium block">Proportionate u/s 86</span>
               )}
             </div>
 
@@ -662,6 +749,19 @@ export default function Section54Calculator() {
             </div>
           </div>
 
+          {/* Advisory Notice for Two-House Option */}
+          {result.activeResult.twoHousesOptionMessage && (
+            <div className={clsx(
+              "surface-card p-4 rounded-xl border text-xs leading-relaxed flex items-start gap-2.5",
+              result.activeResult.twoHousesOptionApplied
+                ? "border-blue-500/40 bg-blue-500/10 text-blue-900 dark:text-blue-300"
+                : "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300"
+            )}>
+              <Info className="w-4 h-4 shrink-0 mt-0.5" />
+              <p>{result.activeResult.twoHousesOptionMessage}</p>
+            </div>
+          )}
+
           {/* Ineligibility / Disqualification / Timeline Alerts */}
           {!result.activeResult.isStatutorilyEligible && (
             <div className="surface-card p-4 rounded-xl border border-destructive/40 bg-destructive/10 flex items-start gap-2.5">
@@ -698,7 +798,7 @@ export default function Section54Calculator() {
               <div className="flex items-center gap-2">
                 <Scale className="w-4 h-4 text-purple-600" />
                 <h3 className="text-sm font-bold text-foreground">
-                  Statutory Route Comparison
+                  Statutory Route Comparison (Income-tax Act, 2025)
                 </h3>
               </div>
 
@@ -712,9 +812,9 @@ export default function Section54Calculator() {
                   <thead>
                     <tr className="border-b border-border text-muted-foreground text-left">
                       <th className="py-2 pr-2">Feature</th>
-                      <th className="py-2 px-2">Section 54 (House)</th>
-                      <th className="py-2 px-2">Section 54EC (Bonds)</th>
-                      <th className="py-2 pl-2">Section 54F (Plot/Gold)</th>
+                      <th className="py-2 px-2">Sec 82 (formerly 54)</th>
+                      <th className="py-2 px-2">Sec 85 (formerly 54EC)</th>
+                      <th className="py-2 pl-2">Sec 86 (formerly 54F)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/50">
@@ -768,8 +868,8 @@ export default function Section54Calculator() {
                     </tr>
                     <tr>
                       <td className="py-2 pr-2 text-muted-foreground">Statutory Cap</td>
-                      <td className="py-2 px-2">₹10 Crore</td>
-                      <td className="py-2 px-2">₹50 Lakh / year</td>
+                      <td className="py-2 px-2">₹10 Cr (1 or 2 houses if LTCG ≤ ₹2Cr)</td>
+                      <td className="py-2 px-2">₹50 Lakh aggregate (Sec 85(2))</td>
                       <td className="py-2 pl-2">₹10 Cr (Proportionate)</td>
                     </tr>
                     <tr>
