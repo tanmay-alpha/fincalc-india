@@ -2603,6 +2603,10 @@ export interface CapitalGainsOutput {
   costOfImprovement: number;
   transferExpenses: number;
   rawCapitalGain: number;
+  grossCapitalGain: number;
+  capitalGainIncludedInTotalIncome: number;
+  annualThresholdOrExemptionUsed: number;
+  specialRateChargeableGain: number;
   isLoss: boolean;
   exemptionAllowed: number;
   taxableGain: number;
@@ -2696,6 +2700,7 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
 
   let exemptionAllowed = 0;
   let taxableGain = Math.max(0, rawCapitalGain);
+  const capitalGainIncludedInTotalIncome = taxableGain;
   let taxRatePercent = 0;
   let totalTaxPayable = 0;
   let realEstateComparison: CapitalGainsOutput["realEstateComparison"];
@@ -2718,6 +2723,7 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
       const remainingExemption = Math.max(0, 125000 - safePriorExemption);
       exemptionAllowed = Math.min(taxableGain, remainingExemption);
       const taxablePortion = Math.max(0, taxableGain - exemptionAllowed);
+      taxableGain = taxablePortion;
       totalTaxPayable = (taxablePortion * 12.5) / 100;
       explanation = `Tax Year 2026-27: Listed Equity LTCG (>12 months) is taxed at 12.5%. Statutory exemption of ₹${Math.round(exemptionAllowed).toLocaleString("en-IN")} applied (out of ₹1.25L limit).`;
     } else {
@@ -2813,6 +2819,10 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
     costOfImprovement: Math.round(safeImp),
     transferExpenses: Math.round(safeExp),
     rawCapitalGain: Math.round(rawCapitalGain),
+    grossCapitalGain: Math.round(rawCapitalGain),
+    capitalGainIncludedInTotalIncome: Math.round(capitalGainIncludedInTotalIncome),
+    annualThresholdOrExemptionUsed: Math.round(exemptionAllowed),
+    specialRateChargeableGain: Math.round(taxableGain),
     isLoss,
     exemptionAllowed: Math.round(exemptionAllowed),
     taxableGain: Math.round(taxableGain),
@@ -3834,7 +3844,7 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
   if (capitalGainsInput) {
     const upstreamResult = calcCapitalGains(capitalGainsInput);
     if (!upstreamResult.isLoss && upstreamResult.gainType === "LTCG") {
-      initialLtcgGains = upstreamResult.taxableGain || upstreamResult.rawCapitalGain;
+      initialLtcgGains = Math.max(0, upstreamResult.rawCapitalGain);
     } else {
       initialLtcgGains = 0;
     }
@@ -6313,7 +6323,6 @@ export function calcNPS(input: NPSInput): NPSOutput {
     summary: `NPS Corpus: ₹${Math.round(totalCorpus).toLocaleString("en-IN")} at Age ${safeRetirement} | Tax-Free Lump Sum: ₹${Math.round(taxFreeLumpSumAmount).toLocaleString("en-IN")} | Monthly Pension: ₹${Math.round(estimatedMonthlyPension).toLocaleString("en-IN")}/mo`,
   };
 }
-
 
 
 
