@@ -267,6 +267,9 @@ export interface TaxOutput {
   rebateSection: string;
   isMarginalRebateApplied: boolean;
   specialRateTax: number;
+  equityLtcgIncludedInTotalIncome: number;
+  equityLtcgChargeableAtSpecialRate: number;
+  equityLtcgAnnualThresholdUsed: number;
   equityLtcgTax: number;
   equityStcgTax: number;
   otherLtcgTax: number;
@@ -1576,6 +1579,9 @@ function computeRegimeTax(
   rebateSection: string;
   isMarginalRebateApplied: boolean;
   specialRateTax: number;
+  equityLtcgIncludedInTotalIncome: number;
+  equityLtcgChargeableAtSpecialRate: number;
+  equityLtcgAnnualThresholdUsed: number;
   equityLtcgTax: number;
   equityStcgTax: number;
   otherLtcgTax: number;
@@ -1645,15 +1651,22 @@ function computeRegimeTax(
   const equityStcg = Math.max(0, input.equityStcg ?? 0);
   const otherLtcg = Math.max(0, input.otherLtcg ?? 0);
 
-  const equityLtcgTaxable = Math.max(0, equityLtcg - CAPITAL_GAINS_RATES.equityLTCG.exemptionThreshold);
-  const equityLtcgTax = Math.round(equityLtcgTaxable * CAPITAL_GAINS_RATES.equityLTCG.rate);
+  // The annual Section 112A threshold reduces only the gain charged at the
+  // special rate. The full eligible gain remains part of total income for
+  // rebate and surcharge threshold tests.
+  const equityLtcgAnnualThresholdUsed = Math.min(
+    equityLtcg,
+    CAPITAL_GAINS_RATES.equityLTCG.exemptionThreshold
+  );
+  const equityLtcgChargeableAtSpecialRate = Math.max(0, equityLtcg - equityLtcgAnnualThresholdUsed);
+  const equityLtcgTax = Math.round(equityLtcgChargeableAtSpecialRate * CAPITAL_GAINS_RATES.equityLTCG.rate);
   const equityStcgTax = Math.round(equityStcg * CAPITAL_GAINS_RATES.equitySTCG.rate);
   const otherLtcgTax = Math.round(otherLtcg * 0.125);
   const specialRateTax = equityLtcgTax + equityStcgTax + otherLtcgTax;
-  const specialRateTaxableIncome = equityLtcgTaxable + equityStcg + otherLtcg;
+  const specialRateTaxableIncome = equityLtcgChargeableAtSpecialRate + equityStcg + otherLtcg;
 
   // Total Taxable Income for statutory thresholds (Section 156 and Surcharge)
-  const totalTaxableIncome = ordinaryTaxableIncome + specialRateTaxableIncome;
+  const totalTaxableIncome = ordinaryTaxableIncome + equityLtcg + equityStcg + otherLtcg;
 
   // ─── SECTION 156 (FORMERLY 87A) REBATE & MARGINAL RELIEF ─────────
   let rebateAmount = 0;
@@ -1722,6 +1735,9 @@ function computeRegimeTax(
     rebateSection: isMarginalRebateApplied ? "Section 156(2)(b) Marginal Relief" : "Section 156",
     isMarginalRebateApplied,
     specialRateTax: Math.round(specialRateTax),
+    equityLtcgIncludedInTotalIncome: Math.round(equityLtcg),
+    equityLtcgChargeableAtSpecialRate: Math.round(equityLtcgChargeableAtSpecialRate),
+    equityLtcgAnnualThresholdUsed: Math.round(equityLtcgAnnualThresholdUsed),
     equityLtcgTax: Math.round(equityLtcgTax),
     equityStcgTax: Math.round(equityStcgTax),
     otherLtcgTax: Math.round(otherLtcgTax),
@@ -1792,6 +1808,9 @@ export function calcTax(input: TaxInput): TaxOutput {
     rebateSection: current.rebateSection,
     isMarginalRebateApplied: current.isMarginalRebateApplied,
     specialRateTax: current.specialRateTax,
+    equityLtcgIncludedInTotalIncome: current.equityLtcgIncludedInTotalIncome,
+    equityLtcgChargeableAtSpecialRate: current.equityLtcgChargeableAtSpecialRate,
+    equityLtcgAnnualThresholdUsed: current.equityLtcgAnnualThresholdUsed,
     equityLtcgTax: current.equityLtcgTax,
     equityStcgTax: current.equityStcgTax,
     otherLtcgTax: current.otherLtcgTax,
@@ -6294,7 +6313,6 @@ export function calcNPS(input: NPSInput): NPSOutput {
     summary: `NPS Corpus: ₹${Math.round(totalCorpus).toLocaleString("en-IN")} at Age ${safeRetirement} | Tax-Free Lump Sum: ₹${Math.round(taxFreeLumpSumAmount).toLocaleString("en-IN")} | Monthly Pension: ₹${Math.round(estimatedMonthlyPension).toLocaleString("en-IN")}/mo`,
   };
 }
-
 
 
 

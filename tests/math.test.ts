@@ -241,7 +241,8 @@ describe('calcTax — Tax Year 2026-27 New Regime', () => {
       regime: 'new',
     })
     expect(result.ordinaryTaxableIncome).toBe(925000)
-    expect(result.taxableIncome).toBe(1000000)
+    // Full Section 112A gain remains in total income; only ₹75k is chargeable at the special rate.
+    expect(result.taxableIncome).toBe(1125000)
     expect(result.slabTaxBeforeRebate).toBe(32500)
     expect(result.rebateAmount).toBe(32500)
     expect(result.specialRateTax).toBe(9375)
@@ -3736,5 +3737,4 @@ describe('FNO_CONTRACT_DEFAULTS — Official NSE Revision Circular Metadata', ()
     expect(FNO_CONTRACT_DEFAULTS.finnifty.transitionNote).toContain('Staggered transition per contract expiry schedule')
   })
 })
-
 
