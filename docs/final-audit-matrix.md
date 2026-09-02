@@ -14,6 +14,7 @@
 | Check | Status | Evidence |
 | --- | --- | --- |
 | Canonical calculator count | VERIFIED | `CALCULATOR_REGISTRY` has 31 entries. |
+| Canonical calculator contracts | VERIFIED | `CALCULATOR_CONTRACTS` derives 31 route/id contracts from `CALCULATOR_REGISTRY`; only the six currently schema-backed calculators are marked save-supported. |
 | Save contract alignment | DEFECT | 21 components render Save controls; `app/api/calculate/[type]/route.ts` handles only SIP, EMI, FD, PPF, Lumpsum, and Tax. |
 | Saved-result integrity | DEFECT | Save API validates `inputs` then persists submitted `results`. |
 | Private-by-default sharing | DEFECT | `Calculation.shareId` is always generated and public result queries do not require a publish flag. |
