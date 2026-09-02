@@ -10,7 +10,8 @@ interface Calculation {
   type: string;
   inputs: Record<string, unknown>;
   outputs: Record<string, unknown>;
-  shareId: string;
+  isShared: boolean;
+  shareId: string | null;
   label: string | null;
   createdAt: string;
 }
@@ -70,10 +71,12 @@ const FILTER_OPTIONS = ['all', 'SIP', 'EMI', 'FD', 'PPF', 'LUMPSUM', 'TAX'] as c
 export default function HistoryClient({ calculations }: { calculations: Calculation[] }) {
   const [filter, setFilter] = useState<string>('all');
   const [deleted, setDeleted] = useState<Set<string>>(new Set());
+  const [sharedState, setSharedState] = useState<Record<string, boolean>>({});
+  const [shareIds, setShareIds] = useState<Record<string, string | null>>({});
 
   const filtered = calculations
     .filter(c => !deleted.has(c.id))
-    .filter(c => filter === 'all' || c.type === filter);
+    .filter(c => filter === 'all' || c.type.toUpperCase() === filter);
 
   const copyLink = (shareId: string) => {
     const url = `${window.location.origin}/result/${shareId}`;
@@ -93,6 +96,32 @@ export default function HistoryClient({ calculations }: { calculations: Calculat
       }
     } catch {
       toast.error('Failed to delete');
+    }
+  };
+
+  const handlePublish = async (id: string) => {
+    try {
+      const res = await fetch(`/api/history/${id}/share`, { method: 'POST' });
+      const json = await res.json().catch(() => null);
+      const shareId = json?.data?.shareId;
+      if (!res.ok || !shareId) throw new Error('Publish failed');
+      setSharedState(prev => ({ ...prev, [id]: true }));
+      setShareIds(prev => ({ ...prev, [id]: shareId }));
+      copyLink(shareId);
+    } catch {
+      toast.error('Could not create a share link');
+    }
+  };
+
+  const handleUnshare = async (id: string) => {
+    try {
+      const res = await fetch(`/api/history/${id}/share`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Revoke failed');
+      setSharedState(prev => ({ ...prev, [id]: false }));
+      setShareIds(prev => ({ ...prev, [id]: null }));
+      toast.success('Share link revoked');
+    } catch {
+      toast.error('Could not revoke share link');
     }
   };
 
@@ -123,21 +152,25 @@ export default function HistoryClient({ calculations }: { calculations: Calculat
       </div>
 
       <div className="space-y-3">
-        {filtered.map(calc => (
+        {filtered.map(calc => {
+          const isShared = sharedState[calc.id] ?? calc.isShared;
+          const shareId = shareIds[calc.id] ?? calc.shareId;
+          const typeKey = calc.type.toUpperCase();
+          return (
           <div
             key={calc.id}
             className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:shadow-md transition-all flex items-center gap-4"
           >
             <div className="w-10 h-10 bg-blue-50 dark:bg-blue-950/50 rounded-xl flex items-center justify-center text-xl shrink-0">
-              {calcIcons[calc.type] || '\uD83D\uDCCA'}
+              {calcIcons[typeKey] || '\uD83D\uDCCA'}
             </div>
 
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-sm text-slate-900 dark:text-white">
-                {calcNames[calc.type] || calc.type}
+                {calcNames[typeKey] || calc.type}
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                {generateLabel(calc.type, calc.inputs)}
+                {generateLabel(typeKey, calc.inputs)}
               </p>
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
                 {formatIST(calc.createdAt)}
@@ -145,20 +178,43 @@ export default function HistoryClient({ calculations }: { calculations: Calculat
             </div>
 
             <div className="flex items-center gap-1 shrink-0">
-              <Link
-                href={`/result/${calc.shareId}`}
-                className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition"
-                title="Open calculation"
-              >
-                <ExternalLink size={14} />
-              </Link>
-              <button
-                onClick={() => copyLink(calc.shareId)}
-                className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition"
-                title="Copy share link"
-              >
-                <Share2 size={14} />
-              </button>
+              {isShared && shareId ? (
+                <>
+                  <Link
+                    href={`/result/${shareId}`}
+                    className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition"
+                    title="Open shared calculation"
+                    aria-label="Open shared calculation"
+                  >
+                    <ExternalLink size={14} />
+                  </Link>
+                  <button
+                    onClick={() => copyLink(shareId)}
+                    className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition"
+                    title="Copy share link"
+                    aria-label="Copy share link"
+                  >
+                    <Share2 size={14} />
+                  </button>
+                  <button
+                    onClick={() => handleUnshare(calc.id)}
+                    className="p-2 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition"
+                    title="Revoke share link"
+                    aria-label="Revoke share link"
+                  >
+                    Revoke
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => handlePublish(calc.id)}
+                  className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition"
+                  title="Publish share link"
+                  aria-label="Publish share link"
+                >
+                  <Share2 size={14} />
+                </button>
+              )}
               <button
                 onClick={() => handleDelete(calc.id)}
                 className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition"
@@ -168,7 +224,7 @@ export default function HistoryClient({ calculations }: { calculations: Calculat
               </button>
             </div>
           </div>
-        ))}
+        )})}
       </div>
     </>
   );

@@ -24,6 +24,7 @@ export async function GET() {
         type: true,
         inputs: true,
         outputs: true,
+        isShared: true,
         shareId: true,
         createdAt: true,
         label: true,

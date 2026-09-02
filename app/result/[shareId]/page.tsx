@@ -6,8 +6,8 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 export const revalidate = 3600; // ISR-ish for shared, immutable results
 
-// Cuid pattern — reject malformed values before hitting the DB.
-const SHARE_ID_PATTERN = /^[a-z0-9]{20,32}$/i;
+// Legacy CUIDs and newly-issued UUIDv4 public tokens are accepted.
+const SHARE_ID_PATTERN = /^(?:[a-z0-9]{20,32}|[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i;
 
 export default async function ResultPage({
   params,
@@ -21,8 +21,8 @@ export default async function ResultPage({
   }
 
   const calc = await prisma.calculation
-    .findUnique({
-      where: { shareId },
+    .findFirst({
+      where: { shareId, isShared: true },
       select: {
         // DO NOT select userId — privacy: shared results must not leak owner
         type: true,
@@ -191,8 +191,8 @@ export async function generateMetadata({
   }
 
   const calc = await prisma.calculation
-    .findUnique({
-      where: { shareId },
+    .findFirst({
+      where: { shareId, isShared: true },
       select: { type: true },
     })
     .catch(() => null);

@@ -3,9 +3,8 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-// shareId values are cuids (~24 chars alphanumeric) — reject anything else
-// early to avoid hitting the DB with garbage.
-const SHARE_ID_PATTERN = /^[a-z0-9]{20,32}$/i;
+// Legacy CUIDs and newly-issued UUIDv4 public tokens are accepted.
+const SHARE_ID_PATTERN = /^(?:[a-z0-9]{20,32}|[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i;
 
 export async function GET(
   req: Request,
@@ -21,8 +20,8 @@ export async function GET(
       );
     }
 
-    const calculation = await prisma.calculation.findUnique({
-      where: { shareId },
+    const calculation = await prisma.calculation.findFirst({
+      where: { shareId, isShared: true },
       select: {
         inputs: true,
         outputs: true,

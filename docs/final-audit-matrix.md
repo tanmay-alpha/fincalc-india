@@ -17,7 +17,7 @@
 | Canonical calculator contracts | VERIFIED | `CALCULATOR_CONTRACTS` derives 31 route/id contracts from `CALCULATOR_REGISTRY`; only the six currently schema-backed calculators are marked save-supported. |
 | Save contract alignment | DEFECT | 21 components render Save controls; `app/api/calculate/[type]/route.ts` handles only SIP, EMI, FD, PPF, Lumpsum, and Tax. |
 | Saved-result integrity | VERIFIED | Save API resolves `CALCULATOR_CONTRACTS`, validates inputs, recomputes the canonical output, and persists only that output. |
-| Private-by-default sharing | DEFECT | `Calculation.shareId` is always generated and public result queries do not require a publish flag. |
+| Private-by-default sharing | VERIFIED | `Calculation` starts with `isShared=false` and no token; explicit owner publish creates a UUID token, and public reads require `isShared=true`. |
 | DB failure semantics | VERIFIED | A Prisma create failure now returns a clean `503` and `success: false`; no fallback claims persistence. |
 | Browser/a11y coverage | DEFECT | Existing browser tests are smoke/a11y-centric; CI has no dedicated retry-zero accessibility job. |
 | PDF export | VERIFIED | No calculator component invokes the PDF generator; this is not currently a user-facing calculator capability. |

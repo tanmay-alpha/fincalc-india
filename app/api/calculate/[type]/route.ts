@@ -196,7 +196,7 @@ export async function POST(
     }
 
     // ─── Persist ────────────────────────────────────────────────
-    let shareId: string | null = null;
+    let calculationId: string | null = null;
 
     try {
       const calculation = await prisma.calculation.create({
@@ -206,9 +206,9 @@ export async function POST(
           outputs,
           userId: session.user.id,
         },
-        select: { shareId: true },
+        select: { id: true },
       });
-      shareId = calculation.shareId;
+      calculationId = calculation.id;
     } catch (dbError) {
       console.error("[calculate] DB save failure:", dbError);
       return NextResponse.json(
@@ -219,7 +219,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      data: { shareId },
+      data: { calculationId },
     });
   } catch (error) {
     console.error("[calculate] unexpected error:", error);

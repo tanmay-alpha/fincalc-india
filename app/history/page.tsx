@@ -46,6 +46,7 @@ export default async function HistoryPage() {
     type: c.type,
     inputs: c.inputs as Record<string, unknown>,
     outputs: c.outputs as Record<string, unknown>,
+    isShared: c.isShared,
     shareId: c.shareId,
     label: c.label,
     createdAt: c.createdAt.toISOString(),

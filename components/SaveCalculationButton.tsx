@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Bookmark, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useSession, signIn } from "next-auth/react";
+import { getCalculatorContract, isSaveSupportedContract } from "@/lib/calculator-contracts";
 import { cn } from "@/lib/utils";
 
 interface SaveCalculationPayload {
@@ -19,7 +20,7 @@ interface SaveCalculationButtonProps {
   calcType: string;
   data: SaveCalculationPayload;
   // eslint-disable-next-line no-unused-vars
-  onSaved?: (_id: string) => void;
+  onSaved?: (_calculationId: string) => void;
   className?: string;
 }
 
@@ -39,13 +40,15 @@ export default function SaveCalculationButton({
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const { data: session, status } = useSession();
+  const contract = getCalculatorContract(calcType.toLowerCase());
+  const saveSupported = Boolean(contract && isSaveSupportedContract(contract));
 
   const handleSave = async () => {
-    if (status === "loading") return;
+    if (status === "loading" || !saveSupported) return;
 
     if (!session) {
       toast("Sign in to save calculations", {
-        description: "Your calculations will be saved and shareable.",
+        description: "Your calculations are private until you choose Share.",
         action: {
           label: "Sign In",
           onClick: () => signIn("google"),
@@ -77,13 +80,13 @@ export default function SaveCalculationButton({
       }
 
       const json = await res.json();
-      const finalShareId = json?.data?.shareId;
-      if (!json?.success || !finalShareId) {
+      const calculationId = json?.data?.calculationId;
+      if (!json?.success || !calculationId) {
         throw new Error("Save failed");
       }
 
       setSaved(true);
-      onSaved?.(finalShareId);
+      onSaved?.(calculationId);
 
       toast.success("Saved!", {
         description: "You can access this in My History anytime.",
@@ -105,7 +108,7 @@ export default function SaveCalculationButton({
     <button
       type="button"
       onClick={handleSave}
-      disabled={loading || saved || status === "loading"}
+      disabled={loading || saved || status === "loading" || !saveSupported}
       aria-label="Save calculation"
       className={cn(
         "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 border",
@@ -123,7 +126,7 @@ export default function SaveCalculationButton({
       ) : (
         <Bookmark size={15} />
       )}
-      {loading ? "Saving…" : saved ? "Saved" : "Save"}
+      {loading ? "Saving…" : saved ? "Saved" : saveSupported ? "Save" : "Save unavailable"}
     </button>
   );
 }
