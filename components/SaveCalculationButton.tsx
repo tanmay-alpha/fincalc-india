@@ -8,7 +8,11 @@ import { cn } from "@/lib/utils";
 
 interface SaveCalculationPayload {
   inputs: Record<string, unknown>;
-  results: Record<string, unknown>;
+  /**
+   * Legacy UI callers may still supply a preview result, but it is never
+   * sent to the server or used for persistence.
+   */
+  results?: Record<string, unknown>;
 }
 
 interface SaveCalculationButtonProps {
@@ -55,7 +59,7 @@ export default function SaveCalculationButton({
       const res = await fetch(`/api/calculate/${calcType.toLowerCase()}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ inputs: data.inputs }),
       });
 
       if (!res.ok) {

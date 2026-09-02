@@ -1,26 +1,20 @@
 import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
-import type { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { validateEnv } from "@/lib/env";
 import {
-  validateInput,
-  sipSchema,
-  emiSchema,
-  fdSchema,
-  ppfSchema,
-  lumpsumSchema,
-  taxSchema,
-} from "@/lib/validations";
+  getCalculatorContract,
+  isSaveSupportedContract,
+} from "@/lib/calculator-contracts";
 
 /**
- * Per-IP rate limiting using a simple sliding-window map.
+ * Best-effort per-user rate limiting using a process-local sliding-window map.
  *
  * NOTE: Vercel serverless functions can run in many parallel instances per
  * region, so an in-memory map is best-effort. For production-grade limits,
- * swap this for an Upstash/Redis backed counter. We make this safe by
- * enforcing a strict per-IP cap even if the map resets between invocations.
+ * swap this for an Upstash/Redis backed counter. It is not a distributed
+ * security boundary because serverless instances do not share this map.
  */
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const MAX_REQUESTS_PER_WINDOW = 30;
@@ -42,8 +36,58 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function isJsonValue(value: unknown): value is Prisma.InputJsonValue {
+  if (value === null || typeof value === "string" || typeof value === "boolean") return true;
+  if (typeof value === "number") return Number.isFinite(value);
+  if (Array.isArray(value)) return value.every(isJsonValue);
+  return isRecord(value) && Object.values(value).every(isJsonValue);
+}
+
 // Cap the size of nested JSON we will accept to prevent payload DoS.
 const MAX_PAYLOAD_BYTES = 32 * 1024; // 32 KB is plenty for calculator outputs
+
+async function readBoundedJsonBody(req: Request): Promise<
+  | { ok: true; body: unknown }
+  | { ok: false; status: 400 | 413; error: string }
+> {
+  const declaredLength = Number(req.headers.get("content-length") ?? 0);
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_PAYLOAD_BYTES) {
+    return { ok: false, status: 413, error: "Request body too large." };
+  }
+
+  if (!req.body) return { ok: false, status: 400, error: "Invalid JSON body" };
+
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > MAX_PAYLOAD_BYTES) {
+        await reader.cancel();
+        return { ok: false, status: 413, error: "Request body too large." };
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  try {
+    return { ok: true, body: JSON.parse(new TextDecoder().decode(bytes)) };
+  } catch {
+    return { ok: false, status: 400, error: "Invalid JSON body" };
+  }
+}
 
 export const dynamic = "force-dynamic";
 
@@ -55,15 +99,19 @@ export async function POST(
     validateEnv();
     const { type: calculatorType } = await params;
 
-    // ─── Rate limit ─────────────────────────────────────────────
-    const ip =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      req.headers.get("x-real-ip") ||
-      "unknown";
+    // ─── Auth ───────────────────────────────────────────────────
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized. Please sign in to save calculations." },
+        { status: 401 }
+      );
+    }
 
+    // ─── Best-effort authenticated rate limit ────────────────────
     const now = Date.now();
     cleanupRateLimit(now);
-    const bucket = ipRequestMap.get(ip);
+    const bucket = ipRequestMap.get(session.user.id);
     if (bucket && now - bucket.timestamp < RATE_LIMIT_WINDOW_MS) {
       if (bucket.count >= MAX_REQUESTS_PER_WINDOW) {
         return NextResponse.json(
@@ -80,37 +128,19 @@ export async function POST(
       }
       bucket.count += 1;
     } else {
-      ipRequestMap.set(ip, { count: 1, timestamp: now });
-    }
-
-    // ─── Auth ───────────────────────────────────────────────────
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized. Please sign in to save calculations." },
-        { status: 401 }
-      );
+      ipRequestMap.set(session.user.id, { count: 1, timestamp: now });
     }
 
     // ─── Body size + parse ──────────────────────────────────────
-    const contentLength = Number(req.headers.get("content-length") ?? 0);
-    if (contentLength > MAX_PAYLOAD_BYTES) {
+    const parsedBody = await readBoundedJsonBody(req);
+    if (!parsedBody.ok) {
       return NextResponse.json(
-        { success: false, error: "Request body too large." },
-        { status: 413 }
+        { success: false, error: parsedBody.error },
+        { status: parsedBody.status }
       );
     }
 
-    let body: unknown;
-    try {
-      body = await req.json();
-    } catch {
-      return NextResponse.json(
-        { success: false, error: "Invalid JSON body" },
-        { status: 400 }
-      );
-    }
-
+    const body = parsedBody.body;
     if (!isRecord(body)) {
       return NextResponse.json(
         { success: false, error: "Invalid request body" },
@@ -118,70 +148,78 @@ export async function POST(
       );
     }
 
-    const { inputs, results } = body;
+    const { inputs } = body;
 
-    if (!isRecord(inputs) || !isRecord(results) || Object.keys(results).length === 0) {
+    if (!isRecord(inputs)) {
       return NextResponse.json(
-        { success: false, error: "Missing inputs or results" },
+        { success: false, error: "Missing or invalid inputs" },
         { status: 400 }
       );
     }
 
-    const type = calculatorType.toUpperCase();
-
-    // ─── Validation by calculator type ─────────────────────────
-    let schema: z.ZodType<unknown>;
-    switch (type) {
-      case "SIP": schema = sipSchema; break;
-      case "EMI": schema = emiSchema; break;
-      case "FD": schema = fdSchema; break;
-      case "PPF": schema = ppfSchema; break;
-      case "LUMPSUM": schema = lumpsumSchema; break;
-      case "TAX": schema = taxSchema; break;
-      default:
-        return NextResponse.json(
-          { success: false, error: "Invalid calculator type" },
-          { status: 400 }
-        );
+    const contract = getCalculatorContract(calculatorType.toLowerCase());
+    if (!contract) {
+      return NextResponse.json(
+        { success: false, error: "Invalid calculator type" },
+        { status: 400 }
+      );
     }
 
-    const validation = validateInput(schema, inputs);
+    if (!isSaveSupportedContract(contract)) {
+      return NextResponse.json(
+        { success: false, error: "Saving is not supported for this calculator" },
+        { status: 400 }
+      );
+    }
+
+    const validation = contract.inputSchema.safeParse(inputs);
     if (!validation.success) {
       return NextResponse.json(
         {
           success: false,
           error: "Validation failed",
-          details: validation.errors,
+          details: validation.error.flatten().fieldErrors,
         },
         { status: 400 }
       );
     }
 
+    const outputs = contract.calculate(validation.data);
+    if (!isRecord(outputs) || !isJsonValue(outputs)) {
+      console.error("[calculate] canonical calculator returned non-serializable output", {
+        calculatorType: contract.id,
+      });
+      return NextResponse.json(
+        { success: false, error: "Calculator produced an invalid result" },
+        { status: 500 }
+      );
+    }
+
     // ─── Persist ────────────────────────────────────────────────
     let shareId: string | null = null;
-    let warning: string | undefined = undefined;
 
     try {
       const calculation = await prisma.calculation.create({
         data: {
-          type,
+          type: contract.id,
           inputs: validation.data as Prisma.InputJsonValue,
-          outputs: results as Prisma.InputJsonValue,
+          outputs,
           userId: session.user.id,
         },
         select: { shareId: true },
       });
       shareId = calculation.shareId;
     } catch (dbError) {
-      // Don't crash the user's calculation if DB is briefly unavailable.
-      console.warn("[calculate] DB save warning:", dbError);
-      warning = "DATABASE_UNAVAILABLE_FALLBACK";
+      console.error("[calculate] DB save failure:", dbError);
+      return NextResponse.json(
+        { success: false, error: "Unable to save calculation right now." },
+        { status: 503 }
+      );
     }
 
     return NextResponse.json({
       success: true,
       data: { shareId },
-      warning,
     });
   } catch (error) {
     console.error("[calculate] unexpected error:", error);

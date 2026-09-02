@@ -8,6 +8,7 @@
  */
 
 import { z } from "zod";
+import { MAX_INPUT_LIMITS } from "@/lib/constants/tax-year-2026-27";
 
 // ─── SIP ──────────────────────────────────────────────────────
 
@@ -115,34 +116,44 @@ export type LumpsumFormValues = z.infer<typeof lumpsumSchema>;
 
 // ─── TAX ──────────────────────────────────────────────────────
 
+const taxIncomeSchema = z
+  .number({ message: "Income must be a number" })
+  .finite("Income must be finite")
+  .min(0, "Income cannot be negative")
+  .max(MAX_INPUT_LIMITS.annualIncome, "Maximum income is ₹100 Crore");
+
+const taxDeductionSchema = (maximum: number, label: string) =>
+  z
+    .number({ message: `${label} must be a number` })
+    .finite(`${label} must be finite`)
+    .min(0, `${label} cannot be negative`)
+    .max(maximum, `${label} exceeds the supported limit`)
+    .default(0);
+
 export const taxSchema = z.object({
-  grossIncome: z
-    .number({ message: "Gross income is required" })
-    .min(0, "Income cannot be negative")
-    .max(100_00_00_000, "Maximum income is ₹100 Crore"),
+  // Retained only for legacy saved inputs. New callers provide actual income streams.
+  grossIncome: taxIncomeSchema.optional(),
+  salaryIncome: taxIncomeSchema.optional(),
+  interestAndOtherIncome: taxIncomeSchema.default(0),
+  dividendIncome: taxIncomeSchema.default(0),
+  businessIncome: taxIncomeSchema.default(0),
+  equityLtcg: taxIncomeSchema.default(0),
+  equityStcg: taxIncomeSchema.default(0),
+  otherLtcg: taxIncomeSchema.default(0),
+  residency: z.enum(["resident_individual", "nri"], {
+    message: "Only resident individual and NRI individual taxation are supported",
+  }).default("resident_individual"),
+  ageCategory: z.enum(["below_60", "senior_60_to_79", "super_senior_80_plus"], {
+    message: "Select a supported age category",
+  }).default("below_60"),
   regime: z.enum(["old", "new"], {
     message: "Select Old or New tax regime",
   }),
-  deduction80C: z
-    .number()
-    .min(0, "Cannot be negative")
-    .max(150000, "Section 80C maximum is ₹1,50,000")
-    .default(0),
-  deduction80D: z
-    .number()
-    .min(0, "Cannot be negative")
-    .max(100000, "Section 80D maximum is ₹1,00,000")
-    .default(0),
-  hraExemption: z
-    .number()
-    .min(0, "Cannot be negative")
-    .max(10_00_000, "Maximum HRA exemption is ₹10,00,000")
-    .default(0),
-  otherDeductions: z
-    .number()
-    .min(0, "Cannot be negative")
-    .max(50_00_000, "Maximum other deductions is ₹50,00,000")
-    .default(0),
+  deduction80C: taxDeductionSchema(150000, "Section 80C deduction"),
+  deduction80D: taxDeductionSchema(100000, "Section 80D deduction"),
+  deduction80CCD1B: taxDeductionSchema(50000, "Section 80CCD(1B) deduction"),
+  hraExemption: taxDeductionSchema(MAX_INPUT_LIMITS.annualIncome, "HRA exemption"),
+  otherDeductions: taxDeductionSchema(50_00_000, "Other deductions"),
 });
 
 export type TaxFormValues = z.infer<typeof taxSchema>;
