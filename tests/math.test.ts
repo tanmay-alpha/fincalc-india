@@ -2971,8 +2971,8 @@ describe('calcMarginRequired', () => {
   })
 
   it('10. Disclaimer text is returned accurately', () => {
-    const res = calcMarginRequired({ instrumentCategory: 'nifty_futures', lotSize: 50, numberOfLots: 1, price: 24000 })
-    expect(res.disclaimer).toContain('Tax Year 2026-27')
+    const res = calcMarginRequired({ instrumentCategory: 'nifty_futures', lotSize: 65, numberOfLots: 1, price: 24000 })
+    expect(res.disclaimer).toContain('Illustrative SPAN/exposure assumptions')
   })
 })
 

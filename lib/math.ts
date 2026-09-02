@@ -165,6 +165,7 @@ import {
   SECTION_54_CONSTANTS,
   NPS_CONSTANTS,
   MAX_INPUT_LIMITS,
+  FNO_CONTRACT_DEFAULTS,
 } from "@/lib/constants/tax-year-2026-27";
 
 export {
@@ -198,6 +199,7 @@ export {
   SECTION_54_CONSTANTS,
   NPS_CONSTANTS,
   MAX_INPUT_LIMITS,
+  FNO_CONTRACT_DEFAULTS,
 };
 
 // ─── TAX ──────────────────────────────────────────────────────
@@ -453,6 +455,16 @@ export interface Section54SingleExemptionResult {
   proportionateExemptionApplied?: boolean;
 }
 
+export type Section54StrategyType = "54" | "54EC" | "54F";
+export type Section54BestStrategyId =
+  | "54"
+  | "54EC"
+  | "54F"
+  | "tie_54_54f"
+  | "tie_54ec_54f"
+  | "tie_54_54ec"
+  | "all_equal";
+
 export interface Section54ExemptionOutput {
   initialLtcgGains: number;
   taxRatePercent: number;
@@ -465,7 +477,12 @@ export interface Section54ExemptionOutput {
     section54: Section54SingleExemptionResult;
     section54ec: Section54SingleExemptionResult;
     section54f?: Section54SingleExemptionResult;
-    taxDifference: number;
+    taxDifference: number; // For backward compatibility: best vs second-best (or 0 if all equal)
+    bestStrategy?: Section54BestStrategyId;
+    secondBestStrategy?: Section54StrategyType | "none";
+    worstStrategy?: Section54StrategyType;
+    bestVsSecondBestTaxDifference?: number;
+    bestVsWorstTaxDifference?: number;
     recommendation: string;
   };
   summary: string;
@@ -1005,6 +1022,7 @@ export interface NPSInput {
   expectedEquityReturnPercent?: number;
   expectedCorpDebtReturnPercent?: number;
   expectedGovtBondReturnPercent?: number;
+  accumulatedCorpus?: number; // Optional: overrides compound projection for testing boundary cases (e.g. ₹5L, ₹8L, ₹8,00,001, ₹12L)
   lumpSumWithdrawalPercent?: number; // Up to 80% permitted in All Citizen Model
   annuityReinvestmentPercent?: number; // Minimum 20%
   assumedAnnuityYieldPercent?: number;
@@ -3969,45 +3987,102 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
 
   let comparison: Section54ExemptionOutput["comparison"] | undefined = undefined;
   if (sectionType === "compare_both") {
-    // Bug 3 fix: rank ALL THREE strategies — 54, 54EC, 54F — not just 54 vs 54EC.
-    // Collect all eligible (non-disqualified) strategies and find the best (lowest tax after exemption).
-    type RankedStrategy = { label: string; result: Section54SingleExemptionResult };
+    // V4.3: Rank all 3 strategies with explicit tie handling and second-best comparison
+    type RankedStrategy = {
+      id: Section54StrategyType;
+      label: string;
+      result: Section54SingleExemptionResult;
+    };
     const eligibleStrategies: RankedStrategy[] = [
-      { label: "Section 54 (Residential Property)", result: s54Result },
-      { label: "Section 54EC Bonds (NHAI/REC/PFC/IRFC)", result: s54ecResult },
-      ...(!s54fResult.disqualified ? [{ label: "Section 54F (Any Long-Term Asset → Residential Property)", result: s54fResult }] : []),
+      { id: "54", label: "Section 54 (Residential Property)", result: s54Result },
+      { id: "54EC", label: "Section 54EC Bonds (NHAI/REC/PFC/IRFC)", result: s54ecResult },
+      ...(!s54fResult.disqualified
+        ? [{ id: "54F" as const, label: "Section 54F (Any Long-Term Asset → Residential Property)", result: s54fResult }]
+        : []),
     ];
 
-    // Sort ascending by taxAfterExemption (lower = better)
+    // Sort ascending by taxAfterExemption (lower tax = better strategy)
     const sorted = [...eligibleStrategies].sort(
       (a, b) => a.result.taxAfterExemption - b.result.taxAfterExemption
     );
-    const best = sorted[0];
-    const worst = sorted[sorted.length - 1];
-    // taxDifference = span between best and worst eligible strategy
-    const taxDiff = worst.result.taxAfterExemption - best.result.taxAfterExemption;
 
+    let bestStrategy: Section54BestStrategyId = "54";
+    let secondBestStrategy: Section54StrategyType | "none" = "none";
+    let worstStrategy: Section54StrategyType = sorted[sorted.length - 1].id;
+    let bestVsSecondBestTaxDifference = 0;
+    let bestVsWorstTaxDifference = sorted[sorted.length - 1].result.taxAfterExemption - sorted[0].result.taxAfterExemption;
     let rec = "";
+
     if (eligibleStrategies.length === 1) {
-      // Only one strategy is eligible
-      rec = `${best.label} is the only eligible strategy for your situation. Tax after exemption: ₹${best.result.taxAfterExemption.toLocaleString("en-IN")}.`;
-    } else if (taxDiff === 0) {
-      rec = `All eligible strategies provide equal tax savings of ₹${best.result.taxSaved.toLocaleString("en-IN")}. ${
-        !s54fResult.disqualified
-          ? "Consider Section 54F if the transferred asset is not a residential house."
-          : "Section 54EC bonds offer the simplest path (no new property required)."
-      }`;
+      // Case F: Only one strategy is eligible
+      bestStrategy = eligibleStrategies[0].id;
+      secondBestStrategy = "none";
+      worstStrategy = eligibleStrategies[0].id;
+      bestVsSecondBestTaxDifference = 0;
+      bestVsWorstTaxDifference = 0;
+      rec = `${eligibleStrategies[0].label} is the only eligible strategy for your situation. Tax after exemption: ₹${eligibleStrategies[0].result.taxAfterExemption.toLocaleString("en-IN")}.`;
     } else {
-      rec = `${best.label} saves ₹${taxDiff.toLocaleString("en-IN")} more than the next-best option (${sorted[1].label}). `;
-      if (best.result.section === "54EC") {
-        rec += "Bond investment is simpler than buying a new property and avoids real-estate execution risk.";
-      } else if (best.result.section === "54F") {
-        rec += "Section 54F applies proportionate exemption when the full net sale consideration is reinvested; partial reinvestment reduces the exemption proportionately.";
+      const minTax = sorted[0].result.taxAfterExemption;
+      const tiedAtTop = sorted.filter((s) => s.result.taxAfterExemption === minTax);
+
+      if (tiedAtTop.length === eligibleStrategies.length) {
+        // Case D: All eligible strategies produce identical tax outcomes
+        bestStrategy = "all_equal";
+        secondBestStrategy = "none";
+        worstStrategy = sorted[sorted.length - 1].id;
+        bestVsSecondBestTaxDifference = 0;
+        bestVsWorstTaxDifference = 0;
+        rec = `All eligible strategies provide equal tax savings of ₹${sorted[0].result.taxSaved.toLocaleString("en-IN")}. ${
+          !s54fResult.disqualified
+            ? "Choose Section 54 if selling a residential house, Section 54F if selling other capital assets, or Section 54EC bonds for zero real-estate hassle."
+            : "Both Section 54 and Section 54EC provide equal tax savings."
+        }`;
+      } else if (tiedAtTop.length === 2) {
+        // Case B or C: Exactly two strategies tie for best
+        const ids = tiedAtTop.map((s) => s.id);
+        if (ids.includes("54") && ids.includes("54F")) {
+          bestStrategy = "tie_54_54f";
+        } else if (ids.includes("54EC") && ids.includes("54F")) {
+          bestStrategy = "tie_54ec_54f";
+        } else {
+          bestStrategy = "tie_54_54ec";
+        }
+
+        const remainder = sorted.find((s) => s.result.taxAfterExemption > minTax)!;
+        secondBestStrategy = remainder.id;
+        worstStrategy = remainder.id;
+        bestVsSecondBestTaxDifference = remainder.result.taxAfterExemption - minTax;
+        bestVsWorstTaxDifference = bestVsSecondBestTaxDifference;
+
+        if (bestStrategy === "tie_54_54f") {
+          rec = `Section 54 and Section 54F tie for the maximum tax savings (saving ₹${tiedAtTop[0].result.taxSaved.toLocaleString("en-IN")}, leaving ₹${minTax.toLocaleString("en-IN")} tax), saving ₹${bestVsSecondBestTaxDifference.toLocaleString("en-IN")} more than ${remainder.label}. Choose Section 54 if selling a residential house, or Section 54F if selling another long-term asset (e.g. plot, commercial property, shares).`;
+        } else if (bestStrategy === "tie_54ec_54f") {
+          rec = `Section 54EC Bonds and Section 54F tie for maximum tax savings (leaving ₹${minTax.toLocaleString("en-IN")} tax), saving ₹${bestVsSecondBestTaxDifference.toLocaleString("en-IN")} more than ${remainder.label}.`;
+        } else {
+          rec = `Section 54 and Section 54EC Bonds tie for maximum tax savings (leaving ₹${minTax.toLocaleString("en-IN")} tax), saving ₹${bestVsSecondBestTaxDifference.toLocaleString("en-IN")} more than ${remainder.label}.`;
+        }
       } else {
-        rec += "Section 54 covers gains beyond the ₹50 Lakh statutory cap of Section 54EC bonds.";
+        // Case A or E: One unique best strategy
+        const best = sorted[0];
+        const secondBest = sorted[1];
+        bestStrategy = best.id;
+        secondBestStrategy = secondBest.id;
+        worstStrategy = sorted[sorted.length - 1].id;
+        bestVsSecondBestTaxDifference = secondBest.result.taxAfterExemption - best.result.taxAfterExemption;
+        bestVsWorstTaxDifference = sorted[sorted.length - 1].result.taxAfterExemption - best.result.taxAfterExemption;
+
+        rec = `${best.label} saves ₹${bestVsSecondBestTaxDifference.toLocaleString("en-IN")} more than the next-best option (${secondBest.label}). `;
+        if (best.id === "54EC") {
+          rec += "Bond investment is simpler than buying a new property and avoids real-estate execution risk.";
+        } else if (best.id === "54F") {
+          rec += "Section 54F provides proportionate exemption on non-residential asset transfers when net sale consideration is reinvested in a residential house.";
+        } else {
+          rec += "Section 54 covers gains beyond the ₹50 Lakh statutory cap of Section 54EC bonds.";
+        }
       }
     }
-    // Always append 54F disqualification reason if it was excluded
+
+    // Always append 54F disqualification reason if it was excluded (Case E)
     if (s54fResult.disqualified && s54fResult.disqualificationReason) {
       rec += ` Note (54F): ${s54fResult.disqualificationReason}`;
     }
@@ -4016,7 +4091,12 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
       section54: s54Result,
       section54ec: s54ecResult,
       section54f: s54fResult,
-      taxDifference: taxDiff,
+      taxDifference: bestVsSecondBestTaxDifference > 0 ? bestVsSecondBestTaxDifference : bestVsWorstTaxDifference,
+      bestStrategy,
+      secondBestStrategy,
+      worstStrategy,
+      bestVsSecondBestTaxDifference,
+      bestVsWorstTaxDifference,
       recommendation: rec,
     };
   }
@@ -4991,7 +5071,7 @@ const STATIC_SPAN_RATES: Record<MarginInstrumentCategory, { span: number; exposu
 export function calcMarginRequired(input: MarginRequiredInput): MarginRequiredOutput {
   const {
     instrumentCategory = "nifty_futures",
-    lotSize = 50,
+    lotSize = FNO_CONTRACT_DEFAULTS.nifty.lotSize,
     numberOfLots = 1,
     price = 24000,
     customSpanPercent,
@@ -5004,7 +5084,7 @@ export function calcMarginRequired(input: MarginRequiredInput): MarginRequiredOu
   const safeCategory = STATIC_SPAN_RATES[instrumentCategory] ? instrumentCategory : "custom";
   const defaultRates = STATIC_SPAN_RATES[safeCategory];
 
-  const safeLotSize = Math.max(1, safePositive(lotSize, 50));
+  const safeLotSize = Math.max(1, safePositive(lotSize, FNO_CONTRACT_DEFAULTS.nifty.lotSize));
   const safeNumLots = Math.max(1, safePositive(numberOfLots, 1));
   const safePrice = safePositive(price, 24000);
 
@@ -5045,7 +5125,7 @@ export function calcMarginRequired(input: MarginRequiredInput): MarginRequiredOu
     mtfBorrowedAmount: Math.round(mtfBorrowedAmount),
     mtfInterestCost: Math.round(mtfInterestCost),
     totalCapitalNeeded: Math.round(totalCapitalNeeded),
-    disclaimer: "Static baseline SPAN rates for Tax Year 2026-27 under SEBI peak margin norms. Actual exchange SPAN changes dynamically with intraday volatility.",
+    disclaimer: "Illustrative SPAN/exposure assumptions. Actual exchange/broker margin varies with contract, volatility and current risk parameters.",
     summary: `Total Margin Required: ₹${Math.round(totalMarginRequired).toLocaleString("en-IN")} (${round2(effectiveLeverage)}x Leverage on ₹${Math.round(totalContractValue).toLocaleString("en-IN")} Contract Value)`,
   };
 }
@@ -5880,9 +5960,12 @@ export function calcNPS(input: NPSInput): NPSOutput {
   const totalInvested = totalMonthlyInflow * totalMonths;
 
   const monthlyRate = blendedReturn / 12 / 100;
-  const totalCorpus = monthlyRate > 0
+  const computedCorpus = monthlyRate > 0
     ? totalMonthlyInflow * ((Math.pow(1 + monthlyRate, totalMonths) - 1) / monthlyRate) * (1 + monthlyRate)
     : totalInvested;
+  const totalCorpus = (input.accumulatedCorpus !== undefined && input.accumulatedCorpus > 0)
+    ? input.accumulatedCorpus
+    : computedCorpus;
 
   // PFRDA All Citizen Exit Model:
   // 1. Normal Superannuation:

@@ -214,13 +214,38 @@ export default function XirrCalculator() {
           <div className="lg:col-span-6 space-y-5">
             {xirrResult.isValid ? (
               <>
+                {/* Multi-Root Ambiguity Warning Banner */}
+                {xirrResult.multipleRootsDetected && (
+                  <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 space-y-2 text-xs">
+                    <div className="flex items-center gap-2 text-amber-500 font-semibold text-sm">
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                      Multiple mathematically valid IRRs were detected. XIRR is ambiguous.
+                    </div>
+                    <p className="text-foreground/90 leading-relaxed">
+                      Candidate roots found:{" "}
+                      <strong className="text-foreground font-mono">
+                        {xirrResult.candidateRoots && xirrResult.candidateRoots.length > 0
+                          ? xirrResult.candidateRoots.map((r) => `${r.toFixed(2)}%`).join(", ")
+                          : `${xirrResult.xirr.toFixed(2)}%`}
+                      </strong>
+                    </p>
+                    <p className="text-muted-foreground leading-relaxed">
+                      Alternating cash flow directions produce multiple discount rates where Net Present Value (NPV) is zero. Examine your cash flow sequence or evaluate <strong>Time-Weighted Rate of Return (TWRR)</strong> instead.
+                    </p>
+                  </div>
+                )}
+
                 <ResultHero
                   label="Extended Internal Rate of Return (XIRR)"
                   value={xirrResult.xirr}
                   formatValue={(val) => `${val.toFixed(2)}%`}
                   breakdown={[
                     { label: "Total Invested", value: xirrResult.totalInvested, color: "blue" },
-                    { label: "Net Portfolio Gain", value: Math.max(0, xirrResult.netGain), color: "green" },
+                    {
+                      label: xirrResult.netGain >= 0 ? "Net Portfolio Gain" : "Net Portfolio Loss",
+                      value: xirrResult.netGain,
+                      color: xirrResult.netGain >= 0 ? "green" : "red",
+                    },
                   ]}
                 />
 
@@ -232,9 +257,20 @@ export default function XirrCalculator() {
                     </p>
                   </div>
                   <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
-                    <p className="text-[11px] text-muted-foreground">Absolute Gain</p>
-                    <p className="text-base font-bold text-emerald-400 mt-0.5">
-                      +{xirrResult.absoluteGainPercent}%
+                    <p className="text-[11px] text-muted-foreground">
+                      {xirrResult.netGain >= 0 ? "Absolute Gain" : "Absolute Loss"}
+                    </p>
+                    <p
+                      className={`text-base font-bold mt-0.5 ${
+                        xirrResult.absoluteGainPercent > 0
+                          ? "text-emerald-500"
+                          : xirrResult.absoluteGainPercent < 0
+                          ? "text-rose-500"
+                          : "text-foreground"
+                      }`}
+                    >
+                      {xirrResult.absoluteGainPercent > 0 ? "+" : ""}
+                      {xirrResult.absoluteGainPercent.toFixed(2)}%
                     </p>
                   </div>
                   <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
@@ -323,15 +359,30 @@ export default function XirrCalculator() {
               formatValue={(val) => `${val.toFixed(2)}%`}
               breakdown={[
                 { label: "Initial Capital", value: cagrResult.initialValue, color: "blue" },
-                { label: "Capital Gain", value: Math.max(0, cagrResult.totalGain), color: "green" },
+                {
+                  label: cagrResult.totalGain >= 0 ? "Capital Gain" : "Capital Loss",
+                  value: cagrResult.totalGain,
+                  color: cagrResult.totalGain >= 0 ? "green" : "red",
+                },
               ]}
             />
 
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl border border-border/60 bg-card/60 p-4 text-center">
-                <p className="text-xs text-muted-foreground">Absolute Total Return</p>
-                <p className="text-xl font-bold text-emerald-500 mt-1">
-                  +{cagrResult.absoluteReturnPercent.toFixed(1)}%
+                <p className="text-xs text-muted-foreground">
+                  {cagrResult.totalGain >= 0 ? "Absolute Total Return" : "Absolute Total Loss"}
+                </p>
+                <p
+                  className={`text-xl font-bold mt-1 ${
+                    cagrResult.absoluteReturnPercent > 0
+                      ? "text-emerald-500"
+                      : cagrResult.absoluteReturnPercent < 0
+                      ? "text-rose-500"
+                      : "text-foreground"
+                  }`}
+                >
+                  {cagrResult.absoluteReturnPercent > 0 ? "+" : ""}
+                  {cagrResult.absoluteReturnPercent.toFixed(1)}%
                 </p>
               </div>
               <div className="rounded-xl border border-border/60 bg-card/60 p-4 text-center">

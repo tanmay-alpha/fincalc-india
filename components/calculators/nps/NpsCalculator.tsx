@@ -236,7 +236,7 @@ export default function NpsCalculator() {
                   label="Lump Sum Withdrawal (%)"
                   hint={
                     maxAllowedLumpSum === 100
-                      ? "Small corpus (<₹6L): PFRDA allows 100% lump sum (fully tax-free)"
+                      ? "Small corpus: PFRDA permits up to 100% lump sum withdrawal. Section 10(12A) exempts up to 60%; remainder is taxable."
                       : `PFRDA permits up to ${maxAllowedLumpSum}% (60% tax-free u/s 10(12A), remaining taxable)`
                   }
                   value={lumpSumWithdrawalPercent}
@@ -419,31 +419,77 @@ export default function NpsCalculator() {
                 ]}
               />
 
+              {/* Regulatory Exit Category Banner */}
+              <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-primary flex-shrink-0" />
+                  <span className="text-xs font-semibold text-foreground">Regulatory Exit Category:</span>
+                </div>
+                <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/20">
+                  {result.regulatoryExitCategory === "small_corpus_full_payout"
+                    ? "Small Corpus Full Exit"
+                    : result.regulatoryExitCategory === "corpus_8L_to_12L_special"
+                    ? "Corpus ₹8L–₹12L Special Exit"
+                    : result.regulatoryExitCategory === "premature_exit"
+                    ? "Premature Exit"
+                    : "Standard Superannuation"}
+                </span>
+              </div>
+
               {/* Statutory Output Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
+                  <p className="text-[11px] text-muted-foreground">Permitted Lump Sum ({result.lumpSumWithdrawalPercent}%)</p>
+                  <p className="text-base font-bold text-foreground mt-0.5">
+                    {formatINR(result.permittedLumpSumAmount)}
+                  </p>
+                  <span className="text-[10px] text-muted-foreground block mt-0.5">
+                    PFRDA Allowed Payout
+                  </span>
+                </div>
+
+                <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
+                  <p className="text-[11px] text-muted-foreground">Tax-Exempt Lump Sum</p>
+                  <p className="text-base font-bold text-emerald-500 mt-0.5">
+                    {formatINR(result.lumpSumTaxFreeAmount)}
+                  </p>
+                  <span className="text-[10px] text-muted-foreground block mt-0.5">
+                    Max 60% u/s 10(12A)
+                  </span>
+                </div>
+
+                <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
+                  <p className="text-[11px] text-muted-foreground">Potentially Taxable Lump Sum</p>
+                  <p className={`text-base font-bold mt-0.5 ${result.taxableLumpSumAmount > 0 ? "text-amber-500" : "text-foreground"}`}>
+                    {formatINR(result.taxableLumpSumAmount)}
+                  </p>
+                  <span className="text-[10px] text-muted-foreground block mt-0.5">
+                    {result.taxableLumpSumAmount > 0
+                      ? `Est. Tax: ${formatINR(result.estimatedTaxOnLumpSum)}`
+                      : "₹0 Taxable (within 60%)"}
+                  </span>
+                </div>
+
+                <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
+                  <p className="text-[11px] text-muted-foreground">Mandatory / Selected Annuity</p>
+                  <p className="text-base font-bold text-primary mt-0.5">
+                    {formatINR(result.annuityPurchasedAmount)}
+                  </p>
+                  <span className="text-[10px] text-muted-foreground block mt-0.5">
+                    {100 - result.lumpSumWithdrawalPercent}% of corpus
+                  </span>
+                </div>
+
                 <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
                   <p className="text-[11px] text-muted-foreground">Monthly Pension</p>
                   <p className="text-base font-bold text-emerald-500 mt-0.5">
                     {formatINR(result.estimatedMonthlyPension)}/mo
                   </p>
+                  <span className="text-[10px] text-muted-foreground block mt-0.5">
+                    At {result.assumedAnnuityYieldPercent}% Annuity Yield
+                  </span>
                 </div>
-                <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
-                  <p className="text-[11px] text-muted-foreground">Tax-Free Lump Sum (60%)</p>
-                  <p className="text-base font-bold text-foreground mt-0.5">
-                    {formatINR(result.lumpSumTaxFreeAmount)}
-                  </p>
-                  {result.taxableLumpSumAmount > 0 && (
-                    <span className="text-[10px] text-amber-500 font-medium block mt-0.5">
-                      +{formatINR(result.taxableLumpSumAmount)} taxable (Est: {formatINR(result.estimatedTaxOnLumpSum)})
-                    </span>
-                  )}
-                </div>
-                <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
-                  <p className="text-[11px] text-muted-foreground">Annuity Corpus ({100 - result.lumpSumWithdrawalPercent}%)</p>
-                  <p className="text-base font-bold text-primary mt-0.5">
-                    {formatINR(result.annuityPurchasedAmount)}
-                  </p>
-                </div>
+
                 <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
                   <p className="text-[11px] text-muted-foreground">Annual Tax Saved</p>
                   <p className="text-base font-bold text-emerald-500 mt-0.5">

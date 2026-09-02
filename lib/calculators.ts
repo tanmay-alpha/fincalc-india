@@ -245,11 +245,11 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
   },
   {
     id: "margin-calculator",
-    name: "F&O Margin & SPAN Estimator",
+    name: "F&O Margin Estimator",
     shortName: "Margin Estimator",
     route: "/margin-calculator",
     category: "trading",
-    description: "Estimate initial SPAN and exposure margin requirements across Index and Stock derivatives.",
+    description: "Estimate initial SPAN and exposure margin requirements across Index and Stock derivatives with illustrative assumptions.",
   },
   {
     id: "portfolio-risk",
