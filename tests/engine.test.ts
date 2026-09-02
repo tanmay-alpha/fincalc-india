@@ -354,6 +354,7 @@ describe("Calculation Engine v2 — Comprehensive Property-Based & Fuzzing Suite
         professionType: "44AD_business",
         grossTurnover: turnover44ad,
         digitalReceiptsPercentage: digitalPct,
+        pastPresumptiveHistory: "first_time_opting_in",
       });
       expect(res44ad.isEligibleForPresumptive).toBe(true);
       expect(res44ad.presumptiveIncome).toBeGreaterThanOrEqual(0);

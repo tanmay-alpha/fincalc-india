@@ -9,7 +9,12 @@ import InsightCard from "@/components/ui/InsightCard";
 import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcCapitalGains } from "@/lib/math";
-import type { AssetClass } from "@/lib/math";
+import type {
+  AssetClass,
+  CapitalGainsTaxpayerCategory,
+  SgbSubscriptionType,
+  SgbRedemptionType,
+} from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
 import { clsx } from "clsx";
@@ -31,10 +36,14 @@ interface CapitalGainsInputsState {
   isPurchasedBeforeCutoff: boolean;
   investorSlabRatePercent: number;
   priorExemptionUsed: number;
+  taxpayerCategory?: CapitalGainsTaxpayerCategory;
+  sgbSubscriptionType?: SgbSubscriptionType;
+  sgbRedemptionType?: SgbRedemptionType;
+  isContinuouslyHeldByIndividual?: boolean;
 }
 
 const DEFAULT_INPUTS: CapitalGainsInputsState = {
-  assetClass: "equity",
+  assetClass: "listed_equity",
   purchasePrice: 500000,
   salePrice: 1000000,
   transferExpenses: 5000,
@@ -44,13 +53,20 @@ const DEFAULT_INPUTS: CapitalGainsInputsState = {
   isPurchasedBeforeCutoff: true,
   investorSlabRatePercent: 30,
   priorExemptionUsed: 0,
+  taxpayerCategory: "resident_individual",
+  sgbSubscriptionType: "original_issue",
+  sgbRedemptionType: "maturity_redemption",
+  isContinuouslyHeldByIndividual: true,
 };
 
 const ASSET_CLASSES: Array<{ id: AssetClass; label: string; icon: string }> = [
-  { id: "equity", label: "Equity / Mutual Funds", icon: "📈" },
+  { id: "listed_equity", label: "Listed Equity & MFs", icon: "📈" },
   { id: "real_estate", label: "Real Estate Property", icon: "🏠" },
-  { id: "debt_mf", label: "Debt Mutual Funds", icon: "🏦" },
-  { id: "gold_sgb", label: "Gold & SGB", icon: "🪙" },
+  { id: "specified_mutual_fund", label: "Specified MF (≤35% Eq)", icon: "🏦" },
+  { id: "non_specified_debt_mf", label: "Non-Specified Debt MF", icon: "📊" },
+  { id: "physical_gold", label: "Physical Gold", icon: "✨" },
+  { id: "listed_gold_etf", label: "Listed Gold ETF", icon: "🪙" },
+  { id: "sovereign_gold_bond", label: "SGB (Gold Bonds)", icon: "📜" },
 ];
 
 export default function CapitalGainsCalculator() {
@@ -216,8 +232,70 @@ export default function CapitalGainsCalculator() {
               </div>
             )}
 
+            {/* SGB Specific Options */}
+            {inputs.assetClass === "sovereign_gold_bond" && (
+              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-4 text-xs">
+                <div className="font-semibold text-amber-900 dark:text-amber-300">
+                  Sovereign Gold Bond (SGB) Statutory Conditions [Section 70(1)(x)]
+                </div>
+
+                <div>
+                  <label className="block text-muted-foreground font-medium mb-1">
+                    Acquisition Method
+                  </label>
+                  <select
+                    value={inputs.sgbSubscriptionType || "original_issue"}
+                    onChange={(e) =>
+                      setInputs((prev) => ({
+                        ...prev,
+                        sgbSubscriptionType: e.target.value as "original_issue" | "secondary_market",
+                      }))
+                    }
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground"
+                  >
+                    <option value="original_issue">Original Issue (Direct RBI Subscription / Primary Issue)</option>
+                    <option value="secondary_market">Secondary Market Purchase (Stock Exchange)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-muted-foreground font-medium mb-1">
+                    Redemption / Transfer Route
+                  </label>
+                  <select
+                    value={inputs.sgbRedemptionType || "maturity_redemption"}
+                    onChange={(e) =>
+                      setInputs((prev) => ({
+                        ...prev,
+                        sgbRedemptionType: e.target.value as SgbRedemptionType,
+                      }))
+                    }
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground"
+                  >
+                    <option value="maturity_redemption">Redemption at Maturity (8 Years with RBI)</option>
+                    <option value="premature_redemption_rbi">Premature RBI Redemption Window (Year 5+)</option>
+                    <option value="market_sale">Secondary Market Sale on Stock Exchange</option>
+                  </select>
+                </div>
+
+                <label className="flex items-start gap-2 cursor-pointer pt-1">
+                  <input
+                    type="checkbox"
+                    checked={inputs.isContinuouslyHeldByIndividual ?? true}
+                    onChange={(e) =>
+                      setInputs((prev) => ({ ...prev, isContinuouslyHeldByIndividual: e.target.checked }))
+                    }
+                    className="mt-0.5 rounded border-border text-primary focus:ring-primary"
+                  />
+                  <span className="text-muted-foreground leading-relaxed">
+                    Continuously held by individual assessee from original subscription until redemption
+                  </span>
+                </label>
+              </div>
+            )}
+
             {/* Equity Prior Exemption */}
-            {inputs.assetClass === "equity" && result.gainType === "LTCG" && (
+            {(inputs.assetClass === "listed_equity" || inputs.assetClass === "equity") && result.gainType === "LTCG" && (
               <HybridInput
                 label="LTCG Exemption Already Used Elsewhere This FY"
                 value={inputs.priorExemptionUsed}
@@ -231,7 +309,7 @@ export default function CapitalGainsCalculator() {
             )}
 
             {/* Investor Slab Rate */}
-            {(inputs.assetClass === "debt_mf" || result.gainType === "STCG") && (
+            {(inputs.assetClass === "specified_mutual_fund" || inputs.assetClass === "non_specified_debt_mf" || inputs.assetClass === "debt_mf" || result.gainType === "STCG") && (
               <HybridInput
                 label="Your Income Tax Slab Rate"
                 value={inputs.investorSlabRatePercent}
@@ -254,11 +332,11 @@ export default function CapitalGainsCalculator() {
         <div className="lg:col-span-6 space-y-6">
           <ResultHero
             label="Total Capital Gains Tax"
-            value={result.totalTaxPayable}
+            value={result.totalTaxWithCess ?? result.totalTaxPayable}
             breakdown={[
               { label: "Gross Capital Gain", value: Math.max(0, result.rawCapitalGain), color: "blue" },
-              { label: "Annual Threshold / Exemption Used", value: result.annualThresholdOrExemptionUsed, color: "green" },
-              { label: "Chargeable Gain for Tax", value: result.specialRateChargeableGain, color: "blue" },
+              { label: "Base Income Tax", value: result.baseTaxPayable ?? result.totalTaxPayable, color: "blue" },
+              { label: "Health & Education Cess (4%)", value: result.cessAmount ?? 0, color: "blue" },
               { label: "Net Cash In Hand", value: netInPocket, color: "green" },
             ]}
           />
@@ -337,6 +415,13 @@ export default function CapitalGainsCalculator() {
             )}
             <p className="leading-relaxed">{result.explanation}</p>
           </div>
+
+          {result.taxScopeNote && (
+            <div className="p-3 rounded-xl bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-800/40 text-xs text-blue-900 dark:text-blue-200 flex items-start gap-2">
+              <span className="font-semibold shrink-0">Note:</span>
+              <p className="leading-relaxed">{result.taxScopeNote}</p>
+            </div>
+          )}
 
           {/* Section 54 / 54EC Reinvestment Exemption Banner for Real Estate LTCG */}
           {inputs.assetClass === "real_estate" && result.gainType === "LTCG" && (

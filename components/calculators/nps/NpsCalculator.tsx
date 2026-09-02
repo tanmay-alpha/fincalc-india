@@ -15,7 +15,7 @@ import type { NPSInput, TaxRegime } from "@/lib/math";
 import { getNPSInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
-import { Landmark, AlertTriangle, TrendingUp, ChevronDown, ChevronUp, ShieldCheck } from "lucide-react";
+import { Landmark, AlertTriangle, AlertCircle, TrendingUp, ChevronDown, ChevronUp, ShieldCheck } from "lucide-react";
 import { clsx } from "clsx";
 
 const NpsChart = dynamic(
@@ -343,15 +343,24 @@ export default function NpsCalculator() {
 
                   <HybridInput
                     label="Annual Basic Salary + Eligible DA"
-                    hint="Base salary used for 80CCD(2) percentage ceiling"
+                    hint="Base salary used for 80CCD(2) percentage ceiling (leave 0 if not applicable)"
                     value={eligibleSalaryFor80CCD2}
                     onChange={setEligibleSalaryFor80CCD2}
-                    min={100000}
+                    min={0}
                     max={100000000}
                     step={50000}
                     prefix="₹"
                   />
                 </div>
+
+                {result.deductionStatus80CCD2 === "salary_required" && (
+                  <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-700 dark:text-amber-400 flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <div>
+                      <strong>Annual Basic Salary + DA Required:</strong> Employer contribution of ₹{(employerMonthlyContribution * 12).toLocaleString("en-IN")}/yr was entered, but eligible Basic + DA salary is missing. Under Section 80CCD(2), deduction is capped at 14% of salary and cannot be determined without explicit salary input.
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <HybridInput
@@ -537,7 +546,7 @@ export default function NpsCalculator() {
                   }}
                   onSaved={(id) => setShareId(id)}
                 />
-                <ShareButton shareId={shareId} />
+                <ShareButton shareId={shareId} calcType="nps" />
               </div>
             </>
           ) : (

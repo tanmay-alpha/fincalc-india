@@ -1683,8 +1683,10 @@ describe('calcPresumptiveTax', () => {
       grossTurnover: 10000000,
       digitalReceiptsPercentage: 100,
       regime: 'new',
+      pastPresumptiveHistory: 'first_time_opting_in',
     })
     expect(result.isEligibleForPresumptive).toBe(true)
+    expect(result.eligibilityStatus).toBe('eligible')
     expect(result.presumptiveIncome).toBe(600000)
     expect(result.presumptiveRateEffective).toBe(6)
   })
@@ -1696,6 +1698,7 @@ describe('calcPresumptiveTax', () => {
       grossTurnover: 10000000,
       digitalReceiptsPercentage: 60,
       regime: 'new',
+      pastPresumptiveHistory: 'opted_in_continuously',
     })
     expect(result.digitalTurnover).toBe(6000000)
     expect(result.cashTurnover).toBe(4000000)
@@ -1750,6 +1753,7 @@ describe('calcPresumptiveTax', () => {
       grossTurnover: 29000000,
       digitalReceiptsPercentage: 98,
       regime: 'new',
+      pastPresumptiveHistory: 'opted_in_continuously',
     })
     expect(result.isEligibleForPresumptive).toBe(true)
     expect(result.maxTurnoverLimit).toBe(30000000)
@@ -1792,10 +1796,34 @@ describe('calcPresumptiveTax', () => {
       digitalReceiptsPercentage: 100,
       actualProfit: 500000,
       regime: 'new',
+      pastPresumptiveHistory: 'opted_in_continuously',
     })
     expect(result.isAuditTriggeredByOptOut).toBe(true)
     expect(result.fiveYearLockoutTriggered).toBe(true)
     expect(result.auditTriggerReason).toContain('Section 44AD(4)')
+  })
+
+  it('11. Source-backed audit: Missing past history marks eligibility as cannot_determine and requires user input', () => {
+    const result = calcPresumptiveTax({
+      professionType: '44AD_business',
+      grossTurnover: 10000000,
+      digitalReceiptsPercentage: 100,
+    })
+    expect(result.eligibilityStatus).toBe('cannot_determine')
+    expect(result.isEligibleForPresumptive).toBe(false)
+    expect(result.ineligibilityReason).toContain('cannot be verified without prior filing history')
+  })
+
+  it('12. Assessee opting out within past 5 years is barred under Section 44AD(4)', () => {
+    const result = calcPresumptiveTax({
+      professionType: '44AD_business',
+      grossTurnover: 10000000,
+      digitalReceiptsPercentage: 100,
+      pastPresumptiveHistory: 'opted_out_within_5_years',
+    })
+    expect(result.eligibilityStatus).toBe('ineligible')
+    expect(result.isEligibleForPresumptive).toBe(false)
+    expect(result.ineligibilityReason).toContain('Section 44AD(4)')
   })
 })
 

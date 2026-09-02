@@ -337,6 +337,12 @@ export interface HRAExemptionOutput {
 // ─── PRESUMPTIVE TAXATION (44AD & 44ADA) ──────────────────────
 
 export type PresumptiveProfessionType = "44ADA_professional" | "44AD_business";
+export type PresumptiveHistoryStatus =
+  | "opted_in_continuously"
+  | "first_time_opting_in"
+  | "opted_out_within_5_years"
+  | "unknown";
+export type PresumptiveEligibilityStatus = "eligible" | "ineligible" | "cannot_determine";
 
 export interface PresumptiveTaxInput {
   professionType: PresumptiveProfessionType;
@@ -347,6 +353,7 @@ export interface PresumptiveTaxInput {
   deduction80C?: number;
   deduction80D?: number;
   otherDeductions?: number;
+  pastPresumptiveHistory?: PresumptiveHistoryStatus;
 }
 
 export interface PresumptiveTaxOutput {
@@ -357,6 +364,7 @@ export interface PresumptiveTaxOutput {
   cashTurnover: number;
   isEnhancedLimitApplicable: boolean;
   maxTurnoverLimit: number;
+  eligibilityStatus: PresumptiveEligibilityStatus;
   isEligibleForPresumptive: boolean;
   ineligibilityReason?: string;
   presumptiveRateEffective: number;
@@ -456,8 +464,13 @@ export interface Section54ExemptionInput {
   section54fTimelineMonths?: number;
   // Section 82 once-in-a-lifetime two-house option (LTCG <= ₹2 Crore)
   useTwoResidentialHousesOption?: boolean;
-  twoHousesOptionExercisedPreviously?: boolean;
+  twoHousesOptionHistory?: "unconfirmed" | "never_used" | "used_before";
+  twoHousesOptionExercisedPreviously?: boolean; // deprecated backward compat alias
   secondPropertyInvestmentAmount?: number;
+  secondPropertyMode?: Section54PropertyMode;
+  secondPropertyTimelineMonths?: number;
+  // Section 85 (formerly Section 54EC) aggregate statutory window cap (₹50 Lakh limit)
+  priorInvestmentInRelevantSection85Window?: number;
 }
 
 export interface Section54SingleExemptionResult {
@@ -1093,6 +1106,7 @@ export interface NPSOutput {
   assumedAnnuityYieldPercent: number;
   estimatedMonthlyPension: number;
   // Section 80CCD deductions
+  deductionStatus80CCD2: "eligible" | "salary_required" | "not_applicable";
   actualEmployerContribution: number;
   eligibleSalaryFor80CCD2: number;
   salaryCap80CCD2Percent: number; // 14% for all under New Regime / Govt under Old Regime; 10% for Private under Old Regime
@@ -2281,12 +2295,12 @@ export function calcNoCostEMITruth(input: NoCostEmiInput): NoCostEmiOutput {
   } = input;
 
   // Defensive input clamping
-  const safePrice = Math.max(1, productPrice || 0);
-  const safeTenure = Math.max(1, Math.min(60, Math.round(tenureMonths || 3)));
-  const safeBankRate = Math.max(0.1, bankInterestRate || 15);
-  const safeFee = Math.max(0, processingFee || 0);
-  const safeForfeitedDisc = Math.max(0, Math.min(safePrice, upfrontDiscountForfeited || 0));
-  const safeGstRate = Math.max(0, gstRatePercent || 18);
+  const safePrice = Math.max(1, productPrice ?? 0);
+  const safeTenure = Math.max(1, Math.min(60, Math.round(tenureMonths ?? 3)));
+  const safeBankRate = Math.max(0, bankInterestRate ?? 15);
+  const safeFee = Math.max(0, processingFee ?? 0);
+  const safeForfeitedDisc = Math.max(0, Math.min(safePrice, upfrontDiscountForfeited ?? 0));
+  const safeGstRate = Math.max(0, gstRatePercent ?? 18);
 
   const r = safeBankRate / 12 / 100;
   const gstMultiplier = safeGstRate / 100;
@@ -2296,9 +2310,13 @@ export function calcNoCostEMITruth(input: NoCostEmiInput): NoCostEmiOutput {
   const monthlyEmi = safePrice / safeTenure;
 
   // Discounted loan amount sanctioned by the bank:
-  const discountFactor = (1 - Math.pow(1 + r, -safeTenure)) / r;
-  const loanPrincipal = monthlyEmi * discountFactor;
-  const hiddenInterest = Math.max(0, safePrice - loanPrincipal);
+  let loanPrincipal = safePrice;
+  let hiddenInterest = 0;
+  if (r > 0) {
+    const discountFactor = (1 - Math.pow(1 + r, -safeTenure)) / r;
+    loanPrincipal = monthlyEmi * discountFactor;
+    hiddenInterest = Math.max(0, safePrice - loanPrincipal);
+  }
 
   // Month-by-month loan amortization with GST on interest
   const monthlyBreakdown: NoCostEmiMonthRow[] = [];
@@ -2437,16 +2455,16 @@ export function calcFIRE(input: FireInput): FireOutput {
     currentSavings = 0,
   } = input;
 
-  const safeCurrentAge = Math.max(18, Math.min(100, Math.round(currentAge || 30)));
-  const safeRetireAge = Math.max(safeCurrentAge, Math.min(100, Math.round(retirementAge || 50)));
-  const safeLifeExp = Math.max(safeRetireAge + 1, Math.min(120, Math.round(lifeExpectancy || 85)));
-  const safeMonthlyExp = Math.max(0, currentMonthlyExpenses || 0);
+  const safeCurrentAge = Math.max(18, Math.min(100, Math.round(currentAge ?? 30)));
+  const safeRetireAge = Math.max(safeCurrentAge, Math.min(100, Math.round(retirementAge ?? 50)));
+  const safeLifeExp = Math.max(safeRetireAge + 1, Math.min(120, Math.round(lifeExpectancy ?? 85)));
+  const safeMonthlyExp = Math.max(0, currentMonthlyExpenses ?? 0);
 
-  const safePreRate = Math.max(0, preRetirementReturn || 12);
-  const safePostRate = Math.max(0, postRetirementReturn || 8);
-  const safeInflation = Math.max(0, inflationRate || 6);
-  const safeSwr = Math.max(0.1, swrPercent || 4.0);
-  const safeSavings = Math.max(0, currentSavings || 0);
+  const safePreRate = Math.max(0, preRetirementReturn ?? 12);
+  const safePostRate = Math.max(0, postRetirementReturn ?? 8);
+  const safeInflation = Math.max(0, inflationRate ?? 6);
+  const safeSwr = Math.max(0.1, swrPercent ?? 4.0);
+  const safeSavings = Math.max(0, currentSavings ?? 0);
 
   const yearsToRetirement = safeRetireAge - safeCurrentAge;
   const yearsInRetirement = safeLifeExp - safeRetireAge;
@@ -2570,8 +2588,22 @@ export function calcFIRE(input: FireInput): FireOutput {
 
 // ─── PART B — FEATURE 1: CAPITAL GAINS TAX CALCULATOR ─────────
 
-export type AssetClass = "equity" | "debt_mf" | "real_estate" | "gold_sgb";
+export type AssetClass =
+  | "listed_equity"
+  | "real_estate"
+  | "specified_mutual_fund"
+  | "non_specified_debt_mf"
+  | "physical_gold"
+  | "listed_gold_etf"
+  | "sovereign_gold_bond"
+  // Backward compat aliases:
+  | "equity"
+  | "debt_mf"
+  | "gold_sgb";
+
 export type CapitalGainsTaxpayerCategory = "resident_individual" | "resident_huf" | "nri" | "other";
+export type SgbSubscriptionType = "original_issue" | "secondary_market";
+export type SgbRedemptionType = "maturity_redemption" | "premature_redemption_rbi" | "market_sale";
 
 export interface CapitalGainsInput {
   assetClass: AssetClass;
@@ -2589,6 +2621,14 @@ export interface CapitalGainsInput {
   isPurchasedBeforeCutoff?: boolean; // Cutoff: 23 July 2024
   investorSlabRatePercent?: number;
   priorExemptionUsed?: number; // Equity ₹1.25L exemption tracking
+  // SGB statutory conditions
+  sgbSubscriptionType?: SgbSubscriptionType;
+  sgbRedemptionType?: SgbRedemptionType;
+  isContinuouslyHeldByIndividual?: boolean;
+  // Debt MF statutory classification
+  debtMfAcquisitionDate?: string; // YYYY-MM-DD
+  isSpecifiedMutualFund?: boolean; // Section 50AA / Section 76 (<= 35% equity acquired >= 1 Apr 2023)
+  isAcquiredOnOrAfterApril2023?: boolean;
 }
 
 export interface CapitalGainsOutput {
@@ -2612,6 +2652,10 @@ export interface CapitalGainsOutput {
   taxableGain: number;
   taxRatePercent: number;
   totalTaxPayable: number;
+  baseTaxPayable: number;
+  cessAmount: number;
+  totalTaxWithCess: number;
+  taxScopeNote: string;
   effectiveTaxRate: number;
   realEstateComparison?: {
     unindexedGain: number;
@@ -2652,12 +2696,30 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
     priorExemptionUsed = 0,
   } = input;
 
-  const safeBuy = Math.max(0, purchasePrice || 0);
-  const safeSale = Math.max(0, salePrice || 0);
-  const safeExp = Math.max(0, transferExpenses || 0);
-  const safeImp = Math.max(0, costOfImprovement || 0);
-  const safeSlab = Math.max(0, investorSlabRatePercent || 30);
-  const safePriorExemption = Math.max(0, Math.min(125000, priorExemptionUsed || 0));
+  const safeBuy = Math.max(0, purchasePrice ?? 0);
+  const safeSale = Math.max(0, salePrice ?? 0);
+  const safeExp = Math.max(0, transferExpenses ?? 0);
+  const safeImp = Math.max(0, costOfImprovement ?? 0);
+  const safeSlab = Math.max(0, investorSlabRatePercent ?? 30);
+  const safePriorExemption = Math.max(0, Math.min(125000, priorExemptionUsed ?? 0));
+
+  // Resolve normalized asset class (supporting backward compat aliases)
+  let normalizedAssetClass: AssetClass = assetClass;
+  if (assetClass === "equity") {
+    normalizedAssetClass = "listed_equity";
+  } else if (assetClass === "debt_mf") {
+    if (input.isSpecifiedMutualFund === false || input.isAcquiredOnOrAfterApril2023 === false || (input.debtMfAcquisitionDate && input.debtMfAcquisitionDate < "2023-04-01")) {
+      normalizedAssetClass = "non_specified_debt_mf";
+    } else {
+      normalizedAssetClass = "specified_mutual_fund";
+    }
+  } else if (assetClass === "gold_sgb") {
+    if (input.sgbSubscriptionType || input.sgbRedemptionType) {
+      normalizedAssetClass = "sovereign_gold_bond";
+    } else {
+      normalizedAssetClass = "physical_gold";
+    }
+  }
 
   // Determine holding months
   let holdingMonths = input.holdingMonths ?? 0;
@@ -2687,20 +2749,38 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
 
   let gainType: "LTCG" | "STCG" | "LOSS" = isLoss ? "LOSS" : "STCG";
 
-  // Determine LTCG threshold: Equity = >12m, Real Estate = >24m, Gold = >24m, Debt MF = N/A
+  // Determine LTCG thresholds under Finance Act 2024 / 2026:
+  // - listed_equity: > 12 months
+  // - real_estate: > 24 months
+  // - specified_mutual_fund: Section 50AA / Sec 76 deemed STCG regardless of holding period
+  // - non_specified_debt_mf: > 24 months
+  // - physical_gold: > 24 months
+  // - listed_gold_etf: > 12 months
+  // - sovereign_gold_bond: > 12 months if traded on exchange
   let isLtcg = false;
   if (!isLoss) {
-    if (assetClass === "equity" && holdingMonths > 12) {
+    if (normalizedAssetClass === "listed_equity" && holdingMonths > 12) {
       isLtcg = true;
-    } else if ((assetClass === "real_estate" || assetClass === "gold_sgb") && holdingMonths > 24) {
+    } else if (normalizedAssetClass === "real_estate" && holdingMonths > 24) {
       isLtcg = true;
+    } else if (normalizedAssetClass === "specified_mutual_fund") {
+      isLtcg = false; // Deemed STCG
+    } else if (normalizedAssetClass === "non_specified_debt_mf" && holdingMonths > 24) {
+      isLtcg = true;
+    } else if (normalizedAssetClass === "physical_gold" && holdingMonths > 24) {
+      isLtcg = true;
+    } else if (normalizedAssetClass === "listed_gold_etf" && holdingMonths > 12) {
+      isLtcg = true;
+    } else if (normalizedAssetClass === "sovereign_gold_bond") {
+      isLtcg = holdingMonths > 12;
     }
     gainType = isLtcg ? "LTCG" : "STCG";
   }
 
   let exemptionAllowed = 0;
   let taxableGain = Math.max(0, rawCapitalGain);
-  const capitalGainIncludedInTotalIncome = taxableGain;
+  let capitalGainIncludedInTotalIncome = 0;
+  let specialRateChargeableGain = 0;
   let taxRatePercent = 0;
   let totalTaxPayable = 0;
   let realEstateComparison: CapitalGainsOutput["realEstateComparison"];
@@ -2710,29 +2790,50 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
     taxableGain = 0;
     totalTaxPayable = 0;
     explanation = `Capital Loss of ₹${Math.abs(Math.round(rawCapitalGain)).toLocaleString("en-IN")}. No tax is payable. This loss can be set off or carried forward for up to 8 financial years.`;
-  } else if (assetClass === "debt_mf") {
-    // All debt mutual funds taxed at investor slab rate
+  } else if (normalizedAssetClass === "specified_mutual_fund") {
+    // Section 50AA / current Section 76: Deemed STCG taxed at investor slab rate
     gainType = "STCG";
     taxRatePercent = safeSlab;
     totalTaxPayable = (taxableGain * safeSlab) / 100;
-    explanation = `Debt Mutual Fund gains are taxed at your income tax slab rate (${safeSlab}%) regardless of holding duration (Tax Year 2026-27).`;
-  } else if (assetClass === "equity") {
+    capitalGainIncludedInTotalIncome = taxableGain;
+    specialRateChargeableGain = 0;
+    explanation = `Specified Mutual Fund under Section 50AA / Section 76 (<= 35% equity acquired on/after 1 April 2023) is deemed short-term capital gain regardless of holding duration and taxed at your income slab rate (${safeSlab}%).`;
+  } else if (normalizedAssetClass === "non_specified_debt_mf") {
     if (isLtcg) {
-      // LTCG: 12.5% with ₹1.25L exemption (Tax Year 2026-27)
+      // Non-specified debt/hybrid fund held > 24m: LTCG at 12.5% without indexation
       taxRatePercent = 12.5;
+      totalTaxPayable = (taxableGain * 12.5) / 100;
+      specialRateChargeableGain = taxableGain;
+      capitalGainIncludedInTotalIncome = 0;
+      explanation = `Non-specified debt/hybrid mutual fund (acquired before 1 April 2023 or non-Section 76 fund) held for > 24 months is taxed at 12.5% LTCG without indexation (Tax Year 2026-27).`;
+    } else {
+      taxRatePercent = safeSlab;
+      totalTaxPayable = (taxableGain * safeSlab) / 100;
+      capitalGainIncludedInTotalIncome = taxableGain;
+      specialRateChargeableGain = 0;
+      explanation = `Non-specified debt/hybrid mutual fund held for ≤ 24 months is STCG, taxed at your income tax slab rate (${safeSlab}%).`;
+    }
+  } else if (normalizedAssetClass === "listed_equity") {
+    if (isLtcg) {
+      // LTCG: 12.5% with ₹1.25L exemption (Section 112A)
+      taxRatePercent = 12.5;
+      capitalGainIncludedInTotalIncome = taxableGain;
       const remainingExemption = Math.max(0, 125000 - safePriorExemption);
       exemptionAllowed = Math.min(taxableGain, remainingExemption);
       const taxablePortion = Math.max(0, taxableGain - exemptionAllowed);
       taxableGain = taxablePortion;
       totalTaxPayable = (taxablePortion * 12.5) / 100;
+      specialRateChargeableGain = taxablePortion;
       explanation = `Tax Year 2026-27: Listed Equity LTCG (>12 months) is taxed at 12.5%. Statutory exemption of ₹${Math.round(exemptionAllowed).toLocaleString("en-IN")} applied (out of ₹1.25L limit).`;
     } else {
-      // STCG: 20%
+      // STCG: 20% flat (Section 111A)
       taxRatePercent = 20;
       totalTaxPayable = (taxableGain * 20) / 100;
-      explanation = `Tax Year 2026-27: Listed Equity STCG (≤12 months) is taxed at a flat 20% rate.`;
+      specialRateChargeableGain = taxableGain;
+      capitalGainIncludedInTotalIncome = 0;
+      explanation = `Tax Year 2026-27: Listed Equity STCG (≤12 months) is taxed at a flat 20% rate under Section 111A.`;
     }
-  } else if (assetClass === "real_estate") {
+  } else if (normalizedAssetClass === "real_estate") {
     if (isLtcg) {
       const unindexedTax = (taxableGain * 12.5) / 100;
       const isGrandfatheringEligible =
@@ -2740,7 +2841,6 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
         (taxpayerCategory === "resident_individual" || taxpayerCategory === "resident_huf");
 
       if (isGrandfatheringEligible) {
-        // Grandfathering: Calculate both 12.5% without indexation and 20% with indexation
         const buyCii = getCiiValue(purchaseCiiYear);
         const sellCii = getCiiValue(saleCiiYear);
         const impCii = getCiiValue(improvementCiiYear);
@@ -2769,15 +2869,18 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
           isGrandfatheringEligible: true,
         };
 
+        specialRateChargeableGain = taxableGain;
+        capitalGainIncludedInTotalIncome = 0;
         explanation = `Grandfathered property (acquired before 23 July 2024 by ${taxpayerCategory === "resident_huf" ? "Resident HUF" : "Resident Individual"}): ${
           isUnindexedBetter
             ? `12.5% without indexation saves you ₹${Math.round(taxSaved).toLocaleString("en-IN")} compared to 20% with indexation.`
             : `20% with indexation saves you ₹${Math.round(taxSaved).toLocaleString("en-IN")} compared to 12.5% without indexation.`
         }`;
       } else {
-        // Purchased on or after 23 July 2024 or Non-Resident / Corporate: Flat 12.5% without indexation
         taxRatePercent = 12.5;
         totalTaxPayable = unindexedTax;
+        specialRateChargeableGain = taxableGain;
+        capitalGainIncludedInTotalIncome = 0;
         if (!isPurchasedBeforeCutoff) {
           explanation = `Property purchased on/after 23 July 2024: Taxed at 12.5% LTCG (>24 months) without indexation benefit (Tax Year 2026-27).`;
         } else {
@@ -2788,17 +2891,84 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
       // STCG: Slab rate
       taxRatePercent = safeSlab;
       totalTaxPayable = (taxableGain * safeSlab) / 100;
+      capitalGainIncludedInTotalIncome = taxableGain;
+      specialRateChargeableGain = 0;
       explanation = `Real Estate STCG (≤24 months) is taxed at your regular income tax slab rate (${safeSlab}%).`;
     }
-  } else if (assetClass === "gold_sgb") {
+  } else if (normalizedAssetClass === "physical_gold") {
     if (isLtcg) {
       taxRatePercent = 12.5;
       totalTaxPayable = (taxableGain * 12.5) / 100;
-      explanation = `Physical Gold & Gold ETF LTCG (>24 months) is taxed at 12.5% without indexation (Tax Year 2026-27).`;
+      specialRateChargeableGain = taxableGain;
+      capitalGainIncludedInTotalIncome = 0;
+      explanation = `Physical Gold LTCG (>24 months) is taxed at 12.5% without indexation (Tax Year 2026-27).`;
     } else {
       taxRatePercent = safeSlab;
       totalTaxPayable = (taxableGain * safeSlab) / 100;
-      explanation = `Gold STCG (≤24 months) is taxed at your income tax slab rate (${safeSlab}%).`;
+      capitalGainIncludedInTotalIncome = taxableGain;
+      specialRateChargeableGain = 0;
+      explanation = `Physical Gold STCG (≤24 months) is taxed at your income tax slab rate (${safeSlab}%).`;
+    }
+  } else if (normalizedAssetClass === "listed_gold_etf") {
+    if (isLtcg) {
+      taxRatePercent = 12.5;
+      totalTaxPayable = (taxableGain * 12.5) / 100;
+      specialRateChargeableGain = taxableGain;
+      capitalGainIncludedInTotalIncome = 0;
+      explanation = `Listed Gold ETF held for > 12 months qualifies as LTCG, taxed at 12.5% without indexation (Finance Act 2024 / 2026).`;
+    } else {
+      taxRatePercent = safeSlab;
+      totalTaxPayable = (taxableGain * safeSlab) / 100;
+      capitalGainIncludedInTotalIncome = taxableGain;
+      specialRateChargeableGain = 0;
+      explanation = `Listed Gold ETF held for ≤ 12 months is STCG, taxed at your income tax slab rate (${safeSlab}%).`;
+    }
+  } else if (normalizedAssetClass === "sovereign_gold_bond") {
+    const isOriginalIssue = input.sgbSubscriptionType === "original_issue" || input.sgbSubscriptionType === undefined;
+    const isContinuousIndividual = (input.isContinuouslyHeldByIndividual ?? true) && taxpayerCategory === "resident_individual";
+    const isMaturityOrRbi = input.sgbRedemptionType === "maturity_redemption" || input.sgbRedemptionType === "premature_redemption_rbi" || input.sgbRedemptionType === undefined;
+
+    if (isOriginalIssue && isContinuousIndividual && isMaturityOrRbi) {
+      // 100% Tax-Exempt under Section 70(1)(x) / Section 47(viic)
+      exemptionAllowed = rawCapitalGain;
+      taxableGain = 0;
+      totalTaxPayable = 0;
+      taxRatePercent = 0;
+      specialRateChargeableGain = 0;
+      capitalGainIncludedInTotalIncome = 0;
+      explanation = "Section 70(1)(x) / Section 47(viic) Statutory Exemption: Sovereign Gold Bonds originally subscribed by an individual and continuously held until maturity (or redeemed via RBI official premature window) are 100% EXEMPT from capital gains tax.";
+    } else if (input.sgbRedemptionType === "market_sale" || input.sgbSubscriptionType === "secondary_market") {
+      // Secondary market transaction: Listed security threshold (>12 months = LTCG)
+      if (isLtcg) {
+        taxRatePercent = 12.5;
+        totalTaxPayable = (taxableGain * 12.5) / 100;
+        specialRateChargeableGain = taxableGain;
+        capitalGainIncludedInTotalIncome = 0;
+        explanation = "SGB transferred via secondary market or secondary acquisition: Holding period > 12 months is taxed at 12.5% LTCG without indexation (Section 70(1)(x) exemption is not applicable).";
+      } else {
+        taxRatePercent = safeSlab;
+        totalTaxPayable = (taxableGain * safeSlab) / 100;
+        capitalGainIncludedInTotalIncome = taxableGain;
+        specialRateChargeableGain = 0;
+        explanation = `SGB sold via market within ≤ 12 months is STCG, taxed at your income tax slab rate (${safeSlab}%).`;
+      }
+    } else {
+      // Premature redemption without meeting all individual original-issue conditions
+      if (holdingMonths > 24) {
+        gainType = "LTCG";
+        taxRatePercent = 12.5;
+        totalTaxPayable = (taxableGain * 12.5) / 100;
+        specialRateChargeableGain = taxableGain;
+        capitalGainIncludedInTotalIncome = 0;
+        explanation = "SGB redemption not meeting Section 70(1)(x) individual original subscription conditions: Taxed at 12.5% LTCG without indexation.";
+      } else {
+        gainType = "STCG";
+        taxRatePercent = safeSlab;
+        totalTaxPayable = (taxableGain * safeSlab) / 100;
+        capitalGainIncludedInTotalIncome = taxableGain;
+        specialRateChargeableGain = 0;
+        explanation = `SGB premature redemption: Taxed as STCG at your income slab rate (${safeSlab}%).`;
+      }
     }
   }
 
@@ -2806,6 +2976,11 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
     rawCapitalGain > 0
       ? Math.round((totalTaxPayable / rawCapitalGain) * 100 * 100) / 100
       : 0;
+
+  const baseTaxPayable = Math.round(totalTaxPayable);
+  const cessAmount = Math.round(baseTaxPayable * 0.04);
+  const totalTaxWithCess = baseTaxPayable + cessAmount;
+  const taxScopeNote = "Base Capital Gains Tax (excludes 4% Health & Education Cess and applicable Surcharge)";
 
   return {
     taxYear: CURRENT_TAX_YEAR,
@@ -2822,12 +2997,16 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
     grossCapitalGain: Math.round(rawCapitalGain),
     capitalGainIncludedInTotalIncome: Math.round(capitalGainIncludedInTotalIncome),
     annualThresholdOrExemptionUsed: Math.round(exemptionAllowed),
-    specialRateChargeableGain: Math.round(taxableGain),
+    specialRateChargeableGain: Math.round(specialRateChargeableGain),
     isLoss,
     exemptionAllowed: Math.round(exemptionAllowed),
     taxableGain: Math.round(taxableGain),
     taxRatePercent,
-    totalTaxPayable: Math.round(totalTaxPayable),
+    totalTaxPayable: baseTaxPayable,
+    baseTaxPayable,
+    cessAmount,
+    totalTaxWithCess,
+    taxScopeNote,
     effectiveTaxRate,
     realEstateComparison,
     explanation,
@@ -3491,18 +3670,33 @@ export function calcPresumptiveTax(input: PresumptiveTaxInput): PresumptiveTaxOu
     otherDeductions = 0,
   } = input;
 
-  const safeTurnover = Math.max(0, grossTurnover || 0);
+  const safeTurnover = Math.max(0, grossTurnover ?? 0);
   const safeDigitalPct = Math.min(100, Math.max(0, digitalReceiptsPercentage ?? 100));
   const isEnhancedLimitApplicable = safeDigitalPct >= 95;
 
+  const pastHistory = input.pastPresumptiveHistory ?? "unknown";
+
   let maxTurnoverLimit = 0;
-  let isEligibleForPresumptive = true;
+  let eligibilityStatus: PresumptiveEligibilityStatus = "eligible";
   let ineligibilityReason: string | undefined = undefined;
+
+  // Source-backed history audit under Section 44AD(4):
+  if (professionType === "44AD_business") {
+    if (pastHistory === "unknown") {
+      eligibilityStatus = "cannot_determine";
+      ineligibilityReason =
+        "Section 44AD eligibility cannot be verified without prior filing history under Section 44AD(4). If you opted out of Section 44AD in any of the preceding 5 assessment years, you are locked out from claiming presumptive benefits. Please confirm your past filing status.";
+    } else if (pastHistory === "opted_out_within_5_years") {
+      eligibilityStatus = "ineligible";
+      ineligibilityReason =
+        "Ineligible under Section 44AD(4): Assessee opted out of Section 44AD within the past 5 assessment years, triggering a mandatory 5-year lock-out period where normal books u/s 44AA and tax audit u/s 44AB are required.";
+    }
+  }
 
   if (professionType === "44ADA_professional") {
     maxTurnoverLimit = isEnhancedLimitApplicable ? 7500000 : 5000000;
     if (safeTurnover > maxTurnoverLimit) {
-      isEligibleForPresumptive = false;
+      eligibilityStatus = "ineligible";
       if (safeTurnover <= 7500000 && !isEnhancedLimitApplicable) {
         ineligibilityReason = `Turnover (₹${(safeTurnover / 100000).toFixed(2)}L) exceeds the standard ₹50 Lakh limit, and digital receipts are ${safeDigitalPct}% (under the 95% threshold required for the enhanced ₹75 Lakh limit).`;
       } else {
@@ -3513,7 +3707,7 @@ export function calcPresumptiveTax(input: PresumptiveTaxInput): PresumptiveTaxOu
     // 44AD Business
     maxTurnoverLimit = isEnhancedLimitApplicable ? 30000000 : 20000000;
     if (safeTurnover > maxTurnoverLimit) {
-      isEligibleForPresumptive = false;
+      eligibilityStatus = "ineligible";
       if (safeTurnover <= 30000000 && !isEnhancedLimitApplicable) {
         ineligibilityReason = `Turnover (₹${(safeTurnover / 10000000).toFixed(2)} Cr) exceeds standard ₹2 Crore limit, and digital receipts are ${safeDigitalPct}% (under the 95% threshold required for enhanced ₹3 Crore limit).`;
       } else {
@@ -3521,6 +3715,8 @@ export function calcPresumptiveTax(input: PresumptiveTaxInput): PresumptiveTaxOu
       }
     }
   }
+
+  const isEligibleForPresumptive = eligibilityStatus === "eligible";
 
   // Calculate turnover splits
   const digitalTurnover = Math.round(safeTurnover * (safeDigitalPct / 100));
@@ -3589,7 +3785,9 @@ export function calcPresumptiveTax(input: PresumptiveTaxInput): PresumptiveTaxOu
 
   // Recommendation
   let recommendation = "";
-  if (!isEligibleForPresumptive) {
+  if (eligibilityStatus === "cannot_determine") {
+    recommendation = ineligibilityReason || "Please verify your past 5-year Section 44AD filing status to determine eligibility.";
+  } else if (!isEligibleForPresumptive) {
     recommendation = ineligibilityReason || "Turnover exceeds eligible limits for presumptive taxation. Regular books of account and normal tax filing apply.";
   } else if (safeTurnover === 0) {
     recommendation = "Enter your gross turnover to calculate presumptive taxation vs actual profit.";
@@ -3613,6 +3811,7 @@ export function calcPresumptiveTax(input: PresumptiveTaxInput): PresumptiveTaxOu
     cashTurnover,
     isEnhancedLimitApplicable,
     maxTurnoverLimit,
+    eligibilityStatus,
     isEligibleForPresumptive,
     ineligibilityReason,
     presumptiveRateEffective,
@@ -3902,20 +4101,20 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
 
   // Helper to compute Section 82 (formerly Section 54 — Residential House)
   function computeSection54(): Section54SingleExemptionResult {
-    const invAmount = Math.max(0, input.section54InvestmentAmount ?? propertyInvestmentAmount ?? 0);
-    const secondInvAmount = Math.max(0, input.secondPropertyInvestmentAmount ?? 0);
-    const mode = input.section54PropertyMode ?? propertyMode;
-    const timeline = input.section54TimelineMonths ?? propertyTimelineMonths;
-    const statutoryCap = 100000000; // ₹10 Crore cap (Finance Act 2023 / 2026)
+    const rawHistory = input.twoHousesOptionHistory ??
+      (input.twoHousesOptionExercisedPreviously === true ? "used_before" :
+       input.twoHousesOptionExercisedPreviously === false ? "never_used" : "unconfirmed");
 
     const useTwoHouses = Boolean(input.useTwoResidentialHousesOption);
-    const previouslyExercised = Boolean(input.twoHousesOptionExercisedPreviously);
-
     let twoHousesOptionApplied = false;
     let twoHousesOptionMessage: string | undefined = undefined;
 
     if (useTwoHouses) {
-      if (previouslyExercised) {
+      if (rawHistory === "unconfirmed") {
+        twoHousesOptionApplied = false;
+        twoHousesOptionMessage =
+          "Section 82 two-house option requires confirmation of prior utilization history. Because prior history is unconfirmed, only one residential house qualifies.";
+      } else if (rawHistory === "used_before") {
         twoHousesOptionApplied = false;
         twoHousesOptionMessage =
           "The Section 82 (formerly Section 54) two-residential-house option is strictly once-in-a-lifetime. Because this option was exercised in a prior tax year, only one residential house qualifies.";
@@ -3929,24 +4128,56 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
       }
     }
 
-    const totalEligibleInvestment = twoHousesOptionApplied
-      ? invAmount + secondInvAmount
-      : invAmount;
+    // Independent validation of House #1
+    const invAmount1 = Math.max(0, input.section54InvestmentAmount ?? propertyInvestmentAmount ?? 0);
+    const mode1 = input.section54PropertyMode ?? propertyMode;
+    const timeline1 = input.section54TimelineMonths ?? propertyTimelineMonths;
 
-    let isValidTimeline = false;
-    let timelineMessage = "";
-
-    if (mode === "purchase") {
-      isValidTimeline = timeline >= -12 && timeline <= 24;
-      timelineMessage = isValidTimeline
-        ? `Valid purchase timeline (${timeline} months relative to sale date. Prescribed window: 1 year before to 2 years after sale).`
-        : `Invalid purchase timeline (${timeline} months). Section 82 (formerly Section 54) requires property purchase between 1 year before and 2 years after transfer date.`;
+    let isValidTimeline1 = false;
+    let timelineMessage1 = "";
+    if (mode1 === "purchase") {
+      isValidTimeline1 = timeline1 >= -12 && timeline1 <= 24;
+      const prefix = twoHousesOptionApplied ? "House #1: " : "";
+      timelineMessage1 = isValidTimeline1
+        ? `${prefix}Valid purchase timeline (${timeline1} months relative to sale date. Prescribed window: 1 year before to 2 years after sale).`
+        : `${prefix}Invalid purchase timeline (${timeline1} months). Section 82 requires property purchase between 1 year before and 2 years after transfer date.`;
     } else {
-      isValidTimeline = timeline >= 0 && timeline <= 36;
-      timelineMessage = isValidTimeline
-        ? `Valid construction timeline (${timeline} months from sale date. Prescribed window: within 3 years after sale).`
-        : `Invalid construction timeline (${timeline} months). Section 82 (formerly Section 54) requires construction completion within 3 years from transfer date.`;
+      isValidTimeline1 = timeline1 >= 0 && timeline1 <= 36;
+      const prefix = twoHousesOptionApplied ? "House #1: " : "";
+      timelineMessage1 = isValidTimeline1
+        ? `${prefix}Valid construction timeline (${timeline1} months from sale date. Prescribed window: within 3 years after sale).`
+        : `${prefix}Invalid construction timeline (${timeline1} months). Section 82 requires construction completion within 3 years from transfer date.`;
     }
+
+    const qualifyingAmount1 = isValidTimeline1 ? invAmount1 : 0;
+
+    // Independent validation of House #2
+    const invAmount2 = Math.max(0, input.secondPropertyInvestmentAmount ?? 0);
+    const mode2 = input.secondPropertyMode ?? mode1;
+    const timeline2 = input.secondPropertyTimelineMonths ?? timeline1;
+
+    let isValidTimeline2 = false;
+    let timelineMessage2 = "";
+    if (mode2 === "purchase") {
+      isValidTimeline2 = timeline2 >= -12 && timeline2 <= 24;
+      timelineMessage2 = isValidTimeline2
+        ? `House #2: Valid purchase timeline (${timeline2} months relative to sale date).`
+        : `House #2: Invalid purchase timeline (${timeline2} months). Section 82 requires property purchase between 1 year before and 2 years after transfer date.`;
+    } else {
+      isValidTimeline2 = timeline2 >= 0 && timeline2 <= 36;
+      timelineMessage2 = isValidTimeline2
+        ? `House #2: Valid construction timeline (${timeline2} months from sale date).`
+        : `House #2: Invalid construction timeline (${timeline2} months). Section 82 requires construction completion within 3 years from transfer date.`;
+    }
+
+    const qualifyingAmount2 = twoHousesOptionApplied && isValidTimeline2 ? invAmount2 : 0;
+    const totalEligibleInvestment = qualifyingAmount1 + qualifyingAmount2;
+    const statutoryCap = 100000000; // ₹10 Crore cap (Finance Act 2023 / 2026)
+
+    const isValidTimeline = isValidTimeline1 || (twoHousesOptionApplied && isValidTimeline2);
+    const timelineMessage = twoHousesOptionApplied
+      ? `${timelineMessage1} ${timelineMessage2}`
+      : timelineMessage1;
 
     let exemptionAllowed = 0;
     if (isS54Eligible && isValidTimeline && initialLtcgGains > 0 && totalEligibleInvestment > 0) {
@@ -3979,9 +4210,9 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
       conditions: [
         "Transferred original asset must be a residential house property (income chargeable under the head 'Income from house property').",
         "Reinvestment must be in a residential house property situated in India (or up to two residential houses if LTCG <= ₹2 Crore and once-in-a-lifetime option is exercised under Section 82).",
-        "Unutilized capital gains before ITR filing due date (Section 139(1)) must be deposited into a Capital Gains Account Scheme (CGAS).",
-        "If the new house is sold within 3 years of purchase/construction, the exemption is revoked and taxed.",
-        "Maximum statutory exemption limit is ₹10 Crore per assessee (Income-tax Act, 2025 as amended by Finance Act, 2026).",
+        "Unutilized capital gains before ITR filing due date under Section 263 (legacy Section 139(1)) must be deposited into a Capital Gains Account Scheme (CGAS).",
+        "Section 82 Recapture: If the new house is sold within 3 years of purchase or construction, the exemption claimed is revoked and taxed.",
+        "Maximum statutory exemption limit is ₹10 Crore per assessee (Income-tax Act, 2025 as amended by Finance Act, 2026). Note: Section 82 contains no restriction against purchasing other residential houses.",
       ],
     };
   }
@@ -3990,6 +4221,9 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
   function computeSection54EC(): Section54SingleExemptionResult {
     const invAmount = Math.max(0, bondsInvestmentAmount || 0);
     const statutoryCap = 5000000; // ₹50 Lakhs statutory limit
+    const priorInv = Math.max(0, input.priorInvestmentInRelevantSection85Window ?? 0);
+    const remainingCap = Math.max(0, statutoryCap - priorInv);
+    const eligibleCurrentInvestment = Math.min(invAmount, remainingCap);
 
     const isValidTimeline = bondsTimelineMonths >= 0 && bondsTimelineMonths <= 6;
     const timelineMessage = isValidTimeline
@@ -3997,8 +4231,8 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
       : `Invalid timeline (${bondsTimelineMonths} months). Section 85 (formerly Section 54EC) requires bond investment within strictly 6 months from the date of property transfer.`;
 
     let exemptionAllowed = 0;
-    if (isS54ECEligible && isValidTimeline && initialLtcgGains > 0 && invAmount > 0) {
-      exemptionAllowed = Math.min(initialLtcgGains, Math.min(invAmount, statutoryCap));
+    if (isS54ECEligible && isValidTimeline && initialLtcgGains > 0 && eligibleCurrentInvestment > 0) {
+      exemptionAllowed = Math.min(initialLtcgGains, eligibleCurrentInvestment);
     }
 
     const taxableGainsRemaining = Math.max(0, initialLtcgGains - exemptionAllowed);
@@ -4112,11 +4346,12 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
       disqualificationReason,
       proportionateExemptionApplied: isS54FEligible && !disqualified && invAmount < netSale && invAmount > 0,
       conditions: [
-        "Income-tax Act, 2025 Section 86 (formerly Section 54F): Transferred asset must be a long-term capital asset other than a residential house (e.g. plot, gold, commercial property, shares).",
-        "Taxpayer must not own more than ONE residential house (other than the new house) on the date of transfer.",
-        "Proportionate statutory exemption: LTCG × (Cost of New House / Net Sale Consideration).",
-        "Statutory cost of new residential house recognized is capped at ₹10 Crore (Finance Act 2023 / 2026).",
-        "Post-reinvestment compliance: Exemption is revoked and taxed as LTCG if taxpayer buys another house within 1yr before/2yrs after transfer, or constructs another house within 3yrs, or sells the new house within 3yrs.",
+        "Income-tax Act, 2025 Section 86 (formerly Section 54F): Transferred original asset must be a long-term capital asset other than a residential house (e.g. plot, commercial property, shares, gold).",
+        "Taxpayer must not own more than ONE residential house (other than the new house) on the date of transfer of the original asset.",
+        "Proportionate statutory exemption: LTCG × (Cost of New House / Net Sale Consideration), capped at ₹10 Crore.",
+        "Section 86 Disqualification / Recapture: Exemption is revoked and taxed as LTCG if taxpayer purchases ANY residential house (other than the new qualifying house) within 1 year before or 2 years after transfer date, or constructs another house within 3 years after transfer date.",
+        "Holding Restriction: Exemption is revoked and taxed if the new house is transferred or sold within 3 years of acquisition or construction.",
+        "CGAS Compliance: Unutilized net sale consideration before the ITR filing due date under Section 263 (legacy Section 139(1)) must be deposited in an authorized CGAS account.",
       ],
     };
   }
@@ -6066,23 +6301,35 @@ export function calcNPS(input: NPSInput): NPSOutput {
   const safeEmployerContribution = Math.max(0, employerMonthlyContribution || 0);
   const totalMonthlyInflow = safeContribution + safeEmployerContribution;
 
-  // 80CCD(2) salary base
-  const safeEligibleSalary = Math.max(
-    0,
-    safePositive(
-      eligibleSalaryFor80CCD2 ?? basicSalaryPlusEligibleDA,
-      safeEmployerContribution > 0 ? (safeEmployerContribution * 12) / 0.1 : 1200000
-    )
-  );
+  // 80CCD(2) salary base: Never invent statutory salary!
+  const rawProvidedSalary = eligibleSalaryFor80CCD2 ?? basicSalaryPlusEligibleDA;
+  const isSalaryProvided = rawProvidedSalary !== undefined && rawProvidedSalary > 0;
+  const safeEligibleSalary = isSalaryProvided ? Math.max(0, safePositive(rawProvidedSalary)) : 0;
+
+  let deductionStatus80CCD2: "eligible" | "salary_required" | "not_applicable" = "not_applicable";
+  if (safeEmployerContribution > 0) {
+    deductionStatus80CCD2 = isSalaryProvided ? "eligible" : "salary_required";
+  }
 
   // Authoritative statutory caps:
   // New Regime: 14% of salary for all employer categories (Finance Act, 2024 / 2025 / 2026).
   // Old Regime: 14% of salary for Central/State Govt; 10% for Private/PSU.
   const salaryCap80CCD2Percent = regime === "new" ? 14 : (isGovtEmployee ? 14 : 10);
   const annualEmployerContribution = safeEmployerContribution * 12;
-  const maxEligible80CCD2 = (safeEligibleSalary * salaryCap80CCD2Percent) / 100;
-  const eligibleDeduction80CCD2 = Math.min(annualEmployerContribution, maxEligible80CCD2);
-  const excessEmployerContributionNotDeductible = Math.max(0, annualEmployerContribution - eligibleDeduction80CCD2);
+
+  let maxEligible80CCD2 = 0;
+  let eligibleDeduction80CCD2 = 0;
+  let excessEmployerContributionNotDeductible = 0;
+
+  if (deductionStatus80CCD2 === "eligible") {
+    maxEligible80CCD2 = (safeEligibleSalary * salaryCap80CCD2Percent) / 100;
+    eligibleDeduction80CCD2 = Math.min(annualEmployerContribution, maxEligible80CCD2);
+    excessEmployerContributionNotDeductible = Math.max(0, annualEmployerContribution - eligibleDeduction80CCD2);
+  } else if (deductionStatus80CCD2 === "salary_required") {
+    // When employer contribution exists but salary is absent, deduction cannot be fabricated
+    eligibleDeduction80CCD2 = 0;
+    excessEmployerContributionNotDeductible = annualEmployerContribution;
+  }
 
   const totalAlloc = equityAllocationPercent + corporateDebtAllocationPercent + govtBondsAllocationPercent;
   if (Math.abs(totalAlloc - 100) > 0.5) {
@@ -6103,6 +6350,7 @@ export function calcNPS(input: NPSInput): NPSOutput {
       annuityPurchasedAmount: 0,
       assumedAnnuityYieldPercent: 6.5,
       estimatedMonthlyPension: 0,
+      deductionStatus80CCD2,
       actualEmployerContribution: annualEmployerContribution,
       eligibleSalaryFor80CCD2: safeEligibleSalary,
       salaryCap80CCD2Percent,
@@ -6305,6 +6553,7 @@ export function calcNPS(input: NPSInput): NPSOutput {
     annuityPurchasedAmount: Math.round(annuityAmount),
     assumedAnnuityYieldPercent: round2(safeAnnuityRate * 100),
     estimatedMonthlyPension: Math.round(estimatedMonthlyPension),
+    deductionStatus80CCD2,
     actualEmployerContribution: Math.round(annualEmployerContribution),
     eligibleSalaryFor80CCD2: Math.round(safeEligibleSalary),
     salaryCap80CCD2Percent,

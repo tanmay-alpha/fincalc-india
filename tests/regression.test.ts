@@ -569,6 +569,7 @@ describe("SECTION 5: Full Regression Audit — Adversarial Edge-Case Suite", () 
         professionType: "44AD_business",
         grossTurnover: 10000000,
         actualProfit: 500000, // 5% < 6%, and 5L > 4L basic exemption
+        pastPresumptiveHistory: "opted_in_continuously",
       });
       expect(res.isAuditTriggeredByOptOut).toBe(true);
       expect(res.fiveYearLockoutTriggered).toBe(true);

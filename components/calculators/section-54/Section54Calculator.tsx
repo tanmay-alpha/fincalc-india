@@ -51,12 +51,18 @@ export default function Section54Calculator() {
   const [section54TimelineMonths, setSection54TimelineMonths] = useState(6);
   // Section 82 once-in-a-lifetime two-house option
   const [useTwoResidentialHousesOption, setUseTwoResidentialHousesOption] = useState(false);
-  const [twoHousesOptionExercisedPreviously, setTwoHousesOptionExercisedPreviously] = useState(false);
+  const [twoHousesOptionHistory, setTwoHousesOptionHistory] =
+    useState<"unconfirmed" | "never_used" | "used_before">("never_used");
   const [secondPropertyInvestmentAmount, setSecondPropertyInvestmentAmount] = useState(0);
+  const [secondPropertyMode, setSecondPropertyMode] =
+    useState<Section54PropertyMode>("purchase");
+  const [secondPropertyTimelineMonths, setSecondPropertyTimelineMonths] = useState(6);
 
   // Section 85 (formerly 54EC) specific state
   const [bondsInvestmentAmount, setBondsInvestmentAmount] = useState(5000000);
   const [bondsTimelineMonths, setBondsTimelineMonths] = useState(3);
+  const [priorInvestmentInRelevantSection85Window, setPriorInvestmentInRelevantSection85Window] =
+    useState(0);
 
   // Section 86 (formerly 54F) specific state
   const [section54fInvestmentAmount, setSection54fInvestmentAmount] = useState(6000000);
@@ -87,11 +93,15 @@ export default function Section54Calculator() {
       section54PropertyMode,
       section54TimelineMonths,
       useTwoResidentialHousesOption,
-      twoHousesOptionExercisedPreviously,
+      twoHousesOptionHistory,
+      twoHousesOptionExercisedPreviously: twoHousesOptionHistory === "used_before",
       secondPropertyInvestmentAmount: useTwoResidentialHousesOption ? secondPropertyInvestmentAmount : undefined,
+      secondPropertyMode: useTwoResidentialHousesOption ? secondPropertyMode : undefined,
+      secondPropertyTimelineMonths: useTwoResidentialHousesOption ? secondPropertyTimelineMonths : undefined,
       // Section 85 parameters
       bondsInvestmentAmount,
       bondsTimelineMonths,
+      priorInvestmentInRelevantSection85Window,
       // Section 86 parameters
       section54fInvestmentAmount,
       section54fPropertyMode,
@@ -121,10 +131,13 @@ export default function Section54Calculator() {
       section54PropertyMode,
       section54TimelineMonths,
       useTwoResidentialHousesOption,
-      twoHousesOptionExercisedPreviously,
+      twoHousesOptionHistory,
       secondPropertyInvestmentAmount,
+      secondPropertyMode,
+      secondPropertyTimelineMonths,
       bondsInvestmentAmount,
       bondsTimelineMonths,
+      priorInvestmentInRelevantSection85Window,
       section54fInvestmentAmount,
       section54fPropertyMode,
       section54fTimelineMonths,
@@ -484,30 +497,111 @@ export default function Section54Calculator() {
                       </div>
                     ) : (
                       <>
-                        <div className="flex items-center gap-2">
-                          <input
-                            id="two-house-prev"
-                            type="checkbox"
-                            checked={twoHousesOptionExercisedPreviously}
-                            onChange={(e) => setTwoHousesOptionExercisedPreviously(e.target.checked)}
-                            className="rounded border-border text-primary focus:ring-primary h-3.5 w-3.5"
-                          />
-                          <label htmlFor="two-house-prev" className="text-xs text-muted-foreground cursor-pointer">
-                            I have previously exercised this option in a prior tax year (option revoked)
+                        <div className="space-y-1.5 bg-muted/40 p-3 rounded-xl border border-border/60">
+                          <label className="text-xs font-semibold text-foreground block">
+                            Prior Utilization of Two-House Option (Section 82 Proviso)
                           </label>
+                          <div className="space-y-1 text-xs">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="twoHousesHistory"
+                                value="never_used"
+                                checked={twoHousesOptionHistory === "never_used"}
+                                onChange={() => setTwoHousesOptionHistory("never_used")}
+                                className="text-primary focus:ring-primary h-3.5 w-3.5"
+                              />
+                              <span className="text-foreground font-medium">
+                                Never exercised before (Eligible for once-in-a-lifetime option)
+                              </span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="twoHousesHistory"
+                                value="used_before"
+                                checked={twoHousesOptionHistory === "used_before"}
+                                onChange={() => setTwoHousesOptionHistory("used_before")}
+                                className="text-primary focus:ring-primary h-3.5 w-3.5"
+                              />
+                              <span className="text-muted-foreground">
+                                Previously exercised in an earlier assessment year (Disqualified)
+                              </span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="twoHousesHistory"
+                                value="unconfirmed"
+                                checked={twoHousesOptionHistory === "unconfirmed"}
+                                onChange={() => setTwoHousesOptionHistory("unconfirmed")}
+                                className="text-primary focus:ring-primary h-3.5 w-3.5"
+                              />
+                              <span className="text-muted-foreground">
+                                Unconfirmed / Unknown history (Option deferred until confirmed)
+                              </span>
+                            </label>
+                          </div>
                         </div>
 
-                        {!twoHousesOptionExercisedPreviously && (
-                          <HybridInput
-                            label="Reinvestment in Second Residential House"
-                            hint="Combined qualifying cost of both houses is exempt up to statutory limit"
-                            value={secondPropertyInvestmentAmount}
-                            onChange={setSecondPropertyInvestmentAmount}
-                            min={0}
-                            max={100000000}
-                            step={100000}
-                            prefix="₹"
-                          />
+                        {twoHousesOptionHistory === "never_used" && (
+                          <div className="space-y-3 pt-1">
+                            <HybridInput
+                              label="Reinvestment in Second Residential House"
+                              hint="Combined qualifying cost of both houses is exempt up to statutory limit"
+                              value={secondPropertyInvestmentAmount}
+                              onChange={setSecondPropertyInvestmentAmount}
+                              min={0}
+                              max={100000000}
+                              step={100000}
+                              prefix="₹"
+                            />
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div>
+                                <label className="text-xs font-semibold text-muted-foreground block mb-1.5">
+                                  House #2 Acquisition Mode
+                                </label>
+                                <div className="grid grid-cols-2 gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => setSecondPropertyMode("purchase")}
+                                    className={clsx(
+                                      "px-3 py-1.5 text-xs font-medium rounded-lg border text-center transition-all",
+                                      secondPropertyMode === "purchase"
+                                        ? "border-primary bg-primary/10 text-primary font-semibold"
+                                        : "border-border text-muted-foreground hover:bg-muted"
+                                    )}
+                                  >
+                                    Purchase
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setSecondPropertyMode("construction")}
+                                    className={clsx(
+                                      "px-3 py-1.5 text-xs font-medium rounded-lg border text-center transition-all",
+                                      secondPropertyMode === "construction"
+                                        ? "border-primary bg-primary/10 text-primary font-semibold"
+                                        : "border-border text-muted-foreground hover:bg-muted"
+                                    )}
+                                  >
+                                    Construction
+                                  </button>
+                                </div>
+                              </div>
+                              <div>
+                                <HybridInput
+                                  label={`House #2 Timeline (${secondPropertyMode === "purchase" ? "Max: 24m" : "Max: 36m"})`}
+                                  value={secondPropertyTimelineMonths}
+                                  onChange={setSecondPropertyTimelineMonths}
+                                  min={0}
+                                  max={60}
+                                  step={1}
+                                  suffix="m"
+                                />
+                              </div>
+                            </div>
+                          </div>
                         )}
                       </>
                     )}
@@ -541,9 +635,20 @@ export default function Section54Calculator() {
               </div>
 
               <HybridInput
-                label="Amount Invested in Specified Bonds"
+                label="Amount Invested in Specified Bonds (Current Transaction)"
                 value={bondsInvestmentAmount}
                 onChange={setBondsInvestmentAmount}
+                min={0}
+                max={5000000}
+                step={50000}
+                prefix="₹"
+              />
+
+              <HybridInput
+                label="Prior Investment in Relevant Section 85 Window"
+                hint="Statutory ₹50L aggregate cap covers transfer FY + subsequent FY. Prior investment reduces remaining limit."
+                value={priorInvestmentInRelevantSection85Window}
+                onChange={setPriorInvestmentInRelevantSection85Window}
                 min={0}
                 max={5000000}
                 step={50000}
@@ -677,12 +782,12 @@ export default function Section54Calculator() {
             </div>
             <p className="text-muted-foreground leading-relaxed text-[11px]">
               This planner evaluates statutory eligibility at the <strong>transaction and initial reinvestment stage</strong>.
-              Under the Income-tax Act, 2025, exemptions claimed under Section 86 (formerly 54F) and Section 82 (formerly 54) will be revoked and taxed as LTCG in future years if:
+              Under the Income-tax Act, 2025, post-reinvestment compliance conditions apply:
             </p>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground text-[11px] pl-1">
-              <li><strong>Ownership restriction:</strong> Purchasing another residential house within 1 year before or 2 years after transfer, or constructing another house within 3 years.</li>
-              <li><strong>Holding restriction:</strong> Transferring or selling the newly acquired residential house within 3 years of acquisition or construction.</li>
-              <li><strong>CGAS compliance:</strong> Failing to utilize funds deposited in the Capital Gains Account Scheme (CGAS) within the prescribed 3-year statutory period.</li>
+              <li><strong>Section 86 (formerly 54F) Exclusive:</strong> Purchasing another residential house within 1 year before or 2 years after transfer date, or constructing another house within 3 years, revokes Section 86 exemption. Section 82 (formerly 54) has no such restriction.</li>
+              <li><strong>Common 3-Year Holding Period:</strong> Transferring or selling the newly acquired or constructed residential house within 3 years revokes the exemption, taxing it in the year of transfer.</li>
+              <li><strong>CGAS Deposit (Section 263):</strong> Any unutilized portion of capital gains/net consideration must be deposited in the Capital Gains Account Scheme before the ITR filing due date u/s 263 (legacy 139(1)).</li>
             </ul>
           </div>
         </div>
@@ -903,7 +1008,7 @@ export default function Section54Calculator() {
           {/* Action buttons */}
           <div className="flex items-center gap-3">
             <SaveCalculationButton
-              calcType="Section 54 Exemption"
+              calcType="section-54-exemption"
               data={{
                 inputs: inputs as unknown as Record<string, unknown>,
                 results: {
@@ -915,7 +1020,7 @@ export default function Section54Calculator() {
               }}
               onSaved={setShareId}
             />
-            <ShareButton shareId={shareId} />
+            <ShareButton shareId={shareId} calcType="section-54-exemption" />
           </div>
         </div>
       </div>

@@ -10,7 +10,7 @@ import { ChartSkeleton } from "@/components/ui/Skeleton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import ShareButton from "@/components/ui/ShareButton";
 import { calcPresumptiveTax } from "@/lib/math";
-import type { PresumptiveProfessionType, PresumptiveTaxInput, TaxRegime } from "@/lib/math";
+import type { PresumptiveProfessionType, PresumptiveTaxInput, TaxRegime, PresumptiveHistoryStatus } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
 import { clsx } from "clsx";
@@ -39,6 +39,8 @@ export default function PresumptiveTaxCalculator() {
   const [regime, setRegime] = useState<TaxRegime>("new");
   const [deduction80C, setDeduction80C] = useState(150000);
   const [deduction80D, setDeduction80D] = useState(25000);
+  const [pastPresumptiveHistory, setPastPresumptiveHistory] =
+    useState<PresumptiveHistoryStatus>("first_time_opting_in");
   const [shareId, setShareId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -54,6 +56,7 @@ export default function PresumptiveTaxCalculator() {
       regime,
       deduction80C: regime === "old" ? deduction80C : 0,
       deduction80D: regime === "old" ? deduction80D : 0,
+      pastPresumptiveHistory,
     }),
     [
       professionType,
@@ -64,6 +67,7 @@ export default function PresumptiveTaxCalculator() {
       regime,
       deduction80C,
       deduction80D,
+      pastPresumptiveHistory,
     ]
   );
 
@@ -218,6 +222,28 @@ export default function PresumptiveTaxCalculator() {
             </div>
           </div>
 
+          {/* 44AD 5-Year Filing History Audit Selector */}
+          {professionType === "44AD_business" && (
+            <div className="surface-card p-4 space-y-2 border border-border/80 bg-muted/20 rounded-xl text-xs">
+              <label className="font-semibold text-foreground block">
+                Past 5-Year Section 44AD Filing History [Section 44AD(4)]
+              </label>
+              <select
+                value={pastPresumptiveHistory}
+                onChange={(e) => setPastPresumptiveHistory(e.target.value as PresumptiveHistoryStatus)}
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-xs"
+              >
+                <option value="first_time_opting_in">First Time Opting In (Eligible for 44AD)</option>
+                <option value="opted_in_continuously">Continuously Opted In (Declared ≥6%/8% in all past 5 years)</option>
+                <option value="opted_out_within_5_years">Opted Out within Past 5 AYs (Declared &lt;6%/8% profit — Locked Out)</option>
+                <option value="unknown">Unspecified / Unknown History (Verification Required)</option>
+              </select>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Under Section 44AD(4), opting out locks the assessee out of presumptive taxation for 5 consecutive assessment years and triggers mandatory tax audit u/s 44AB.
+              </p>
+            </div>
+          )}
+
           {/* Actual Profit Comparison & Tax Regime */}
           <div className="surface-card p-5 space-y-4">
             <div className="flex items-center justify-between">
@@ -307,7 +333,20 @@ export default function PresumptiveTaxCalculator() {
         {/* Right Output Column */}
         <div className="lg:col-span-6 space-y-6">
           {/* Main Hero Card */}
-          {result.isEligibleForPresumptive ? (
+          {result.eligibilityStatus === "cannot_determine" ? (
+            <div className="surface-card p-6 border-2 border-amber-500/50 bg-amber-500/10 space-y-2 rounded-2xl">
+              <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-bold">
+                <AlertTriangle className="w-5 h-5" />
+                <span>Section 44AD History Verification Required</span>
+              </div>
+              <p className="text-sm text-foreground/90 leading-relaxed">
+                {result.ineligibilityReason}
+              </p>
+              <p className="text-xs text-muted-foreground pt-1">
+                Please confirm your 5-year Section 44AD filing status using the selector on the left to verify whether the 5-year lock-out under Section 44AD(4) applies to your return.
+              </p>
+            </div>
+          ) : result.isEligibleForPresumptive ? (
             <ResultHero
               label="Tax Under Presumptive Scheme"
               value={result.presumptiveTaxPayable}
@@ -477,7 +516,7 @@ export default function PresumptiveTaxCalculator() {
           {/* Action buttons */}
           <div className="flex items-center gap-3">
             <SaveCalculationButton
-              calcType="Presumptive Tax"
+              calcType="presumptive-tax"
               data={{
                 inputs: inputs as unknown as Record<string, unknown>,
                 results: {
@@ -489,7 +528,7 @@ export default function PresumptiveTaxCalculator() {
               }}
               onSaved={setShareId}
             />
-            <ShareButton shareId={shareId} />
+            <ShareButton shareId={shareId} calcType="presumptive-tax" />
           </div>
         </div>
       </div>

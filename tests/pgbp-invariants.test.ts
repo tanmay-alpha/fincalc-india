@@ -118,6 +118,7 @@ describe("Tax Invariant & PGBP Unification Test Suite (AY 2026-27)", () => {
       grossTurnover: 10000000,
       digitalReceiptsPercentage: 100,
       regime: "new",
+      pastPresumptiveHistory: "first_time_opting_in",
     });
 
     const expectedTax = computePGBPTax(600000, "new").totalTax;
