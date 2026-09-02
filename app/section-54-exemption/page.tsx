@@ -6,13 +6,13 @@ import RelatedCalculators from "@/components/shared/RelatedCalculators";
 import CalculatorDisclaimer from "@/components/ui/CalculatorDisclaimer";
 
 export const metadata: Metadata = {
-  title: "Section 54 & 54EC Capital Gains Exemption Planner — Tax Year 2026-27",
+  title: "Section 54, 54EC & 54F Capital Gains Exemption Planner — Tax Year 2026-27",
   description:
-    "Calculate tax exemption on real estate LTCG under Section 54 (Residential house reinvestment) and Section 54EC (REC/NHAI bonds up to ₹50L) for Tax Year 2026-27.",
+    "Calculate statutory capital gains exemptions under Section 54 (Residential house), Section 54EC (Specified bonds up to ₹50L), and Section 54F (Shares/Gold/Plot to House). Statutory eligibility depends strictly on the original asset sold.",
   openGraph: {
-    title: "Section 54 & 54EC Capital Gains Exemption Planner — Tax Year 2026-27 — FinCalc India",
+    title: "Section 54, 54EC & 54F Capital Gains Exemption Planner — Tax Year 2026-27 — FinCalc India",
     description:
-      "Plan real estate capital gains tax savings, compare residential property vs 54EC bonds under Tax Year 2026-27 rules.",
+      "Statutory capital gains tax exemption planner under Sections 54, 54EC, and 54F. Compare eligible routes based on the original asset sold under Tax Year 2026-27 rules.",
   },
 };
 
@@ -25,17 +25,17 @@ export default function Section54ExemptionPage() {
             items={[
               { label: "Home", href: "/" },
               { label: "Capital Gains Tax", href: "/capital-gains-tax" },
-              { label: "Section 54 / 54EC Planner" },
+              { label: "Section 54 / 54EC / 54F Planner" },
             ]}
           />
           <div className="flex items-center gap-3 mb-1.5">
             <span className="text-3xl" aria-hidden="true">🏡</span>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
-              Section 54 & 54EC Exemption Planner — Tax Year 2026-27
+              Section 54, 54EC & 54F Exemption Planner — Tax Year 2026-27
             </h1>
           </div>
           <p className="text-muted-foreground text-sm mt-1 max-w-2xl">
-            Save up to 100% tax on property LTCG by planning reinvestment in a new residential house (Section 54, up to ₹10 Cr) or specified REC/NHAI bonds (Section 54EC, up to ₹50L).
+            Save tax on long-term capital gains by planning statutory reinvestment under Section 54 (residential house), Section 54EC (specified bonds up to ₹50L), or Section 54F (shares, gold, or plot reinvested into a residential house). Available statutory routes depend strictly on the original asset transferred.
           </p>
         </div>
 

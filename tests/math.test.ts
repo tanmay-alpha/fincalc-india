@@ -2105,6 +2105,7 @@ describe('calcSection54Exemption', () => {
     const result = calcSection54Exemption({
       capitalGainsAmount: 10000000,
       sectionType: 'compare_both',
+      originalAssetType: 'residential_house',
       propertyInvestmentAmount: 10000000,
       propertyMode: 'purchase',
       propertyTimelineMonths: 6,
@@ -3647,14 +3648,15 @@ describe('calcTax — Bug 1 Regression: dividendIncome included in grossIncome',
  * Without the fix, 54F was computed but not considered in the recommendation or taxDifference.
  */
 describe('calcSection54Exemption — Bug 3 Regression: compare-all ranks 54, 54EC, and 54F', () => {
-  it('when 54F provides full exemption and 54EC is capped, recommendation correctly names 54F as best', () => {
-    // Scenario: Large LTCG of ₹1 Crore.
-    // Section 54: invest 1Cr in residential house → exemption 1Cr, tax = 0
+  it('when 54F provides full exemption and 54EC is capped on non-residential asset, recommendation correctly names 54F as best', () => {
+    // Scenario: Commercial property LTCG of ₹1 Crore.
+    // Section 54: Ineligible (not residential house)
     // Section 54EC: only 50L cap → 50L taxable, tax = 6.5L
     // Section 54F: invest 1Cr, netSaleConsideration = 1Cr → full proportionate exemption, tax = 0
     const result = calcSection54Exemption({
       capitalGainsAmount: 10000000, // ₹1Cr LTCG
       sectionType: 'compare_both',
+      originalAssetType: 'land_or_building_non_residential',
       propertyInvestmentAmount: 10000000,
       propertyMode: 'purchase',
       propertyTimelineMonths: 12,
@@ -3665,45 +3667,46 @@ describe('calcSection54Exemption — Bug 3 Regression: compare-all ranks 54, 54E
     })
 
     expect(result.comparison).toBeDefined()
-    // 54 provides full exemption
-    expect(result.comparison?.section54.taxAfterExemption).toBe(0)
+    // 54 is statutorily ineligible on non-residential transfer
+    expect(result.comparison?.section54.isStatutorilyEligible).toBe(false)
     // 54EC is capped at 50L, so 50L taxable → 6.5L tax
     expect(result.comparison?.section54ec.taxAfterExemption).toBe(650000)
     // 54F provides full exemption (invAmount >= netSaleConsideration)
     expect(result.comparison?.section54f?.taxAfterExemption).toBe(0)
     expect(result.comparison?.section54f?.disqualified).toBe(false)
 
-    // taxDifference = worst (54EC=6.5L) - best (0) = 6.5L
+    // Best strategy is 54F, second best is 54EC
+    expect(result.comparison?.bestStrategy).toBe('54F')
+    expect(result.comparison?.secondBestStrategy).toBe('54EC')
     expect(result.comparison?.taxDifference).toBe(650000)
 
-    // Recommendation must NOT say only "54 saves over 54EC" — it must acknowledge all strategies
     const rec = result.comparison?.recommendation ?? ''
     expect(rec.length).toBeGreaterThan(20)
-    // The best strategy (54 or 54F — both at 0) is mentioned
-    expect(rec).toMatch(/Section 54|Section 54F|equal/)
+    expect(rec).toContain('Section 54F')
   })
 
-  it('when 54F is disqualified, compare-all recommendation still works correctly with 54 vs 54EC only', () => {
+  it('when residential house is sold, 54F is statutorily ineligible and compare-all works with 54 vs 54EC only', () => {
     const result = calcSection54Exemption({
       capitalGainsAmount: 5000000,
       sectionType: 'compare_both',
+      originalAssetType: 'residential_house',
       propertyInvestmentAmount: 5000000,
       propertyMode: 'purchase',
       propertyTimelineMonths: 6,
       bondsInvestmentAmount: 5000000,
       bondsTimelineMonths: 3,
-      existingResidentialHousesCount: 2, // 54F disqualified: owns 2 houses
+      existingResidentialHousesCount: 2,
     })
 
     expect(result.comparison).toBeDefined()
-    expect(result.comparison?.section54f?.disqualified).toBe(true)
+    expect(result.comparison?.section54f?.isStatutorilyEligible).toBe(false)
     // taxDifference should be between 54 and 54EC only (54F excluded)
     const diff54vs54ec = Math.abs(
       (result.comparison?.section54.taxAfterExemption ?? 0) -
       (result.comparison?.section54ec.taxAfterExemption ?? 0)
     )
     expect(result.comparison?.taxDifference).toBe(diff54vs54ec)
-    // Disqualification reason is appended to recommendation
+    // Ineligibility reason is appended to recommendation
     expect(result.comparison?.recommendation).toContain('54F')
   })
 })

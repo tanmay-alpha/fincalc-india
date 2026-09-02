@@ -10,7 +10,12 @@ import { ChartSkeleton } from "@/components/ui/Skeleton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import ShareButton from "@/components/ui/ShareButton";
 import { calcSection54Exemption } from "@/lib/math";
-import type { Section54Type, Section54PropertyMode, Section54ExemptionInput } from "@/lib/math";
+import type {
+  Section54Type,
+  Section54PropertyMode,
+  Section54OriginalAssetType,
+  Section54ExemptionInput,
+} from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
 import { clsx } from "clsx";
@@ -22,6 +27,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Gem,
+  Info,
 } from "lucide-react";
 
 const Section54Chart = dynamic(
@@ -31,44 +37,85 @@ const Section54Chart = dynamic(
 
 export default function Section54Calculator() {
   const [mounted, setMounted] = useState(false);
+  const [originalAssetType, setOriginalAssetType] =
+    useState<Section54OriginalAssetType>("residential_house");
   const [capitalGainsAmount, setCapitalGainsAmount] = useState(6000000); // 60 Lakhs
   const [netSaleConsideration, setNetSaleConsideration] = useState(10000000); // 1 Cr
   const [existingHousesCount, setExistingHousesCount] = useState(0); // For 54F
   const [sectionType, setSectionType] = useState<Section54Type>("compare_both");
-  const [propertyInvestmentAmount, setPropertyInvestmentAmount] = useState(6000000);
-  const [propertyMode, setPropertyMode] = useState<Section54PropertyMode>("purchase");
-  const [propertyTimelineMonths, setPropertyTimelineMonths] = useState(6);
+
+  // Section 54 specific state
+  const [section54InvestmentAmount, setSection54InvestmentAmount] = useState(6000000);
+  const [section54PropertyMode, setSection54PropertyMode] =
+    useState<Section54PropertyMode>("purchase");
+  const [section54TimelineMonths, setSection54TimelineMonths] = useState(6);
+
+  // Section 54EC specific state
   const [bondsInvestmentAmount, setBondsInvestmentAmount] = useState(5000000);
   const [bondsTimelineMonths, setBondsTimelineMonths] = useState(3);
+
+  // Section 54F specific state
+  const [section54fInvestmentAmount, setSection54fInvestmentAmount] = useState(6000000);
+  const [section54fPropertyMode, setSection54fPropertyMode] =
+    useState<Section54PropertyMode>("purchase");
+  const [section54fTimelineMonths, setSection54fTimelineMonths] = useState(6);
+
   const [shareId, setShareId] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  const is54FApplicable =
+    sectionType === "section_54f_property" ||
+    (sectionType === "compare_both" && originalAssetType !== "residential_house");
+
   const inputs: Section54ExemptionInput = useMemo(
     () => ({
       capitalGainsAmount,
-      netSaleConsideration,
+      netSaleConsideration: is54FApplicable ? netSaleConsideration : undefined,
       existingResidentialHousesCount: existingHousesCount,
       sectionType,
-      propertyInvestmentAmount,
-      propertyMode,
-      propertyTimelineMonths,
+      originalAssetType,
+      taxRatePercent: 12.5,
+      // Section-specific parameters
+      section54InvestmentAmount,
+      section54PropertyMode,
+      section54TimelineMonths,
       bondsInvestmentAmount,
       bondsTimelineMonths,
-      taxRatePercent: 12.5,
+      section54fInvestmentAmount,
+      section54fPropertyMode,
+      section54fTimelineMonths,
+      // Compatibility fallback
+      propertyInvestmentAmount:
+        originalAssetType === "residential_house"
+          ? section54InvestmentAmount
+          : section54fInvestmentAmount,
+      propertyMode:
+        originalAssetType === "residential_house"
+          ? section54PropertyMode
+          : section54fPropertyMode,
+      propertyTimelineMonths:
+        originalAssetType === "residential_house"
+          ? section54TimelineMonths
+          : section54fTimelineMonths,
     }),
     [
       capitalGainsAmount,
       netSaleConsideration,
+      is54FApplicable,
       existingHousesCount,
       sectionType,
-      propertyInvestmentAmount,
-      propertyMode,
-      propertyTimelineMonths,
+      originalAssetType,
+      section54InvestmentAmount,
+      section54PropertyMode,
+      section54TimelineMonths,
       bondsInvestmentAmount,
       bondsTimelineMonths,
+      section54fInvestmentAmount,
+      section54fPropertyMode,
+      section54fTimelineMonths,
     ]
   );
 
@@ -87,10 +134,99 @@ export default function Section54Calculator() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Form Column */}
         <div className="lg:col-span-6 space-y-6">
-          {/* Capital Gains Input */}
+          {/* Step 1: Original Asset Sold Selector */}
+          <div className="surface-card p-5 space-y-3 border-2 border-primary/20">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold uppercase tracking-wider text-foreground">
+                Original Capital Asset Transferred (Sold)
+              </label>
+              <span className="text-[10px] bg-primary/10 text-primary font-semibold px-2 py-0.5 rounded">
+                Statutory Eligibility Gate
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Under the Income Tax Act, available tax exemption routes depend strictly on the type of long-term asset you sold.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setOriginalAssetType("residential_house");
+                  if (sectionType === "section_54f_property") {
+                    setSectionType("section_54_property");
+                  }
+                }}
+                className={clsx(
+                  "p-3 rounded-xl border text-left transition-all",
+                  originalAssetType === "residential_house"
+                    ? "border-primary bg-primary/10 text-primary font-semibold shadow-sm ring-1 ring-primary/40"
+                    : "border-border text-muted-foreground hover:border-primary/40 hover:bg-accent/40"
+                )}
+              >
+                <div className="text-xs font-bold flex items-center gap-1.5">
+                  <Building className="w-4 h-4 text-blue-500 shrink-0" />
+                  Residential House
+                </div>
+                <div className="text-[10px] text-muted-foreground mt-1">
+                  Eligible: <strong className="text-foreground">Sec 54 & 54EC</strong>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setOriginalAssetType("land_or_building_non_residential");
+                  if (sectionType === "section_54_property") {
+                    setSectionType("section_54ec_bonds");
+                  }
+                }}
+                className={clsx(
+                  "p-3 rounded-xl border text-left transition-all",
+                  originalAssetType === "land_or_building_non_residential"
+                    ? "border-primary bg-primary/10 text-primary font-semibold shadow-sm ring-1 ring-primary/40"
+                    : "border-border text-muted-foreground hover:border-primary/40 hover:bg-accent/40"
+                )}
+              >
+                <div className="text-xs font-bold flex items-center gap-1.5">
+                  <Landmark className="w-4 h-4 text-emerald-500 shrink-0" />
+                  Commercial / Plot
+                </div>
+                <div className="text-[10px] text-muted-foreground mt-1">
+                  Eligible: <strong className="text-foreground">Sec 54EC & 54F</strong>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setOriginalAssetType("other_long_term_asset");
+                  if (sectionType === "section_54_property" || sectionType === "section_54ec_bonds") {
+                    setSectionType("section_54f_property");
+                  }
+                }}
+                className={clsx(
+                  "p-3 rounded-xl border text-left transition-all",
+                  originalAssetType === "other_long_term_asset"
+                    ? "border-primary bg-primary/10 text-primary font-semibold shadow-sm ring-1 ring-primary/40"
+                    : "border-border text-muted-foreground hover:border-primary/40 hover:bg-accent/40"
+                )}
+              >
+                <div className="text-xs font-bold flex items-center gap-1.5">
+                  <Gem className="w-4 h-4 text-amber-500 shrink-0" />
+                  Shares, Gold, etc.
+                </div>
+                <div className="text-[10px] text-muted-foreground mt-1">
+                  Eligible: <strong className="text-foreground">Sec 54F Only</strong>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* Capital Gains & Sale Input */}
           <div className="surface-card p-5 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-foreground">Capital Asset Sale & Gain Details</h3>
+              <h3 className="text-sm font-bold text-foreground">Sale & Capital Gain Details</h3>
               <span className="text-xs text-muted-foreground font-medium">
                 Tax @ {result.effectiveTaxRateBeforeExemption}%: {formatINR(result.taxBeforeExemption)}
               </span>
@@ -106,10 +242,10 @@ export default function Section54Calculator() {
               prefix="₹"
             />
 
-            {sectionType === "section_54f_property" && (
+            {is54FApplicable && (
               <HybridInput
                 label="Net Sale Consideration (Sale Price - Transfer Expenses)"
-                hint="Required for Section 54F proportionate exemption calculation"
+                hint="Statutorily required for Section 54F proportionate exemption calculation"
                 value={netSaleConsideration}
                 onChange={setNetSaleConsideration}
                 min={capitalGainsAmount}
@@ -127,7 +263,8 @@ export default function Section54Calculator() {
                   type="button"
                   onClick={() => {
                     setCapitalGainsAmount(amt);
-                    setPropertyInvestmentAmount(amt);
+                    setSection54InvestmentAmount(amt);
+                    setSection54fInvestmentAmount(amt);
                     setNetSaleConsideration(Math.round(amt * 1.6));
                   }}
                   className="px-2.5 py-1 text-xs rounded-lg border border-border bg-muted/50 hover:bg-accent text-muted-foreground hover:text-foreground font-medium transition-colors"
@@ -141,12 +278,17 @@ export default function Section54Calculator() {
           {/* Exemption Section Selector */}
           <div className="surface-card p-5 space-y-3">
             <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Select Statutory Exemption Route
+              Select Exemption Mode
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <button
                 type="button"
-                onClick={() => setSectionType("section_54_property")}
+                onClick={() => {
+                  setSectionType("section_54_property");
+                  if (originalAssetType !== "residential_house") {
+                    setOriginalAssetType("residential_house");
+                  }
+                }}
                 className={clsx(
                   "p-3 rounded-xl border text-center transition-all",
                   sectionType === "section_54_property"
@@ -161,7 +303,12 @@ export default function Section54Calculator() {
 
               <button
                 type="button"
-                onClick={() => setSectionType("section_54ec_bonds")}
+                onClick={() => {
+                  setSectionType("section_54ec_bonds");
+                  if (originalAssetType === "other_long_term_asset") {
+                    setOriginalAssetType("land_or_building_non_residential");
+                  }
+                }}
                 className={clsx(
                   "p-3 rounded-xl border text-center transition-all",
                   sectionType === "section_54ec_bonds"
@@ -176,7 +323,12 @@ export default function Section54Calculator() {
 
               <button
                 type="button"
-                onClick={() => setSectionType("section_54f_property")}
+                onClick={() => {
+                  setSectionType("section_54f_property");
+                  if (originalAssetType === "residential_house") {
+                    setOriginalAssetType("land_or_building_non_residential");
+                  }
+                }}
                 className={clsx(
                   "p-3 rounded-xl border text-center transition-all",
                   sectionType === "section_54f_property"
@@ -201,21 +353,20 @@ export default function Section54Calculator() {
               >
                 <Scale className="w-5 h-5 mx-auto mb-1 text-purple-500" />
                 <div className="text-xs font-bold">Compare All</div>
-                <div className="text-[10px] text-muted-foreground">Side-by-Side</div>
+                <div className="text-[10px] text-muted-foreground">Eligible Routes</div>
               </button>
             </div>
           </div>
 
-          {/* Section 54 / 54F Property Inputs */}
-          {(sectionType === "section_54_property" || sectionType === "section_54f_property" || sectionType === "compare_both") && (
+          {/* Section 54 Inputs (Residential House -> Residential House) */}
+          {(sectionType === "section_54_property" ||
+            (sectionType === "compare_both" && originalAssetType === "residential_house")) && (
             <div className="surface-card p-5 space-y-4 border border-blue-500/20 bg-blue-50/10 dark:bg-blue-950/10">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Building className="w-4 h-4 text-blue-500" />
                   <h3 className="text-sm font-bold text-foreground">
-                    {sectionType === "section_54f_property"
-                      ? "Section 54F: Residential House Reinvestment"
-                      : "Section 54: Residential Property Reinvestment"}
+                    Section 54: Residential House Reinvestment
                   </h3>
                 </div>
                 <span className="text-[10px] font-bold text-blue-600 bg-blue-100 dark:bg-blue-900/50 px-2 py-0.5 rounded">
@@ -224,31 +375,14 @@ export default function Section54Calculator() {
               </div>
 
               <HybridInput
-                label="Amount Reinvested in New Residential House"
-                value={propertyInvestmentAmount}
-                onChange={setPropertyInvestmentAmount}
+                label="Amount Reinvested in New Residential House (Section 54)"
+                value={section54InvestmentAmount}
+                onChange={setSection54InvestmentAmount}
                 min={0}
                 max={100000000}
                 step={100000}
                 prefix="₹"
               />
-
-              {sectionType === "section_54f_property" && (
-                <div className="space-y-1.5 pt-2 border-t border-border/40">
-                  <label className="text-xs font-medium text-foreground block">
-                    Existing Residential Houses Owned on Sale Date
-                  </label>
-                  <select
-                    value={existingHousesCount}
-                    onChange={(e) => setExistingHousesCount(parseInt(e.target.value, 10) || 0)}
-                    className="w-full bg-card border border-border/60 rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    <option value={0}>0 houses (Fully Eligible)</option>
-                    <option value={1}>1 house (Fully Eligible u/s 54F)</option>
-                    <option value={2}>2 or more houses (Disqualified u/s 54F)</option>
-                  </select>
-                </div>
-              )}
 
               {/* Mode & Timeline */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border/60">
@@ -259,20 +393,24 @@ export default function Section54Calculator() {
                   <div className="grid grid-cols-2 gap-1 bg-muted p-1 rounded-lg text-xs font-medium">
                     <button
                       type="button"
-                      onClick={() => setPropertyMode("purchase")}
+                      onClick={() => setSection54PropertyMode("purchase")}
                       className={clsx(
                         "py-1 rounded",
-                        propertyMode === "purchase" ? "bg-background text-foreground shadow-sm font-bold" : "text-muted-foreground"
+                        section54PropertyMode === "purchase"
+                          ? "bg-background text-foreground shadow-sm font-bold"
+                          : "text-muted-foreground"
                       )}
                     >
                       Purchase
                     </button>
                     <button
                       type="button"
-                      onClick={() => setPropertyMode("construction")}
+                      onClick={() => setSection54PropertyMode("construction")}
                       className={clsx(
                         "py-1 rounded",
-                        propertyMode === "construction" ? "bg-background text-foreground shadow-sm font-bold" : "text-muted-foreground"
+                        section54PropertyMode === "construction"
+                          ? "bg-background text-foreground shadow-sm font-bold"
+                          : "text-muted-foreground"
                       )}
                     >
                       Construction
@@ -283,14 +421,14 @@ export default function Section54Calculator() {
                 <div>
                   <HybridInput
                     label={
-                      propertyMode === "purchase"
+                      section54PropertyMode === "purchase"
                         ? "Months Relative to Sale (-12 to +24)"
                         : "Months from Sale Date (0 to +36)"
                     }
-                    value={propertyTimelineMonths}
-                    onChange={setPropertyTimelineMonths}
-                    min={propertyMode === "purchase" ? -12 : 0}
-                    max={propertyMode === "purchase" ? 36 : 48}
+                    value={section54TimelineMonths}
+                    onChange={setSection54TimelineMonths}
+                    min={section54PropertyMode === "purchase" ? -12 : 0}
+                    max={section54PropertyMode === "purchase" ? 36 : 48}
                     step={1}
                     suffix="m"
                   />
@@ -299,8 +437,11 @@ export default function Section54Calculator() {
             </div>
           )}
 
-          {/* Section 54EC Inputs */}
-          {(sectionType === "section_54ec_bonds" || sectionType === "compare_both") && (
+          {/* Section 54EC Inputs (Specified Bonds) */}
+          {(sectionType === "section_54ec_bonds" ||
+            (sectionType === "compare_both" &&
+              (originalAssetType === "residential_house" ||
+                originalAssetType === "land_or_building_non_residential"))) && (
             <div className="surface-card p-5 space-y-4 border border-emerald-500/20 bg-emerald-50/10 dark:bg-emerald-950/10">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -340,6 +481,124 @@ export default function Section54Calculator() {
                   />
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Section 54F Inputs (Non-Residential Asset -> Residential House) */}
+          {is54FApplicable && (
+            <div className="surface-card p-5 space-y-4 border border-amber-500/20 bg-amber-50/10 dark:bg-amber-950/10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Gem className="w-4 h-4 text-amber-500" />
+                  <h3 className="text-sm font-bold text-foreground">
+                    Section 54F: Residential House Reinvestment
+                  </h3>
+                </div>
+                <span className="text-[10px] font-bold text-amber-600 bg-amber-100 dark:bg-amber-900/50 px-2 py-0.5 rounded">
+                  Max Cap: ₹10 Cr
+                </span>
+              </div>
+
+              <HybridInput
+                label="Amount Reinvested in New House (Section 54F)"
+                value={section54fInvestmentAmount}
+                onChange={setSection54fInvestmentAmount}
+                min={0}
+                max={100000000}
+                step={100000}
+                prefix="₹"
+              />
+
+              <div className="space-y-1.5 pt-2 border-t border-border/40">
+                <label className="text-xs font-medium text-foreground block">
+                  Existing Residential Houses Owned on Sale Date
+                </label>
+                <select
+                  value={existingHousesCount}
+                  onChange={(e) => setExistingHousesCount(parseInt(e.target.value, 10) || 0)}
+                  className="w-full bg-card border border-border/60 rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value={0}>0 houses (Fully Eligible u/s 54F)</option>
+                  <option value={1}>1 house (Eligible u/s 54F)</option>
+                  <option value={2}>2 or more houses (Disqualified u/s 54F)</option>
+                </select>
+              </div>
+
+              {/* Mode & Timeline */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border/60">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground block mb-1.5">
+                    Reinvestment Nature
+                  </label>
+                  <div className="grid grid-cols-2 gap-1 bg-muted p-1 rounded-lg text-xs font-medium">
+                    <button
+                      type="button"
+                      onClick={() => setSection54fPropertyMode("purchase")}
+                      className={clsx(
+                        "py-1 rounded",
+                        section54fPropertyMode === "purchase"
+                          ? "bg-background text-foreground shadow-sm font-bold"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      Purchase
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSection54fPropertyMode("construction")}
+                      className={clsx(
+                        "py-1 rounded",
+                        section54fPropertyMode === "construction"
+                          ? "bg-background text-foreground shadow-sm font-bold"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      Construction
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <HybridInput
+                    label={
+                      section54fPropertyMode === "purchase"
+                        ? "Months Relative to Sale (-12 to +24)"
+                        : "Months from Sale Date (0 to +36)"
+                    }
+                    value={section54fTimelineMonths}
+                    onChange={setSection54fTimelineMonths}
+                    min={section54fPropertyMode === "purchase" ? -12 : 0}
+                    max={section54fPropertyMode === "purchase" ? 36 : 48}
+                    step={1}
+                    suffix="m"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Ineligibility Explanatory Banner in Compare All mode */}
+          {sectionType === "compare_both" && (
+            <div className="surface-card p-4 rounded-xl border border-border/60 bg-muted/30 text-xs text-muted-foreground space-y-1.5">
+              <div className="flex items-center gap-1.5 font-semibold text-foreground">
+                <Info className="w-3.5 h-3.5 text-primary" />
+                Statutory Routing Summary
+              </div>
+              {originalAssetType === "residential_house" && (
+                <p>
+                  Selling a <strong>Residential House</strong>: Evaluating <strong>Section 54</strong> (new house) vs <strong>Section 54EC</strong> (bonds). Section 54F is statutorily unavailable.
+                </p>
+              )}
+              {originalAssetType === "land_or_building_non_residential" && (
+                <p>
+                  Selling <strong>Commercial Property or Plot</strong>: Evaluating <strong>Section 54EC</strong> (bonds) vs <strong>Section 54F</strong> (new house). Section 54 is statutorily unavailable.
+                </p>
+              )}
+              {originalAssetType === "other_long_term_asset" && (
+                <p>
+                  Selling <strong>Shares, Gold, or Other Capital Assets</strong>: Evaluating <strong>Section 54F</strong> (new house). Sections 54 and 54EC are statutorily unavailable.
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -382,7 +641,11 @@ export default function Section54Calculator() {
             <div className="surface-card p-3.5 text-center col-span-2 sm:col-span-1">
               <div className="text-xs text-muted-foreground">Eligibility & Timeline</div>
               <div className="text-xs font-bold mt-1.5 flex items-center justify-center gap-1">
-                {result.activeResult.disqualified ? (
+                {!result.activeResult.isStatutorilyEligible ? (
+                  <span className="text-destructive flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5" /> Ineligible Asset
+                  </span>
+                ) : result.activeResult.disqualified ? (
                   <span className="text-destructive flex items-center gap-1">
                     <AlertCircle className="w-3.5 h-3.5" /> Disqualified
                   </span>
@@ -399,8 +662,17 @@ export default function Section54Calculator() {
             </div>
           </div>
 
-          {/* Disqualification / Timeline Alerts */}
-          {result.activeResult.disqualified && (
+          {/* Ineligibility / Disqualification / Timeline Alerts */}
+          {!result.activeResult.isStatutorilyEligible && (
+            <div className="surface-card p-4 rounded-xl border border-destructive/40 bg-destructive/10 flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+              <p className="text-xs text-destructive leading-relaxed">
+                {result.activeResult.ineligibilityReason}
+              </p>
+            </div>
+          )}
+
+          {result.activeResult.isStatutorilyEligible && result.activeResult.disqualified && (
             <div className="surface-card p-4 rounded-xl border border-destructive/40 bg-destructive/10 flex items-start gap-2.5">
               <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
               <p className="text-xs text-destructive leading-relaxed">
@@ -409,14 +681,16 @@ export default function Section54Calculator() {
             </div>
           )}
 
-          {!result.activeResult.isValidTimeline && !result.activeResult.disqualified && (
-            <div className="surface-card p-4 rounded-xl border border-destructive/40 bg-destructive/5 flex items-start gap-2.5">
-              <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-              <p className="text-xs text-destructive leading-relaxed">
-                {result.activeResult.timelineMessage}
-              </p>
-            </div>
-          )}
+          {result.activeResult.isStatutorilyEligible &&
+            !result.activeResult.isValidTimeline &&
+            !result.activeResult.disqualified && (
+              <div className="surface-card p-4 rounded-xl border border-destructive/40 bg-destructive/5 flex items-start gap-2.5">
+                <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+                <p className="text-xs text-destructive leading-relaxed">
+                  {result.activeResult.timelineMessage}
+                </p>
+              </div>
+            )}
 
           {/* Side-by-Side Comparison Card */}
           {result.comparison && (
@@ -424,21 +698,50 @@ export default function Section54Calculator() {
               <div className="flex items-center gap-2">
                 <Scale className="w-4 h-4 text-purple-600" />
                 <h3 className="text-sm font-bold text-foreground">
-                  Section 54 vs 54EC vs 54F Comparison
+                  Statutory Route Comparison
                 </h3>
               </div>
 
-              <div className="overflow-x-auto">
+              <div
+                className="overflow-x-auto"
+                tabIndex={0}
+                role="region"
+                aria-label="Statutory Route Comparison Table"
+              >
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-border text-muted-foreground text-left">
                       <th className="py-2 pr-2">Feature</th>
                       <th className="py-2 px-2">Section 54 (House)</th>
                       <th className="py-2 px-2">Section 54EC (Bonds)</th>
-                      {result.comparison.section54f && <th className="py-2 pl-2">Section 54F (Plot/Gold)</th>}
+                      <th className="py-2 pl-2">Section 54F (Plot/Gold)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/50">
+                    <tr>
+                      <td className="py-2 pr-2 text-muted-foreground font-medium">Statutory Eligibility</td>
+                      <td className="py-2 px-2">
+                        {result.comparison.section54.isStatutorilyEligible ? (
+                          <span className="text-emerald-600 font-bold">Eligible</span>
+                        ) : (
+                          <span className="text-muted-foreground italic">Ineligible</span>
+                        )}
+                      </td>
+                      <td className="py-2 px-2">
+                        {result.comparison.section54ec.isStatutorilyEligible ? (
+                          <span className="text-emerald-600 font-bold">Eligible</span>
+                        ) : (
+                          <span className="text-muted-foreground italic">Ineligible</span>
+                        )}
+                      </td>
+                      <td className="py-2 pl-2">
+                        {result.comparison.section54f?.isStatutorilyEligible ? (
+                          <span className="text-emerald-600 font-bold">Eligible</span>
+                        ) : (
+                          <span className="text-muted-foreground italic">Ineligible</span>
+                        )}
+                      </td>
+                    </tr>
                     <tr>
                       <td className="py-2 pr-2 text-muted-foreground">Exemption Allowed</td>
                       <td className="py-2 px-2 font-bold text-emerald-600">
@@ -447,23 +750,33 @@ export default function Section54Calculator() {
                       <td className="py-2 px-2 font-bold text-emerald-600">
                         {formatINR(result.comparison.section54ec.exemptionAllowed)}
                       </td>
-                      {result.comparison.section54f && (
-                        <td className="py-2 pl-2 font-bold text-emerald-600">
-                          {formatINR(result.comparison.section54f.exemptionAllowed)}
-                        </td>
-                      )}
+                      <td className="py-2 pl-2 font-bold text-emerald-600">
+                        {formatINR(result.comparison.section54f?.exemptionAllowed ?? 0)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-2 pr-2 text-muted-foreground">Tax Payable After Exemption</td>
+                      <td className="py-2 px-2 font-medium">
+                        {formatINR(result.comparison.section54.taxAfterExemption)}
+                      </td>
+                      <td className="py-2 px-2 font-medium">
+                        {formatINR(result.comparison.section54ec.taxAfterExemption)}
+                      </td>
+                      <td className="py-2 pl-2 font-medium">
+                        {formatINR(result.comparison.section54f?.taxAfterExemption ?? result.taxBeforeExemption)}
+                      </td>
                     </tr>
                     <tr>
                       <td className="py-2 pr-2 text-muted-foreground">Statutory Cap</td>
                       <td className="py-2 px-2">₹10 Crore</td>
                       <td className="py-2 px-2">₹50 Lakh / year</td>
-                      {result.comparison.section54f && <td className="py-2 pl-2">₹10 Cr (Proportionate)</td>}
+                      <td className="py-2 pl-2">₹10 Cr (Proportionate)</td>
                     </tr>
                     <tr>
                       <td className="py-2 pr-2 text-muted-foreground">Lock-in Period</td>
                       <td className="py-2 px-2">3 Years (House)</td>
                       <td className="py-2 px-2">5 Years (Bonds)</td>
-                      {result.comparison.section54f && <td className="py-2 pl-2">3 Years (House)</td>}
+                      <td className="py-2 pl-2">3 Years (House)</td>
                     </tr>
                   </tbody>
                 </table>

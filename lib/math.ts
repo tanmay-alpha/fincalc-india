@@ -421,11 +421,16 @@ export interface PositionSizeOutput {
 // ─── SECTION 54 / 54EC / 54F CAPITAL GAINS EXEMPTION PLANNER ──
 export type Section54Type = "section_54_property" | "section_54ec_bonds" | "section_54f_property" | "compare_both";
 export type Section54PropertyMode = "purchase" | "construction";
+export type Section54OriginalAssetType =
+  | "residential_house"
+  | "land_or_building_non_residential"
+  | "other_long_term_asset";
 
 export interface Section54ExemptionInput {
   capitalGainsAmount?: number;
   capitalGainsInput?: CapitalGainsInput;
   sectionType: Section54Type;
+  originalAssetType?: Section54OriginalAssetType;
   propertyInvestmentAmount?: number;
   propertyMode?: Section54PropertyMode;
   propertyTimelineMonths?: number; // months relative to sale date (-12 to 36)
@@ -447,6 +452,8 @@ export interface Section54SingleExemptionResult {
   section: "54" | "54EC" | "54F";
   investmentAmount: number;
   statutoryCap: number;
+  isStatutorilyEligible: boolean;
+  ineligibilityReason?: string;
   isValidTimeline: boolean;
   timelineMessage: string;
   exemptionAllowed: number;
@@ -3809,6 +3816,49 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
   const effectiveTaxRateBeforeExemption = round2(baseRate * (1 + cessPercent / 100)); // 13%
   const taxBeforeExemption = Math.round((initialLtcgGains * effectiveTaxRateBeforeExemption) / 100);
 
+  const rawAssetType = input.originalAssetType;
+  // In single-section mode without explicit originalAssetType, infer canonical asset type for backward compatibility:
+  const originalAssetType: Section54OriginalAssetType | undefined =
+    rawAssetType ??
+    (sectionType === "section_54_property"
+      ? "residential_house"
+      : sectionType === "section_54f_property"
+      ? "other_long_term_asset"
+      : sectionType === "section_54ec_bonds"
+      ? "land_or_building_non_residential"
+      : undefined);
+
+  // Statutory Asset Eligibility Definitions
+  // Section 54: Eligible ONLY when original asset is residential house
+  const isS54Eligible = originalAssetType === "residential_house";
+  const s54IneligibilityReason = isS54Eligible
+    ? undefined
+    : originalAssetType === undefined
+    ? "Original asset type must be specified in Compare mode to determine statutory eligibility."
+    : `Ineligible: Section 54 is statutorily restricted to LTCG from the transfer of a residential house property. It is not available for ${
+        originalAssetType === "land_or_building_non_residential" ? "commercial property or land/plot" : "shares, gold, or other non-residential assets"
+      }.`;
+
+  // Section 54EC: Eligible ONLY when original asset is land or building or both
+  const isS54ECEligible =
+    originalAssetType === "residential_house" ||
+    originalAssetType === "land_or_building_non_residential";
+  const s54ecIneligibilityReason = isS54ECEligible
+    ? undefined
+    : originalAssetType === undefined
+    ? "Original asset type must be specified in Compare mode to determine statutory eligibility."
+    : "Ineligible: Section 54EC is statutorily restricted to capital gains arising from the transfer of land or building or both. It is not available for shares, gold, mutual funds, or other non-land/building assets.";
+
+  // Section 54F: Eligible ONLY when original asset is long-term capital asset OTHER THAN residential house
+  const isS54FEligible =
+    originalAssetType === "land_or_building_non_residential" ||
+    originalAssetType === "other_long_term_asset";
+  const s54fIneligibilityReason = isS54FEligible
+    ? undefined
+    : originalAssetType === undefined
+    ? "Original asset type must be specified in Compare mode to determine statutory eligibility."
+    : "Ineligible: Section 54F is statutorily restricted to long-term capital assets other than a residential house. It cannot be claimed on the sale of a residential house property.";
+
   // Helper to compute Section 54 (Residential Property)
   function computeSection54(): Section54SingleExemptionResult {
     const invAmount = Math.max(0, input.section54InvestmentAmount ?? propertyInvestmentAmount ?? 0);
@@ -3832,7 +3882,7 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
     }
 
     let exemptionAllowed = 0;
-    if (isValidTimeline && initialLtcgGains > 0 && invAmount > 0) {
+    if (isS54Eligible && isValidTimeline && initialLtcgGains > 0 && invAmount > 0) {
       exemptionAllowed = Math.min(initialLtcgGains, Math.min(invAmount, statutoryCap));
     }
 
@@ -3845,8 +3895,10 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
       section: "54",
       investmentAmount: invAmount,
       statutoryCap,
+      isStatutorilyEligible: isS54Eligible,
+      ineligibilityReason: s54IneligibilityReason,
       isValidTimeline,
-      timelineMessage,
+      timelineMessage: !isS54Eligible && s54IneligibilityReason ? s54IneligibilityReason : timelineMessage,
       exemptionAllowed: Math.round(exemptionAllowed),
       taxableGainsRemaining: Math.round(taxableGainsRemaining),
       taxBeforeExemption,
@@ -3855,10 +3907,11 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
       effectiveTaxRate,
       lockInPeriod: "3 Years (from date of purchase/construction)",
       conditions: [
+        "Transferred original asset must be a residential house property situated in India.",
         "Reinvestment must be in a residential house property situated in India.",
         "Unutilized capital gains before ITR filing due date must be deposited into a Capital Gains Account Scheme (CGAS).",
         "If the new house is sold within 3 years of purchase/construction, the exemption is revoked and taxed.",
-        "Maximum statutory exemption limit is ₹10 Crore (Finance Act 2023).",
+        "Maximum statutory exemption limit is ₹10 Crore (Finance Act 2023 / 2026).",
       ],
     };
   }
@@ -3874,7 +3927,7 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
       : `Invalid timeline (${bondsTimelineMonths} months). Section 54EC requires bond investment within strictly 6 months from the date of property transfer.`;
 
     let exemptionAllowed = 0;
-    if (isValidTimeline && initialLtcgGains > 0 && invAmount > 0) {
+    if (isS54ECEligible && isValidTimeline && initialLtcgGains > 0 && invAmount > 0) {
       exemptionAllowed = Math.min(initialLtcgGains, Math.min(invAmount, statutoryCap));
     }
 
@@ -3887,8 +3940,10 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
       section: "54EC",
       investmentAmount: invAmount,
       statutoryCap,
+      isStatutorilyEligible: isS54ECEligible,
+      ineligibilityReason: s54ecIneligibilityReason,
       isValidTimeline,
-      timelineMessage,
+      timelineMessage: !isS54ECEligible && s54ecIneligibilityReason ? s54ecIneligibilityReason : timelineMessage,
       exemptionAllowed: Math.round(exemptionAllowed),
       taxableGainsRemaining: Math.round(taxableGainsRemaining),
       taxBeforeExemption,
@@ -3897,6 +3952,7 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
       effectiveTaxRate,
       lockInPeriod: "5 Years (mandatory lock-in; cannot pledge/transfer)",
       conditions: [
+        "Transferred original asset must be land or building or both (residential, commercial, or plot).",
         "Invest in eligible 54EC bonds issued by NHAI, REC, PFC, or IRFC.",
         "Maximum statutory investment cap is ₹50 Lakhs per investor in a financial year.",
         "Must be invested within 6 months from the date of property transfer.",
@@ -3923,6 +3979,9 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
     } else if (rawNetSale !== undefined && rawNetSale > 0 && rawNetSale < initialLtcgGains) {
       disqualified = true;
       disqualificationReason = `Invalid Input: Net Sale Consideration (₹${rawNetSale.toLocaleString("en-IN")}) cannot be less than Long-Term Capital Gains (₹${initialLtcgGains.toLocaleString("en-IN")}).`;
+    } else if (sectionType === "compare_both" && isS54FEligible && (rawNetSale === undefined || rawNetSale <= 0)) {
+      disqualified = true;
+      disqualificationReason = "Net Sale Consideration is required for Section 54F proportionate exemption calculation in Compare mode.";
     }
 
     const netSale = Math.max(initialLtcgGains, rawNetSale && rawNetSale > 0 ? rawNetSale : initialLtcgGains);
@@ -3943,7 +4002,7 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
     }
 
     let exemptionAllowed = 0;
-    if (!disqualified && isValidTimeline && initialLtcgGains > 0 && invAmount > 0 && netSale > 0) {
+    if (isS54FEligible && !disqualified && isValidTimeline && initialLtcgGains > 0 && invAmount > 0 && netSale > 0) {
       const eligibleInvestment = Math.min(invAmount, statutoryCap);
       if (eligibleInvestment >= netSale) {
         exemptionAllowed = initialLtcgGains;
@@ -3962,8 +4021,14 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
       section: "54F",
       investmentAmount: invAmount,
       statutoryCap,
+      isStatutorilyEligible: isS54FEligible,
+      ineligibilityReason: s54fIneligibilityReason,
       isValidTimeline,
-      timelineMessage: disqualified ? (disqualificationReason || timelineMessage) : timelineMessage,
+      timelineMessage: !isS54FEligible && s54fIneligibilityReason
+        ? s54fIneligibilityReason
+        : disqualified
+        ? (disqualificationReason || timelineMessage)
+        : timelineMessage,
       exemptionAllowed: Math.round(exemptionAllowed),
       taxableGainsRemaining: Math.round(taxableGainsRemaining),
       taxBeforeExemption,
@@ -3973,7 +4038,7 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
       lockInPeriod: "3 Years (from date of purchase/construction)",
       disqualified,
       disqualificationReason,
-      proportionateExemptionApplied: !disqualified && invAmount < netSale && invAmount > 0,
+      proportionateExemptionApplied: isS54FEligible && !disqualified && invAmount < netSale && invAmount > 0,
       conditions: [
         "Transferred asset must be a long-term capital asset other than a residential house (e.g. plot, gold, commercial property, shares).",
         "Taxpayer must not own more than ONE residential house (other than the new house) on the date of transfer.",
@@ -3993,30 +4058,37 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
     activeResult = s54ecResult;
   } else if (sectionType === "section_54f_property") {
     activeResult = s54fResult;
-  } else {
+  } else if (sectionType === "section_54_property") {
     activeResult = s54Result;
+  } else {
+    // In compare_both mode: default activeResult to best statutorily eligible option
+    if (isS54Eligible) {
+      activeResult = (s54Result.taxSaved >= s54ecResult.taxSaved) ? s54Result : s54ecResult;
+    } else if (isS54FEligible && isS54ECEligible) {
+      activeResult = (s54fResult.taxSaved >= s54ecResult.taxSaved) ? s54fResult : s54ecResult;
+    } else if (isS54FEligible) {
+      activeResult = s54fResult;
+    } else {
+      activeResult = s54Result;
+    }
   }
 
   let comparison: Section54ExemptionOutput["comparison"] | undefined = undefined;
   if (sectionType === "compare_both") {
-    // V4.3.1: Build eligible strategies ONLY when legally usable:
-    // - Section 54: isValidTimeline === true
-    // - Section 54EC: isValidTimeline === true
-    // - Section 54F: !disqualified && isValidTimeline === true
     type RankedStrategy = {
       id: Section54StrategyType;
       label: string;
       result: Section54SingleExemptionResult;
     };
     const eligibleStrategies: RankedStrategy[] = [
-      ...(s54Result.isValidTimeline
-        ? [{ id: "54" as const, label: "Section 54 (Residential Property)", result: s54Result }]
+      ...(s54Result.isStatutorilyEligible && s54Result.isValidTimeline
+        ? [{ id: "54" as const, label: "Section 54 (Residential House)", result: s54Result }]
         : []),
-      ...(s54ecResult.isValidTimeline
+      ...(s54ecResult.isStatutorilyEligible && s54ecResult.isValidTimeline
         ? [{ id: "54EC" as const, label: "Section 54EC Bonds (NHAI/REC/PFC/IRFC)", result: s54ecResult }]
         : []),
-      ...(!s54fResult.disqualified && s54fResult.isValidTimeline
-        ? [{ id: "54F" as const, label: "Section 54F (Any Long-Term Asset → Residential Property)", result: s54fResult }]
+      ...(s54fResult.isStatutorilyEligible && !s54fResult.disqualified && s54fResult.isValidTimeline
+        ? [{ id: "54F" as const, label: "Section 54F (Reinvestment in House)", result: s54fResult }]
         : []),
     ];
 
@@ -4028,15 +4100,23 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
     let rec = "";
 
     if (eligibleStrategies.length === 0) {
-      // All strategies invalid or disqualified
       bestStrategy = "none";
       secondBestStrategy = "none";
       worstStrategy = "none";
       bestVsSecondBestTaxDifference = 0;
       bestVsWorstTaxDifference = 0;
-      rec = "No eligible exemption strategy available. All evaluated options have invalid statutory timelines or are disqualified under statutory rules. Full capital gains tax applies.";
+      if (!originalAssetType) {
+        rec = "Please select the original asset sold (Residential House, Commercial/Land, or Other LTCG Asset) to determine statutory eligibility under Sections 54, 54EC, and 54F.";
+      } else {
+        const assetLabel =
+          originalAssetType === "residential_house"
+            ? "residential house property"
+            : originalAssetType === "land_or_building_non_residential"
+            ? "commercial property or plot"
+            : "other long-term assets (shares/gold)";
+        rec = `No eligible statutory exemption strategy available for ${assetLabel}. All applicable routes either have invalid statutory timelines, ineligibility constraints, or ownership disqualifications. Full capital gains tax applies.`;
+      }
     } else if (eligibleStrategies.length === 1) {
-      // Case F: Exactly one strategy is eligible
       const only = eligibleStrategies[0];
       bestStrategy = only.id;
       secondBestStrategy = "none";
@@ -4045,76 +4125,37 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
       bestVsWorstTaxDifference = 0;
       rec = `${only.label} is the only eligible strategy for your situation. Tax after exemption: ₹${only.result.taxAfterExemption.toLocaleString("en-IN")}.`;
     } else {
-      // Sort ascending by taxAfterExemption (lower tax = better strategy)
+      // 2 eligible strategies
       const sorted = [...eligibleStrategies].sort(
         (a, b) => a.result.taxAfterExemption - b.result.taxAfterExemption
       );
 
-      const minTax = sorted[0].result.taxAfterExemption;
-      const tiedAtTop = sorted.filter((s) => s.result.taxAfterExemption === minTax);
+      const tied = sorted[0].result.taxAfterExemption === sorted[1].result.taxAfterExemption;
 
-      if (tiedAtTop.length === eligibleStrategies.length) {
-        // All eligible strategies produce identical tax outcomes
-        if (eligibleStrategies.length === 2) {
-          const ids = tiedAtTop.map((s) => s.id);
-          if (ids.includes("54") && ids.includes("54F")) {
-            bestStrategy = "tie_54_54f";
-          } else if (ids.includes("54EC") && ids.includes("54F")) {
-            bestStrategy = "tie_54ec_54f";
-          } else {
-            bestStrategy = "tie_54_54ec";
-          }
-          secondBestStrategy = "none";
-          worstStrategy = sorted[sorted.length - 1].id;
-          bestVsSecondBestTaxDifference = 0;
-          bestVsWorstTaxDifference = 0;
-          rec = `Both eligible strategies (${tiedAtTop[0].label} and ${tiedAtTop[1].label}) provide equal tax savings of ₹${sorted[0].result.taxSaved.toLocaleString("en-IN")}.`;
-        } else {
-          // All 3 equal
-          bestStrategy = "all_equal";
-          secondBestStrategy = "none";
-          worstStrategy = sorted[sorted.length - 1].id;
-          bestVsSecondBestTaxDifference = 0;
-          bestVsWorstTaxDifference = 0;
-          rec = `All eligible strategies provide equal tax savings of ₹${sorted[0].result.taxSaved.toLocaleString("en-IN")}. ${
-            !s54fResult.disqualified
-              ? "Choose Section 54 if selling a residential house, Section 54F if selling other capital assets, or Section 54EC bonds for zero real-estate hassle."
-              : "Both Section 54 and Section 54EC provide equal tax savings."
-          }`;
-        }
-      } else if (tiedAtTop.length === 2) {
-        // Exactly two strategies tie for best, with a worse remainder strategy
-        const ids = tiedAtTop.map((s) => s.id);
-        if (ids.includes("54") && ids.includes("54F")) {
-          bestStrategy = "tie_54_54f";
+      if (tied) {
+        const ids = sorted.map((s) => s.id);
+        if (ids.includes("54") && ids.includes("54EC")) {
+          bestStrategy = "tie_54_54ec";
         } else if (ids.includes("54EC") && ids.includes("54F")) {
           bestStrategy = "tie_54ec_54f";
+        } else if (ids.includes("54") && ids.includes("54F")) {
+          bestStrategy = "tie_54_54f";
         } else {
-          bestStrategy = "tie_54_54ec";
+          bestStrategy = "all_equal";
         }
-
-        const remainder = sorted.find((s) => s.result.taxAfterExemption > minTax)!;
-        secondBestStrategy = remainder.id;
-        worstStrategy = remainder.id;
-        bestVsSecondBestTaxDifference = remainder.result.taxAfterExemption - minTax;
-        bestVsWorstTaxDifference = bestVsSecondBestTaxDifference;
-
-        if (bestStrategy === "tie_54_54f") {
-          rec = `Section 54 and Section 54F tie for the maximum tax savings (saving ₹${tiedAtTop[0].result.taxSaved.toLocaleString("en-IN")}, leaving ₹${minTax.toLocaleString("en-IN")} tax), saving ₹${bestVsSecondBestTaxDifference.toLocaleString("en-IN")} more than ${remainder.label}. Choose Section 54 if selling a residential house, or Section 54F if selling another long-term asset (e.g. plot, commercial property, shares).`;
-        } else if (bestStrategy === "tie_54ec_54f") {
-          rec = `Section 54EC Bonds and Section 54F tie for maximum tax savings (leaving ₹${minTax.toLocaleString("en-IN")} tax), saving ₹${bestVsSecondBestTaxDifference.toLocaleString("en-IN")} more than ${remainder.label}.`;
-        } else {
-          rec = `Section 54 and Section 54EC Bonds tie for maximum tax savings (leaving ₹${minTax.toLocaleString("en-IN")} tax), saving ₹${bestVsSecondBestTaxDifference.toLocaleString("en-IN")} more than ${remainder.label}.`;
-        }
+        secondBestStrategy = "none";
+        worstStrategy = sorted[1].id;
+        bestVsSecondBestTaxDifference = 0;
+        bestVsWorstTaxDifference = 0;
+        rec = `Both eligible strategies (${sorted[0].label} and ${sorted[1].label}) provide equal tax savings of ₹${sorted[0].result.taxSaved.toLocaleString("en-IN")}.`;
       } else {
-        // One unique best strategy
         const best = sorted[0];
         const secondBest = sorted[1];
         bestStrategy = best.id;
         secondBestStrategy = secondBest.id;
-        worstStrategy = sorted[sorted.length - 1].id;
+        worstStrategy = secondBest.id;
         bestVsSecondBestTaxDifference = secondBest.result.taxAfterExemption - best.result.taxAfterExemption;
-        bestVsWorstTaxDifference = sorted[sorted.length - 1].result.taxAfterExemption - best.result.taxAfterExemption;
+        bestVsWorstTaxDifference = bestVsSecondBestTaxDifference;
 
         rec = `${best.label} saves ₹${bestVsSecondBestTaxDifference.toLocaleString("en-IN")} more than the next-best option (${secondBest.label}). `;
         if (best.id === "54EC") {
@@ -4127,17 +4168,25 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
       }
     }
 
-    // Append informative notes for disqualified or invalid options
-    if (s54fResult.disqualified && s54fResult.disqualificationReason) {
+    // Append informative notes for disqualified or ineligible options
+    if (!s54Result.isStatutorilyEligible && s54Result.ineligibilityReason) {
+      rec += ` Note (54): ${s54Result.ineligibilityReason}`;
+    } else if (!s54Result.isValidTimeline) {
+      rec += ` Note (54): ${s54Result.timelineMessage}`;
+    }
+
+    if (!s54ecResult.isStatutorilyEligible && s54ecResult.ineligibilityReason) {
+      rec += ` Note (54EC): ${s54ecResult.ineligibilityReason}`;
+    } else if (!s54ecResult.isValidTimeline) {
+      rec += ` Note (54EC): ${s54ecResult.timelineMessage}`;
+    }
+
+    if (!s54fResult.isStatutorilyEligible && s54fResult.ineligibilityReason) {
+      rec += ` Note (54F): ${s54fResult.ineligibilityReason}`;
+    } else if (s54fResult.disqualified && s54fResult.disqualificationReason) {
       rec += ` Note (54F): ${s54fResult.disqualificationReason}`;
     } else if (!s54fResult.isValidTimeline) {
       rec += ` Note (54F): ${s54fResult.timelineMessage}`;
-    }
-    if (!s54Result.isValidTimeline) {
-      rec += ` Note (54): ${s54Result.timelineMessage}`;
-    }
-    if (!s54ecResult.isValidTimeline) {
-      rec += ` Note (54EC): ${s54ecResult.timelineMessage}`;
     }
 
     comparison = {
