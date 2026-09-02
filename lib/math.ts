@@ -327,6 +327,37 @@ export interface HRAExemptionOutput {
   summary: string;
 }
 
+// ─── CTC TO IN-HAND SALARY ───────────────────────────────────
+
+export interface CtcInHandInput {
+  annualCtc: number;
+  basicPercent: number;
+  hraPercent: number;
+  employerPfContribution: number;
+  gratuity: number;
+  otherAllowancesBonus: number;
+  annualRentPaid: number;
+  cityType: CityType;
+  regime: TaxRegime;
+}
+
+export interface CtcInHandOutput {
+  annualCtc: number;
+  basicSalary: number;
+  hraReceived: number;
+  otherAllowancesBonus: number;
+  salaryCash: number;
+  employeePfDeduction: number;
+  employerPfContribution: number;
+  taxableEmployerContribution: number;
+  gratuity: number;
+  hraExemption: number;
+  taxDeducted: number;
+  annualInHand: number;
+  monthlyInHand: number;
+  notes: string[];
+}
+
 // ─── PRESUMPTIVE TAXATION (44AD & 44ADA) ──────────────────────
 
 export type PresumptiveProfessionType = "44ADA_professional" | "44AD_business";
@@ -5957,4 +5988,68 @@ export function calcNPS(input: NPSInput): NPSOutput {
   };
 }
 
+/**
+ * CTC to in-hand salary estimator. Tax and HRA treatment deliberately reuse
+ * the canonical engines so salary calculations cannot drift from tax pages.
+ * The ₹7.5L employer retirement-contribution threshold is configurable only
+ * through this statutory constant until it is manually re-verified each year.
+ */
+export function calcInHandFromCTC(input: CtcInHandInput): CtcInHandOutput {
+  const annualCtc = safePositive(input.annualCtc);
+  const basicPercent = safeNum(input.basicPercent);
+  const hraPercent = safeNum(input.hraPercent);
 
+  if (basicPercent < 0 || basicPercent > 100 || hraPercent < 0 || hraPercent > 100) {
+    throw new Error("CTC salary percentages must be between 0 and 100.");
+  }
+
+  const basicSalary = annualCtc * basicPercent / 100;
+  const hraReceived = annualCtc * hraPercent / 100;
+  const employerPfContribution = safePositive(input.employerPfContribution);
+  const gratuity = safePositive(input.gratuity);
+  const otherAllowancesBonus = safePositive(input.otherAllowancesBonus);
+  const allocatedCtc = basicSalary + hraReceived + employerPfContribution + gratuity + otherAllowancesBonus;
+
+  if (allocatedCtc > annualCtc + 0.01) {
+    throw new Error("CTC breakup exceeds the stated annual CTC.");
+  }
+
+  const salaryCash = basicSalary + hraReceived + otherAllowancesBonus;
+  const employeePfDeduction = Math.min(basicSalary * 0.12, employerPfContribution);
+  const taxableEmployerContribution = Math.max(0, employerPfContribution - 750_000);
+  const hra = calcHRAExemption({
+    basicSalary,
+    salaryPeriod: "annual",
+    hraReceived,
+    rentPaid: safePositive(input.annualRentPaid),
+    cityType: input.cityType,
+    regime: input.regime,
+  });
+  const tax = calcTax({
+    salaryIncome: salaryCash + taxableEmployerContribution,
+    hraExemption: hra.annualExemptHra,
+    regime: input.regime,
+  });
+  const annualInHand = Math.max(0, salaryCash - employeePfDeduction - tax.totalTax);
+
+  return {
+    annualCtc: Math.round(annualCtc),
+    basicSalary: Math.round(basicSalary),
+    hraReceived: Math.round(hraReceived),
+    otherAllowancesBonus: Math.round(otherAllowancesBonus),
+    salaryCash: Math.round(salaryCash),
+    employeePfDeduction: Math.round(employeePfDeduction),
+    employerPfContribution: Math.round(employerPfContribution),
+    taxableEmployerContribution: Math.round(taxableEmployerContribution),
+    gratuity: Math.round(gratuity),
+    hraExemption: Math.round(hra.annualExemptHra),
+    taxDeducted: tax.totalTax,
+    annualInHand: Math.round(annualInHand),
+    monthlyInHand: Math.round(annualInHand / 12),
+    notes: [
+      "Employer PF above ₹7.5 lakh per year is treated as a taxable perquisite; verify this aggregate retirement-contribution threshold for your assessment year.",
+      "Gratuity is a long-term benefit and is excluded from monthly cash in hand.",
+      ...(input.regime === "new" ? ["HRA exemption is unavailable under the New Tax Regime."] : []),
+    ],
+  };
+}

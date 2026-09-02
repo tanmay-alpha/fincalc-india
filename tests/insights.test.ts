@@ -31,6 +31,7 @@ import {
   getUSStockReturnInsights,
   getNRIDepositInsights,
   getNPSInsights,
+  getCtcInsights,
 } from "../lib/insights";
 import {
   calcSIP,
@@ -60,6 +61,7 @@ import {
   calcUSStockReturn,
   calcNRIDepositReturns,
   calcNPS,
+  calcInHandFromCTC,
 } from "../lib/math";
 
 describe("Insights & Suggestions Engine", () => {
@@ -382,5 +384,11 @@ describe("Insights & Suggestions Engine", () => {
     const insights = getNPSInsights(res);
     expect(insights.length).toBeGreaterThanOrEqual(2);
     expect(insights[0].title).toContain("Retirement Corpus");
+  });
+
+  it("generates CTC insights from calculated salary values", () => {
+    const insights = getCtcInsights(calcInHandFromCTC({ annualCtc: 2000000, basicPercent: 40, hraPercent: 20, employerPfContribution: 96000, gratuity: 38462, otherAllowancesBonus: 665538, annualRentPaid: 360000, cityType: "metro", regime: "new" }));
+    expect(insights).toHaveLength(3);
+    expect(insights[0].title).toContain("CTC");
   });
 });

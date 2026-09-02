@@ -31,6 +31,7 @@ import type {
   USStockReturnOutput,
   NRIDepositOutput,
   NPSOutput,
+  CtcInHandOutput,
 } from "./math";
 import { formatCompact, formatINR, formatPercent } from "./format";
 
@@ -734,6 +735,15 @@ export function getNPSInsights(r: NPSOutput): InsightItem[] {
       subtitle: `Section 80CCD(1B) Tax Saved: ${formatINR(r.annualTaxSavedUnder80CCD)}/year (${formatINR(r.lifetimeTaxSaved)} lifetime)`,
       type: "good",
     },
+  ];
+}
+
+export function getCtcInsights(r: CtcInHandOutput): InsightItem[] {
+  const cashRatio = r.annualCtc > 0 ? Math.round((r.annualInHand / r.annualCtc) * 100) : 0;
+  return [
+    { icon: "💳", title: `${cashRatio}% of CTC reaches your bank account`, subtitle: `${formatINR(r.monthlyInHand)} estimated monthly in-hand`, type: "info" },
+    { icon: "🏦", title: `${formatINR(r.employerPfContribution + r.gratuity)} is long-term compensation`, subtitle: "Employer PF and gratuity are not monthly cash", type: "good" },
+    { icon: "🧾", title: `${formatINR(r.taxDeducted)} estimated annual tax deduction`, subtitle: r.hraExemption > 0 ? `${formatINR(r.hraExemption)} HRA exemption applied` : "No HRA exemption in the selected regime", type: r.taxDeducted > r.salaryCash * 0.2 ? "warning" : "info" },
   ];
 }
 

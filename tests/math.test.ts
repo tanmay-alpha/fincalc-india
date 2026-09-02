@@ -42,6 +42,7 @@ import {
   calcUSStockReturn,
   calcNRIDepositReturns,
   calcNPS,
+  calcInHandFromCTC,
 } from '../lib/math'
 
 // ─── SIP ──────────────────────────────────────────────────────
@@ -3662,3 +3663,55 @@ describe('calcHumanLifeValue', () => {
   })
 })
 
+describe('calcInHandFromCTC', () => {
+  const base = {
+    annualCtc: 2_000_000,
+    basicPercent: 40,
+    hraPercent: 20,
+    employerPfContribution: 96_000,
+    gratuity: 38_462,
+    otherAllowancesBonus: 665_538,
+    annualRentPaid: 360_000,
+    cityType: 'metro' as const,
+    regime: 'new' as const,
+  }
+
+  it('taxes employer PF above the ₹7.5 lakh annual threshold as a perquisite', () => {
+    expect(calcInHandFromCTC({ ...base, annualCtc: 2_125_000, employerPfContribution: 850_000, otherAllowancesBonus: 0, gratuity: 0 }).taxableEmployerContribution).toBe(100_000)
+  })
+
+  it('keeps gratuity out of monthly cash in hand while reporting it as a benefit', () => {
+    const result = calcInHandFromCTC(base)
+    expect(result.gratuity).toBe(base.gratuity)
+    expect(result.monthlyInHand).toBeLessThan(result.annualCtc / 12)
+  })
+
+  it('handles zero bonus without creating a negative cash component', () => {
+    expect(calcInHandFromCTC({ ...base, otherAllowancesBonus: 0 }).otherAllowancesBonus).toBe(0)
+  })
+
+  it('rejects a breakup that exceeds CTC', () => {
+    expect(() => calcInHandFromCTC({ ...base, otherAllowancesBonus: 2_000_000 })).toThrow(/CTC/i)
+  })
+
+  it('uses the shared tax engine for old and new regime differences', () => {
+    const oldRegime = calcInHandFromCTC({ ...base, regime: 'old' })
+    const newRegime = calcInHandFromCTC({ ...base, regime: 'new' })
+    expect(oldRegime.taxDeducted).not.toBe(newRegime.taxDeducted)
+  })
+
+  it('uses the shared HRA exemption function only in the old regime', () => {
+    expect(calcInHandFromCTC({ ...base, regime: 'old' }).hraExemption).toBeGreaterThan(0)
+    expect(calcInHandFromCTC({ ...base, regime: 'new' }).hraExemption).toBe(0)
+  })
+
+  it('returns a zero cash result for a zero CTC', () => {
+    const result = calcInHandFromCTC({ ...base, annualCtc: 0, basicPercent: 0, hraPercent: 0, employerPfContribution: 0, gratuity: 0, otherAllowancesBonus: 0, annualRentPaid: 0 })
+    expect(result.annualInHand).toBe(0)
+  })
+
+  it('keeps annual breakup reconciliation exact', () => {
+    const result = calcInHandFromCTC(base)
+    expect(result.salaryCash + result.employerPfContribution + result.gratuity).toBe(result.annualCtc)
+  })
+})
