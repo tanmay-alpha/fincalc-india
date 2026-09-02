@@ -383,25 +383,52 @@ export const MAX_INPUT_LIMITS = {
 
 // ─── 14. CANONICAL F&O CONTRACT DEFAULTS ─────────────────────────
 /**
- * Canonical contract lot sizes based on official NSE revisions
- * (NSE Circular Ref. No: NSE/FAOP/64516 under SEBI index derivatives framework).
+ * Canonical contract lot sizes based on official NSE revisions:
+ * NSE Circular Ref. No: NSE/FAOP/70616 dated 03 October 2025
+ * Subject: Revision in Market Lot of Derivative Contracts on Indices.
+ *
+ * Circular revisions:
+ * - NIFTY: 75 -> 65
+ * - BANKNIFTY: 35 -> 30
+ * - FINNIFTY: 65 -> 60
+ *
+ * Staggered Transition Note:
+ * The circular specifies staggered transition dates depending on contract expiry cycles.
+ * Existing expiries continue trading at legacy lot sizes until contract maturity,
+ * while newly introduced contracts adopt the revised market lots.
+ *
  * Note: SPAN and Exposure margins are dynamic exchange parameters.
  */
 export const FNO_CONTRACT_DEFAULTS = {
   nifty: {
     lotSize: 65,
-    effectiveFrom: "November 20, 2024",
-    source: "NSE Circular Ref. No: NSE/FAOP/64516 (SEBI Index Derivatives Framework)",
+    previousLotSize: 75,
+    circularNumber: "NSE/FAOP/70616",
+    circularDate: "03 October 2025",
+    circularTitle: "Revision in Market Lot of Derivative Contracts on Indices",
+    source: "National Stock Exchange of India (NSE)",
+    sourceReference: "NSE Circular Ref. No: NSE/FAOP/70616 dated October 03, 2025",
+    transitionNote: "Staggered transition per contract expiry schedule: existing derivative contracts continue at market lot 75 until expiry; new contract expiries trade at revised market lot 65.",
   },
   banknifty: {
     lotSize: 30,
-    effectiveFrom: "November 20, 2024",
-    source: "NSE Circular Ref. No: NSE/FAOP/64516 (SEBI Index Derivatives Framework)",
+    previousLotSize: 35,
+    circularNumber: "NSE/FAOP/70616",
+    circularDate: "03 October 2025",
+    circularTitle: "Revision in Market Lot of Derivative Contracts on Indices",
+    source: "National Stock Exchange of India (NSE)",
+    sourceReference: "NSE Circular Ref. No: NSE/FAOP/70616 dated October 03, 2025",
+    transitionNote: "Staggered transition per contract expiry schedule: existing derivative contracts continue at market lot 35 until expiry; new contract expiries trade at revised market lot 30.",
   },
   finnifty: {
     lotSize: 60,
-    effectiveFrom: "November 20, 2024",
-    source: "NSE Circular Ref. No: NSE/FAOP/64516 (SEBI Index Derivatives Framework)",
+    previousLotSize: 65,
+    circularNumber: "NSE/FAOP/70616",
+    circularDate: "03 October 2025",
+    circularTitle: "Revision in Market Lot of Derivative Contracts on Indices",
+    source: "National Stock Exchange of India (NSE)",
+    sourceReference: "NSE Circular Ref. No: NSE/FAOP/70616 dated October 03, 2025",
+    transitionNote: "Staggered transition per contract expiry schedule: existing derivative contracts continue at market lot 65 until expiry; new contract expiries trade at revised market lot 60.",
   },
 } as const;
 

@@ -40,6 +40,7 @@ import {
   calcUSStockReturn,
   calcNRIDepositReturns,
   calcNPS,
+  FNO_CONTRACT_DEFAULTS,
 } from '../lib/math'
 
 // ─── SIP ──────────────────────────────────────────────────────
@@ -3706,4 +3707,31 @@ describe('calcSection54Exemption — Bug 3 Regression: compare-all ranks 54, 54E
     expect(result.comparison?.recommendation).toContain('54F')
   })
 })
+
+describe('FNO_CONTRACT_DEFAULTS — Official NSE Revision Circular Metadata', () => {
+  it('cites official NSE Circular Ref. No: NSE/FAOP/70616 dated 03 October 2025', () => {
+    expect(FNO_CONTRACT_DEFAULTS.nifty.circularNumber).toBe('NSE/FAOP/70616')
+    expect(FNO_CONTRACT_DEFAULTS.nifty.circularDate).toBe('03 October 2025')
+    expect(FNO_CONTRACT_DEFAULTS.banknifty.circularNumber).toBe('NSE/FAOP/70616')
+    expect(FNO_CONTRACT_DEFAULTS.finnifty.circularNumber).toBe('NSE/FAOP/70616')
+  })
+
+  it('stores accurate lot size revisions (NIFTY 75->65, BANKNIFTY 35->30, FINNIFTY 65->60)', () => {
+    expect(FNO_CONTRACT_DEFAULTS.nifty.previousLotSize).toBe(75)
+    expect(FNO_CONTRACT_DEFAULTS.nifty.lotSize).toBe(65)
+
+    expect(FNO_CONTRACT_DEFAULTS.banknifty.previousLotSize).toBe(35)
+    expect(FNO_CONTRACT_DEFAULTS.banknifty.lotSize).toBe(30)
+
+    expect(FNO_CONTRACT_DEFAULTS.finnifty.previousLotSize).toBe(65)
+    expect(FNO_CONTRACT_DEFAULTS.finnifty.lotSize).toBe(60)
+  })
+
+  it('stores staggered transition notes per contract expiry schedule rather than a single fabricated date', () => {
+    expect(FNO_CONTRACT_DEFAULTS.nifty.transitionNote).toContain('Staggered transition per contract expiry schedule')
+    expect(FNO_CONTRACT_DEFAULTS.banknifty.transitionNote).toContain('Staggered transition per contract expiry schedule')
+    expect(FNO_CONTRACT_DEFAULTS.finnifty.transitionNote).toContain('Staggered transition per contract expiry schedule')
+  })
+})
+
 
