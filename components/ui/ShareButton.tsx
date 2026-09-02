@@ -4,15 +4,24 @@ import { useState } from "react";
 import { Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { getCalculatorContract, isShareSupportedContract } from "@/lib/calculator-contracts";
 
 interface ShareButtonProps {
   /** The private saved-calculation id; a public token is created on click. */
   shareId: string | null;
   className?: string;
+  calcType?: string;
 }
 
-export default function ShareButton({ shareId, className }: ShareButtonProps) {
+export default function ShareButton({ shareId, className, calcType }: ShareButtonProps) {
   const [sharing, setSharing] = useState(false);
+
+  if (calcType) {
+    const contract = getCalculatorContract(calcType.toLowerCase());
+    if (!contract || !isShareSupportedContract(contract)) {
+      return null;
+    }
+  }
 
   const handleShare = async () => {
     if (!shareId) return;

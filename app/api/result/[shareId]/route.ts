@@ -16,7 +16,13 @@ export async function GET(
     if (!SHARE_ID_PATTERN.test(shareId)) {
       return NextResponse.json(
         { success: false, error: "Invalid share id" },
-        { status: 400 }
+        {
+          status: 400,
+          headers: {
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+            "X-Robots-Tag": "noindex, nofollow, noarchive",
+          },
+        }
       );
     }
 
@@ -33,11 +39,18 @@ export async function GET(
     if (!calculation) {
       return NextResponse.json(
         { success: false, error: "Result not found" },
-        { status: 404 }
+        {
+          status: 404,
+          headers: {
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+            "X-Robots-Tag": "noindex, nofollow, noarchive",
+          },
+        }
       );
     }
 
-    // Shared results are immutable: cache aggressively at the edge.
+    // Revocation privacy: Never cache shared calculations.
+    // When revoked or rotated, results must immediately return 404.
     return NextResponse.json(
       {
         success: true,
@@ -50,7 +63,10 @@ export async function GET(
       },
       {
         headers: {
-          "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+          "X-Robots-Tag": "noindex, nofollow, noarchive",
         },
       }
     );

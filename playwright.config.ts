@@ -30,7 +30,7 @@ export default defineConfig({
     env: {
       NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || "ci-testing-secret-at-least-32-characters-long",
       NEXTAUTH_URL: process.env.NEXTAUTH_URL || "http://localhost:3000",
-      DATABASE_URL: process.env.DATABASE_URL || "file:./dev.db",
+      DATABASE_URL: process.env.DATABASE_URL || "postgresql://postgres:postgrespassword@localhost:5432/fincalc_test",
     },
   },
 });

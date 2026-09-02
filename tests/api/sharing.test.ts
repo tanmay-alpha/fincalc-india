@@ -43,6 +43,8 @@ describe("saved-calculation sharing", () => {
     });
 
     expect(response.status).toBe(404);
+    expect(response.headers.get("Cache-Control")).toContain("no-store");
+    expect(response.headers.get("X-Robots-Tag")).toContain("noindex");
     expect(mocks.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({ where: { shareId: CALCULATION_ID, isShared: true } })
     );
@@ -61,6 +63,8 @@ describe("saved-calculation sharing", () => {
     });
 
     expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toContain("no-store");
+    expect(response.headers.get("X-Robots-Tag")).toContain("noindex");
     await expect(response.json()).resolves.toMatchObject({
       success: true,
       data: { type: "sip", outputs: { totalCorpus: 2_323_391 } },

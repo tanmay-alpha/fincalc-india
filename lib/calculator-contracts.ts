@@ -142,3 +142,7 @@ export function isSaveSupportedContract(
 ): contract is CalculatorContract & Required<Pick<CalculatorContract, "inputSchema" | "calculate">> {
   return contract.saveSupported && Boolean(contract.inputSchema) && typeof contract.calculate === "function";
 }
+
+export function isShareSupportedContract(contract: CalculatorContract): boolean {
+  return Boolean(contract.shareSupported);
+}

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 // Shared results are public to anyone with the link. Make sure the page is
 // rendered on the server (no client caching of personalized state).
 export const dynamic = "force-dynamic";
-export const revalidate = 3600; // ISR-ish for shared, immutable results
+export const revalidate = 0; // Immediate reflection of revocation / rotation
 
 // Legacy CUIDs and newly-issued UUIDv4 public tokens are accepted.
 const SHARE_ID_PATTERN = /^(?:[a-z0-9]{20,32}|[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i;
@@ -187,7 +187,10 @@ export async function generateMetadata({
   const { shareId } = await params;
 
   if (!SHARE_ID_PATTERN.test(shareId)) {
-    return { title: "Calculation Not Found" };
+    return {
+      title: "Calculation Not Found",
+      robots: { index: false, follow: false },
+    };
   }
 
   const calc = await prisma.calculation
@@ -198,7 +201,10 @@ export async function generateMetadata({
     .catch(() => null);
 
   if (!calc) {
-    return { title: "Calculation Not Found" };
+    return {
+      title: "Calculation Not Found",
+      robots: { index: false, follow: false },
+    };
   }
 
   const typeNames: Record<string, string> = {
@@ -213,6 +219,16 @@ export async function generateMetadata({
   return {
     title: `Shared ${name} Calculation | FinCalc India`,
     description: `See this ${name} calculation shared via FinCalc India.`,
+    robots: {
+      index: false,
+      follow: false,
+      nocache: true,
+      googleBot: {
+        index: false,
+        follow: false,
+        noimageindex: true,
+      },
+    },
     openGraph: {
       title: `Shared ${name} Calculation`,
       description: `View this shared ${name} calculation on FinCalc India — free financial calculators for Indian investors.`,

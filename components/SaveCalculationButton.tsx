@@ -43,6 +43,10 @@ export default function SaveCalculationButton({
   const contract = getCalculatorContract(calcType.toLowerCase());
   const saveSupported = Boolean(contract && isSaveSupportedContract(contract));
 
+  if (!saveSupported) {
+    return null;
+  }
+
   const handleSave = async () => {
     if (status === "loading" || !saveSupported) return;
 

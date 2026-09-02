@@ -12,13 +12,28 @@ concurrency:
 
 jobs:
   quality-and-unit:
-    name: Lint, Type-Check & Regulatory Test Suite
+    name: Lint, Type-Check, Migration Integrity & Coverage Suite
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgrespassword
+          POSTGRES_DB: fincalc_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     env:
       NEXTAUTH_SECRET: "ci-testing-secret-at-least-32-characters-long"
       NEXTAUTH_URL: "http://localhost:3000"
-      DATABASE_URL: "file:./dev.db"
+      DATABASE_URL: "postgresql://postgres:postgrespassword@localhost:5432/fincalc_test"
 
     steps:
       - name: Checkout Source Code
@@ -35,6 +50,12 @@ jobs:
 
       - name: Generate Prisma Client
         run: npx prisma generate
+
+      - name: Verify Prisma Migration Deployment
+        run: npx prisma migrate deploy
+
+      - name: Verify Migration Deployment Status
+        run: npx prisma migrate status
 
       - name: ESLint Code Quality Check
         run: npm run lint
@@ -42,18 +63,33 @@ jobs:
       - name: Strict TypeScript Compilation Check
         run: npx tsc --noEmit
 
-      - name: Run Vitest Regulatory & Invariant Test Suite
-        run: npm test
+      - name: Run Vitest with Enforceable Coverage Thresholds
+        run: npm run test:coverage
 
   build-and-e2e:
     name: Production Build & Playwright Browser Smoke/A11y
     needs: quality-and-unit
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgrespassword
+          POSTGRES_DB: fincalc_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     env:
       NEXTAUTH_SECRET: "ci-testing-secret-at-least-32-characters-long"
       NEXTAUTH_URL: "http://localhost:3000"
-      DATABASE_URL: "file:./dev.db"
+      DATABASE_URL: "postgresql://postgres:postgrespassword@localhost:5432/fincalc_test"
 
     steps:
       - name: Checkout Source Code
@@ -70,6 +106,9 @@ jobs:
 
       - name: Generate Prisma Client
         run: npx prisma generate
+
+      - name: Deploy Migrations for E2E
+        run: npx prisma migrate deploy
 
       - name: Production Next.js Bundle Build
         run: npm run build
@@ -83,3 +122,5 @@ jobs:
       - name: Run Mobile Chrome E2E Suite
         run: npm run test:e2e:mobile
 
+      - name: Run Zero-Retry Accessibility Scan (Axe WCAG 2A/2AA)
+        run: npm run test:a11y
