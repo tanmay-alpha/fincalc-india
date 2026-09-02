@@ -107,13 +107,15 @@ describe("Section 54F Capital Gains Statutory Exemption Tests (AY 2026-27)", () 
     expect(validConstruction.activeResult.exemptionAllowed).toBe(3000000);
   });
 
-  describe("Section 54 vs 54EC vs 54F Comparison Ranking & Tie Semantics (Cases A–F)", () => {
-    it("Case A: One unique best strategy (Section 54 saves more than next-best Section 54EC)", () => {
-      // LTCG = ₹80L. Section 54 invests 80L -> tax = 0.
-      // Section 54EC capped at 50L -> 30L taxable -> tax = 3,90,000.
-      // Section 54F invests 40L with netSale 1.6Cr -> exemption 20L -> 60L taxable -> tax = 7,80,000.
+  describe("Section 54 / 54EC / 54F Statutory Original-Asset Eligibility & Ranking (Matrix A–I)", () => {
+    it("Scenario A. Residential house: 54 eligible, 54EC eligible, 54F ineligible", () => {
+      // LTCG = ₹80L from sale of residential house.
+      // 54 invests 80L in house -> tax = 0.
+      // 54EC capped at 50L -> 30L taxable -> tax = 3,90,000.
+      // 54F: Even if 54F inputs provided, 54F is statutorily ineligible on residential house transfer.
       const res = calcSection54Exemption({
         sectionType: "compare_both",
+        originalAssetType: "residential_house",
         capitalGainsAmount: 8000000,
         propertyInvestmentAmount: 8000000,
         propertyMode: "purchase",
@@ -125,203 +127,227 @@ describe("Section 54F Capital Gains Statutory Exemption Tests (AY 2026-27)", () 
       });
 
       expect(res.comparison).toBeDefined();
+      expect(res.comparison?.section54.isStatutorilyEligible).toBe(true);
+      expect(res.comparison?.section54ec.isStatutorilyEligible).toBe(true);
+      expect(res.comparison?.section54f?.isStatutorilyEligible).toBe(false);
+      expect(res.comparison?.section54f?.exemptionAllowed).toBe(0);
+
+      // Ranking must only compare 54 vs 54EC
       expect(res.comparison?.bestStrategy).toBe("54");
       expect(res.comparison?.secondBestStrategy).toBe("54EC");
-      expect(res.comparison?.worstStrategy).toBe("54F");
+      expect(res.comparison?.worstStrategy).toBe("54EC");
       expect(res.comparison?.bestVsSecondBestTaxDifference).toBe(390000);
-      expect(res.comparison?.bestVsWorstTaxDifference).toBe(520000);
       expect(res.comparison?.taxDifference).toBe(390000);
-      // Recommendation must use bestVsSecondBest (₹3,90,000), not bestVsWorst (₹7,80,000)
       expect(res.comparison?.recommendation).toContain("saves ₹3,90,000 more than the next-best option (Section 54EC Bonds");
+      expect(res.comparison?.recommendation).toContain("Note (54F): Ineligible: Section 54F is statutorily restricted to long-term capital assets other than a residential house");
     });
 
-    it("Case B: Section 54 and Section 54F TIE for best (tax = 0), saving more than Section 54EC", () => {
-      // LTCG = ₹1 Crore.
-      // Section 54: Invest 1Cr -> tax = 0
-      // Section 54F: Invest 1Cr (netSale 1Cr) -> tax = 0
-      // Section 54EC: Cap 50L -> 50L taxable -> tax = 6,50,000
+    it("Scenario B. Commercial property: 54 ineligible, 54EC eligible, 54F eligible", () => {
+      // LTCG = ₹50L from commercial property sale, net sale = 1Cr.
+      // 54: Ineligible (not residential house) -> exemption = 0.
+      // 54EC: 50L bonds in 3m -> exemption = 50L -> tax = 0.
+      // 54F: 50L invested in house, net sale 1Cr -> exemption = 25L -> tax = 3,25,000.
       const res = calcSection54Exemption({
         sectionType: "compare_both",
-        capitalGainsAmount: 10000000,
-        propertyInvestmentAmount: 10000000,
-        propertyMode: "purchase",
-        propertyTimelineMonths: 12,
-        bondsInvestmentAmount: 5000000,
-        bondsTimelineMonths: 3,
+        originalAssetType: "land_or_building_non_residential",
+        capitalGainsAmount: 5000000,
         netSaleConsideration: 10000000,
-        existingResidentialHousesCount: 0,
-      });
-
-      expect(res.comparison).toBeDefined();
-      expect(res.comparison?.bestStrategy).toBe("tie_54_54f");
-      expect(res.comparison?.secondBestStrategy).toBe("54EC");
-      expect(res.comparison?.bestVsSecondBestTaxDifference).toBe(650000);
-      expect(res.comparison?.taxDifference).toBe(650000);
-      // Recommendation must acknowledge the tie between 54 and 54F and not declare 54 uniquely superior
-      expect(res.comparison?.recommendation).toContain("Section 54 and Section 54F tie for the maximum tax savings");
-      expect(res.comparison?.recommendation).toContain("saving ₹6,50,000 more than Section 54EC Bonds");
-    });
-
-    it("Case C: REQUIRE actual tie_54ec_54f assertions (54EC and 54F tie for best)", () => {
-      // LTCG = ₹60L.
-      // Section 54: Invests ₹30L -> ₹30L remaining -> tax = ₹3,90,000 (valid, but higher tax)
-      // Section 54EC: Invests ₹50L (statutory cap) in 3m -> ₹10L remaining -> tax = ₹1,30,000
-      // Section 54F: Invests ₹50L with netSale ₹60L in 12m -> exemption ₹50L -> ₹10L remaining -> tax = ₹1,30,000
-      const res = calcSection54Exemption({
-        sectionType: "compare_both",
-        capitalGainsAmount: 6000000,
-        section54InvestmentAmount: 3000000,
-        section54TimelineMonths: 6,
+        section54InvestmentAmount: 5000000,
         section54PropertyMode: "purchase",
+        section54TimelineMonths: 6,
         bondsInvestmentAmount: 5000000,
         bondsTimelineMonths: 3,
         section54fInvestmentAmount: 5000000,
-        section54fTimelineMonths: 12,
         section54fPropertyMode: "purchase",
-        netSaleConsideration: 6000000,
+        section54fTimelineMonths: 6,
         existingResidentialHousesCount: 0,
       });
 
       expect(res.comparison).toBeDefined();
-      expect(res.comparison?.bestStrategy).toBe("tie_54ec_54f");
-      expect(res.comparison?.secondBestStrategy).toBe("54");
-      expect(res.comparison?.worstStrategy).toBe("54");
-      expect(res.comparison?.bestVsSecondBestTaxDifference).toBe(260000);
-      expect(res.comparison?.taxDifference).toBe(260000);
-      expect(res.comparison?.recommendation).toContain("Section 54EC Bonds and Section 54F tie for maximum tax savings");
-      expect(res.comparison?.recommendation).toContain("saving ₹2,60,000 more than Section 54 (Residential Property)");
+      expect(res.comparison?.section54.isStatutorilyEligible).toBe(false);
+      expect(res.comparison?.section54.exemptionAllowed).toBe(0);
+      expect(res.comparison?.section54ec.isStatutorilyEligible).toBe(true);
+      expect(res.comparison?.section54f?.isStatutorilyEligible).toBe(true);
+
+      // Ranking compares 54EC vs 54F only
+      expect(res.comparison?.bestStrategy).toBe("54EC");
+      expect(res.comparison?.secondBestStrategy).toBe("54F");
+      expect(res.comparison?.worstStrategy).toBe("54F");
+      expect(res.comparison?.bestVsSecondBestTaxDifference).toBe(325000);
+      expect(res.comparison?.taxDifference).toBe(325000);
+      expect(res.comparison?.recommendation).toContain("Note (54): Ineligible: Section 54 is statutorily restricted to LTCG from the transfer of a residential house property");
     });
 
-    it("Case C (Timeline Variant): Section 54 has invalid timeline, Section 54EC and Section 54F TIE", () => {
-      // LTCG = ₹40L.
-      // Section 54: Invalid purchase (+30m > 24m) -> excluded from eligible strategies
-      // Section 54EC: 40L bonds in 3m -> tax = 0
-      // Section 54F: 40L construction in 12m, netSale 40L -> tax = 0
+    it("Scenario C. Plot: 54 ineligible, 54EC eligible, 54F eligible (and tie_54ec_54f)", () => {
+      // LTCG = ₹40L from plot sale.
+      // 54: Ineligible.
+      // 54EC: 40L in bonds in 3m -> tax = 0.
+      // 54F: 40L in house, net sale 40L -> tax = 0.
       const res = calcSection54Exemption({
         sectionType: "compare_both",
+        originalAssetType: "land_or_building_non_residential",
         capitalGainsAmount: 4000000,
-        section54InvestmentAmount: 4000000,
-        section54PropertyMode: "purchase",
-        section54TimelineMonths: 30, // Invalid timeline for 54
-        bondsInvestmentAmount: 4000000,
-        bondsTimelineMonths: 3, // Valid 54EC
-        section54fInvestmentAmount: 4000000,
-        section54fPropertyMode: "construction",
-        section54fTimelineMonths: 12, // Valid 54F
         netSaleConsideration: 4000000,
+        bondsInvestmentAmount: 4000000,
+        bondsTimelineMonths: 3,
+        section54fInvestmentAmount: 4000000,
+        section54fPropertyMode: "purchase",
+        section54fTimelineMonths: 6,
         existingResidentialHousesCount: 0,
       });
 
       expect(res.comparison).toBeDefined();
+      expect(res.comparison?.section54.isStatutorilyEligible).toBe(false);
+      expect(res.comparison?.section54ec.isStatutorilyEligible).toBe(true);
+      expect(res.comparison?.section54f?.isStatutorilyEligible).toBe(true);
       expect(res.comparison?.bestStrategy).toBe("tie_54ec_54f");
       expect(res.comparison?.secondBestStrategy).toBe("none");
-      expect(res.comparison?.worstStrategy).toBe("54F");
-      expect(res.comparison?.bestVsSecondBestTaxDifference).toBe(0);
-      expect(res.comparison?.recommendation).toContain("Both eligible strategies");
-      expect(res.comparison?.recommendation).toContain("Note (54): Invalid purchase timeline (30 months)");
+      expect(res.comparison?.recommendation).toContain("Section 54EC Bonds (NHAI/REC/PFC/IRFC) and Section 54F (Reinvestment in House)");
+      expect(res.comparison?.recommendation).toContain("provide equal tax savings");
+      expect(res.comparison?.recommendation).toContain("Note (54): Ineligible");
     });
 
-    it("Case D: All eligible strategies provide EQUAL tax savings", () => {
-      // LTCG = ₹30L.
-      // Section 54: 30L invested -> tax = 0
-      // Section 54EC: 30L bonds -> tax = 0
-      // Section 54F: 30L invested (netSale 30L) -> tax = 0
+    it("Scenario D. Shares: 54 ineligible, 54EC ineligible, 54F eligible", () => {
+      // LTCG = ₹30L from sale of equity shares.
+      // 54: Ineligible (not residential house).
+      // 54EC: Ineligible (shares are not land or building).
+      // 54F: Eligible -> 30L reinvested in house with netSale 30L -> full exemption.
       const res = calcSection54Exemption({
         sectionType: "compare_both",
+        originalAssetType: "other_long_term_asset",
         capitalGainsAmount: 3000000,
+        netSaleConsideration: 3000000,
         propertyInvestmentAmount: 3000000,
         propertyMode: "purchase",
         propertyTimelineMonths: 6,
         bondsInvestmentAmount: 3000000,
         bondsTimelineMonths: 3,
-        netSaleConsideration: 3000000,
         existingResidentialHousesCount: 0,
       });
 
       expect(res.comparison).toBeDefined();
-      expect(res.comparison?.bestStrategy).toBe("all_equal");
+      expect(res.comparison?.section54.isStatutorilyEligible).toBe(false);
+      expect(res.comparison?.section54.exemptionAllowed).toBe(0);
+      expect(res.comparison?.section54ec.isStatutorilyEligible).toBe(false);
+      expect(res.comparison?.section54ec.exemptionAllowed).toBe(0);
+      expect(res.comparison?.section54f?.isStatutorilyEligible).toBe(true);
+      expect(res.comparison?.section54f?.exemptionAllowed).toBe(3000000);
+
+      // 54F is the only eligible strategy
+      expect(res.comparison?.bestStrategy).toBe("54F");
       expect(res.comparison?.secondBestStrategy).toBe("none");
-      expect(res.comparison?.bestVsSecondBestTaxDifference).toBe(0);
-      expect(res.comparison?.taxDifference).toBe(0);
-      expect(res.comparison?.recommendation).toContain("All eligible strategies provide equal tax savings");
+      expect(res.comparison?.worstStrategy).toBe("54F");
+      expect(res.comparison?.recommendation).toContain("Section 54F (Reinvestment in House) is the only eligible strategy");
+      expect(res.comparison?.recommendation).toContain("Note (54): Ineligible");
+      expect(res.comparison?.recommendation).toContain("Note (54EC): Ineligible: Section 54EC is statutorily restricted to capital gains arising from the transfer of land or building");
     });
 
-    it("Case E: Section 54F is disqualified (owns 2 houses), ranks Section 54 vs Section 54EC", () => {
-      // Taxpayer owns 2 houses -> 54F disqualified.
-      // LTCG = ₹80L. Section 54 saves more than 54EC (cap ₹50L).
+    it("Scenario E. Gold: 54 ineligible, 54EC ineligible, 54F eligible", () => {
+      // LTCG = ₹20L from gold sale.
       const res = calcSection54Exemption({
         sectionType: "compare_both",
-        capitalGainsAmount: 8000000,
-        propertyInvestmentAmount: 8000000,
-        propertyMode: "purchase",
-        propertyTimelineMonths: 6,
-        bondsInvestmentAmount: 5000000,
-        bondsTimelineMonths: 3,
-        netSaleConsideration: 8000000,
-        existingResidentialHousesCount: 2, // Disqualifies 54F
+        originalAssetType: "other_long_term_asset",
+        capitalGainsAmount: 2000000,
+        netSaleConsideration: 2500000,
+        propertyInvestmentAmount: 2500000,
+        propertyMode: "construction",
+        propertyTimelineMonths: 18,
+        existingResidentialHousesCount: 1, // 1 house is eligible u/s 54F
       });
 
-      expect(res.comparison).toBeDefined();
-      expect(res.comparison?.section54f?.disqualified).toBe(true);
-      expect(res.comparison?.bestStrategy).toBe("54");
-      expect(res.comparison?.secondBestStrategy).toBe("54EC");
-      expect(res.comparison?.recommendation).toContain("Note (54F): Disqualified: Section 54F is not available if the taxpayer owns more than one residential house");
+      expect(res.comparison?.section54.isStatutorilyEligible).toBe(false);
+      expect(res.comparison?.section54ec.isStatutorilyEligible).toBe(false);
+      expect(res.comparison?.section54f?.isStatutorilyEligible).toBe(true);
+      expect(res.comparison?.section54f?.disqualified).toBe(false);
+      expect(res.comparison?.bestStrategy).toBe("54F");
+      expect(res.comparison?.secondBestStrategy).toBe("none");
     });
 
-    it("Case F: Only one eligible strategy (Section 54 eligible, 54EC invalid timeline, 54F disqualified)", () => {
-      // 54F disqualified (2 houses). 54EC invalid timeline (10 months > 6m).
-      // Only Section 54 is eligible.
+    it("Scenario F. Residential house + perfect 54F-looking inputs: 54F MUST remain ineligible", () => {
+      // Transfer of residential house with zero other houses owned, perfect 54F inputs.
+      // Section 54F MUST be statutorily ineligible by enacted law.
       const res = calcSection54Exemption({
         sectionType: "compare_both",
+        originalAssetType: "residential_house",
+        capitalGainsAmount: 10000000,
+        netSaleConsideration: 10000000,
+        section54InvestmentAmount: 10000000,
+        section54PropertyMode: "purchase",
+        section54TimelineMonths: 12,
+        section54fInvestmentAmount: 10000000,
+        section54fPropertyMode: "purchase",
+        section54fTimelineMonths: 12,
+        existingResidentialHousesCount: 0,
+      });
+
+      expect(res.comparison?.section54.isStatutorilyEligible).toBe(true);
+      expect(res.comparison?.section54f?.isStatutorilyEligible).toBe(false);
+      expect(res.comparison?.section54f?.exemptionAllowed).toBe(0);
+      expect(res.comparison?.section54f?.ineligibilityReason).toContain("Section 54F is statutorily restricted to long-term capital assets other than a residential house");
+      expect(res.comparison?.bestStrategy).toBe("54");
+    });
+
+    it("Scenario G. Shares + valid 54EC timeline/investment: 54EC MUST remain ineligible", () => {
+      // Sale of shares with ₹50L bonds within 3 months.
+      // 54EC MUST remain statutorily ineligible because shares are not land or building.
+      const res = calcSection54Exemption({
+        sectionType: "compare_both",
+        originalAssetType: "other_long_term_asset",
+        capitalGainsAmount: 5000000,
+        bondsInvestmentAmount: 5000000,
+        bondsTimelineMonths: 3, // Valid timeline
+      });
+
+      expect(res.comparison?.section54ec.isStatutorilyEligible).toBe(false);
+      expect(res.comparison?.section54ec.isValidTimeline).toBe(true);
+      expect(res.comparison?.section54ec.exemptionAllowed).toBe(0);
+      expect(res.comparison?.section54ec.ineligibilityReason).toContain("statutorily restricted to capital gains arising from the transfer of land or building");
+      expect(res.comparison?.bestStrategy).toBe("none"); // 54F also not configured
+    });
+
+    it("Scenario H. Compare All never uses hidden/default 54F net consideration", () => {
+      // In compare_both with other_long_term_asset, omit netSaleConsideration
+      const res = calcSection54Exemption({
+        sectionType: "compare_both",
+        originalAssetType: "other_long_term_asset",
         capitalGainsAmount: 5000000,
         propertyInvestmentAmount: 5000000,
         propertyMode: "purchase",
         propertyTimelineMonths: 6,
-        bondsInvestmentAmount: 5000000,
-        bondsTimelineMonths: 10, // Invalid timeline for 54EC
-        netSaleConsideration: 5000000,
-        existingResidentialHousesCount: 2, // Disqualified for 54F
+        // netSaleConsideration omitted
       });
 
-      expect(res.comparison).toBeDefined();
-      expect(res.comparison?.bestStrategy).toBe("54");
-      expect(res.comparison?.secondBestStrategy).toBe("none");
-      expect(res.comparison?.worstStrategy).toBe("54");
-      expect(res.comparison?.bestVsSecondBestTaxDifference).toBe(0);
-      expect(res.comparison?.section54ec.isValidTimeline).toBe(false);
       expect(res.comparison?.section54f?.disqualified).toBe(true);
-      expect(res.comparison?.recommendation).toContain("Section 54 (Residential Property) is the only eligible strategy");
-      expect(res.comparison?.recommendation).toContain("Note (54EC): Invalid timeline (10 months)");
-      expect(res.comparison?.recommendation).toContain("Note (54F): Disqualified: Section 54F is not available if the taxpayer owns more than one residential house");
+      expect(res.comparison?.section54f?.disqualificationReason).toContain("Net Sale Consideration is required for Section 54F proportionate exemption calculation in Compare mode");
+      expect(res.comparison?.section54f?.exemptionAllowed).toBe(0);
+      expect(res.comparison?.bestStrategy).toBe("none");
     });
 
-    it("returns a clear 'no eligible strategy' result when all options are invalid/disqualified rather than throwing", () => {
-      // Section 54: invalid purchase timeline (40 months)
-      // Section 54EC: invalid bond timeline (12 months)
-      // Section 54F: disqualified (owns 3 houses)
+    it("Scenario I. All applicable strategies invalid: bestStrategy === 'none'", () => {
+      // Residential house transfer, but:
+      // Section 54 has invalid purchase timeline (40 months > 24m)
+      // Section 54EC has invalid bond timeline (12 months > 6m)
+      // Section 54F is ineligible
       const res = calcSection54Exemption({
         sectionType: "compare_both",
+        originalAssetType: "residential_house",
         capitalGainsAmount: 5000000,
         propertyInvestmentAmount: 5000000,
         propertyMode: "purchase",
         propertyTimelineMonths: 40, // Invalid for 54
         bondsInvestmentAmount: 5000000,
         bondsTimelineMonths: 12, // Invalid for 54EC
-        netSaleConsideration: 5000000,
-        existingResidentialHousesCount: 3, // Disqualified for 54F
       });
 
       expect(res.comparison).toBeDefined();
       expect(res.comparison?.bestStrategy).toBe("none");
       expect(res.comparison?.secondBestStrategy).toBe("none");
       expect(res.comparison?.worstStrategy).toBe("none");
-      expect(res.comparison?.bestVsSecondBestTaxDifference).toBe(0);
-      expect(res.comparison?.bestVsWorstTaxDifference).toBe(0);
       expect(res.comparison?.taxDifference).toBe(0);
-      expect(res.comparison?.recommendation).toContain("No eligible exemption strategy available");
-      expect(res.comparison?.recommendation).toContain("Note (54F): Disqualified");
+      expect(res.comparison?.recommendation).toContain("No eligible statutory exemption strategy available for residential house property");
       expect(res.comparison?.recommendation).toContain("Note (54): Invalid purchase timeline");
       expect(res.comparison?.recommendation).toContain("Note (54EC): Invalid timeline");
+      expect(res.comparison?.recommendation).toContain("Note (54F): Ineligible");
     });
   });
 });
