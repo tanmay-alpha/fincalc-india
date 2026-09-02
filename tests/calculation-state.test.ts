@@ -1,42 +1,68 @@
-import { describe, expect, it } from "vitest";
-import { calcSIP } from "@/lib/math";
+import { describe, it, expect } from "vitest";
 import {
-  decodeCalculationInputs,
-  encodeCalculationInputs,
-  saveScenario,
-  type ScenarioSnapshot,
-} from "@/lib/calculation-state";
+  encodeCalculationState,
+  decodeCalculationState,
+  buildShareableUrl,
+} from "../lib/calculation-state";
 
-const isSipInput = (value: unknown): value is { monthlyAmount: number; annualRate: number; years: number } => {
-  if (!value || typeof value !== "object") return false;
-  const input = value as Record<string, unknown>;
-  return [input.monthlyAmount, input.annualRate, input.years].every(
-    (item) => typeof item === "number" && Number.isFinite(item)
-  );
-};
+describe("Calculation State Serialization & URL Sharing", () => {
+  it("encodes and decodes standard calculator input payload cleanly", () => {
+    const input = {
+      monthlyInvestment: 25000,
+      annualRate: 12.5,
+      timeHorizonYears: 15,
+      stepUpPercent: 10,
+    };
 
-describe("calculation URL state", () => {
-  it("round-trips SIP inputs to an identical result", () => {
-    const input = { monthlyAmount: 5000, annualRate: 12, years: 10 };
-    const decoded = decodeCalculationInputs(encodeCalculationInputs(input), isSipInput);
+    const encoded = encodeCalculationState("sip", input);
+    expect(typeof encoded).toBe("string");
+    expect(encoded.length).toBeGreaterThan(10);
 
-    expect(decoded).toEqual(input);
-    expect(calcSIP(decoded!)).toEqual(calcSIP(input));
+    const decoded = decodeCalculationState<typeof input>(encoded);
+    expect(decoded).not.toBeNull();
+    expect(decoded?.id).toBe("sip");
+    expect(decoded?.v).toBe(1);
+    expect(decoded?.data).toEqual(input);
   });
 
-  it("rejects non-finite and unknown URL values", () => {
-    expect(decodeCalculationInputs("?v=1&i=Infinity", isSipInput)).toBeNull();
-    expect(decodeCalculationInputs(`${encodeCalculationInputs({ monthlyAmount: 5000, annualRate: 12, years: 10 })}&x=1`, isSipInput)).toBeNull();
+  it("handles Unicode strings and currency symbols (e.g. ₹, emojis) safely", () => {
+    const input = {
+      customLabel: "Retirement Goal for 2035 🎯 ₹10 Crore Corpus",
+      currencySymbol: "₹",
+      nested: { notes: "Section 80CCD(2) @ 14% tax saving 🚀" },
+    };
+
+    const encoded = encodeCalculationState("retirement", input);
+    const decoded = decodeCalculationState<typeof input>(encoded);
+    expect(decoded).not.toBeNull();
+    expect(decoded?.data.customLabel).toBe("Retirement Goal for 2035 🎯 ₹10 Crore Corpus");
+    expect(decoded?.data.currencySymbol).toBe("₹");
+    expect(decoded?.data.nested.notes).toBe("Section 80CCD(2) @ 14% tax saving 🚀");
   });
-});
 
-describe("scenario snapshots", () => {
-  it("keeps the three latest scenarios", () => {
-    const one: ScenarioSnapshot<{ amount: number }> = { id: "one", name: "One", inputs: { amount: 1 } };
-    const two: ScenarioSnapshot<{ amount: number }> = { id: "two", name: "Two", inputs: { amount: 2 } };
-    const three: ScenarioSnapshot<{ amount: number }> = { id: "three", name: "Three", inputs: { amount: 3 } };
-    const four: ScenarioSnapshot<{ amount: number }> = { id: "four", name: "Four", inputs: { amount: 4 } };
+  it("builds a well-formed shareable URL", () => {
+    const input = { principal: 5000000, rate: 8.5, tenureYears: 20 };
+    const url = buildShareableUrl("https://fincalcindia.com", "/home-loan-emi", input);
 
-    expect(saveScenario(saveScenario(saveScenario(saveScenario([], one), two), three), four)).toEqual([two, three, four]);
+    expect(url).toContain("https://fincalcindia.com/home-loan-emi?state=");
+    const stateParam = new URL(url).searchParams.get("state");
+    expect(stateParam).not.toBeNull();
+
+    const decoded = decodeCalculationState(stateParam!);
+    expect(decoded?.id).toBe("home-loan-emi");
+    expect(decoded?.data).toEqual(input);
+  });
+
+  it("rejects malformed Base64, non-JSON strings, and empty payloads without throwing", () => {
+    expect(decodeCalculationState("")).toBeNull();
+    expect(decodeCalculationState("not-valid-base64-%%$!@#")).toBeNull();
+    expect(decodeCalculationState("SGVsbG8gV29ybGQ=")).toBeNull(); // Valid base64 ("Hello World"), but not valid JSON state
+    expect(decodeCalculationState(null as unknown as string)).toBeNull();
+    expect(decodeCalculationState(undefined as unknown as string)).toBeNull();
+  });
+
+  it("rejects excessively large payloads to protect against DoS attacks", () => {
+    const massiveString = "A".repeat(100 * 1024); // 100 KB
+    expect(decodeCalculationState(massiveString)).toBeNull();
   });
 });

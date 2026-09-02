@@ -212,6 +212,7 @@ export interface TaxInput {
   salaryIncome?: number; // eligible for standard deduction (₹75k new / ₹50k old)
   interestAndOtherIncome?: number; // ordinary income, not eligible for salary standard deduction
   businessIncome?: number; // ordinary income, not eligible for salary standard deduction
+  dividendIncome?: number; // ordinary income, but surcharge on its tax component is capped at 15%
 
   // Special-rate capital gains (isolated from standard rebate)
   equityLtcg?: number; // Section 112A special rate (12.5% above ₹1.25L)
@@ -251,6 +252,7 @@ export interface TaxOutput {
   grossIncome: number;
   salaryIncome: number;
   otherIncome: number;
+  dividendIncome: number;
   standardDeduction: number;
   totalDeductions: number;
   ordinaryTaxableIncome: number;
@@ -638,20 +640,28 @@ export interface XirrOutput {
   firstDate: string;
   lastDate: string;
   durationYears: number;
+  candidateRoots?: number[];
+  multipleRootsDetected?: boolean;
+  rootCount?: number;
+  warning?: string;
   isValid: boolean;
   errorMessage?: string;
   summary: string;
 }
 
+export interface TwrrPeriodResult {
+  periodIndex: number;
+  startValue: number;
+  endValue: number;
+  netCashflow: number;
+  holdingPeriodReturn: number;
+}
+
 export interface TwrrOutput {
-  periods: Array<{
-    periodIndex: number;
-    startValue: number;
-    endValue: number;
-    netCashflow: number;
-    holdingPeriodReturn: number;
-  }>;
+  periods: TwrrPeriodResult[];
   twrr: number;
+  isValid: boolean;
+  errorMessage?: string;
   summary: string;
 }
 
@@ -1007,6 +1017,15 @@ export interface NRIDepositOutput {
 // ─── GROUP 5: RETIREMENT TYPES ─────────────────────────────────
 
 // 14. NPS & Tier-1 Pension Modeler
+export interface NPSExitOption {
+  id: string;
+  name: string;
+  description: string;
+  maxLumpSumPercent: number;
+  minAnnuityPercent: number;
+  fixedLumpSumCap?: number;
+}
+
 export interface NPSInput {
   currentAge: number;
   retirementAge?: number;
@@ -1023,8 +1042,11 @@ export interface NPSInput {
   taxBracketPercent?: number;
   regime?: TaxRegime;
   employerMonthlyContribution?: number;
+  eligibleSalaryFor80CCD2?: number; // Annual basic salary + DA eligible for 80CCD(2)
+  basicSalaryPlusEligibleDA?: number; // Alias for eligibleSalaryFor80CCD2
   isGovtEmployee?: boolean;
   isPrematureExit?: boolean;
+  exitOptionChoice?: "standard" | "sur_6yr_split";
 }
 
 export interface NPSYearRow {
@@ -1053,12 +1075,20 @@ export interface NPSOutput {
   annuityPurchasedAmount: number;
   assumedAnnuityYieldPercent: number;
   estimatedMonthlyPension: number;
+  // Section 80CCD deductions
+  actualEmployerContribution: number;
+  eligibleSalaryFor80CCD2: number;
+  salaryCap80CCD2Percent: number; // 14% for all under New Regime / Govt under Old Regime; 10% for Private under Old Regime
+  eligibleDeduction80CCD2: number;
+  excessEmployerContributionNotDeductible: number;
+  taxSaving80CCD2: number;
   annualTaxSavedUnder80CCD: number;
   annualTaxSavedUnder80CCD1B: number;
   annualTaxSavedUnder80CCD2: number;
   lifetimeTaxSaved: number;
   taxTreatmentNote: string;
-  regulatoryExitCategory: "small_corpus_full_payout" | "standard_superannuation" | "premature_exit";
+  regulatoryExitCategory: "small_corpus_full_payout" | "corpus_8L_to_12L_special" | "standard_superannuation" | "premature_exit";
+  exitOptionsAvailable: NPSExitOption[];
   yearlyProgression: NPSYearRow[];
   isValid: boolean;
   errorMessage?: string;
@@ -1418,7 +1448,8 @@ function internalSurchargeCalc(
   specialRateTax: number,
   totalTaxableIncome: number,
   regime: TaxRegime,
-  ageCategory: TaxpayerAgeCategory = "below_60"
+  ageCategory: TaxpayerAgeCategory = "below_60",
+  dividendTax = 0
 ): { surcharge: number; marginalRelief: number; netSurcharge: number } {
   let slabSurchargeRate = 0;
   let specialSurchargeRate = 0;
@@ -1428,7 +1459,7 @@ function internalSurchargeCalc(
   if (regime === "new") {
     if (totalTaxableIncome > 20000000) {
       slabSurchargeRate = 0.25;
-      specialSurchargeRate = 0.15; // Capped at 15% on special rate gains
+      specialSurchargeRate = 0.15; // Capped at 15% on special rate gains & dividend income
       threshold = 20000000;
       thresholdSurchargeRate = 0.15;
     } else if (totalTaxableIncome > 10000000) {
@@ -1467,7 +1498,13 @@ function internalSurchargeCalc(
     }
   }
 
-  const rawSurcharge = slabTax * slabSurchargeRate + specialRateTax * specialSurchargeRate;
+  // Under official CBDT provisions, surcharge on the tax component of dividend income is capped at 15%
+  const nonDividendSlabTax = Math.max(0, slabTax - dividendTax);
+  const dividendSurchargeRate = Math.min(slabSurchargeRate, 0.15);
+  const rawSurcharge =
+    nonDividendSlabTax * slabSurchargeRate +
+    dividendTax * dividendSurchargeRate +
+    specialRateTax * specialSurchargeRate;
 
   let marginalRelief = 0;
   if (threshold > 0 && slabSurchargeRate > 0) {
@@ -1513,6 +1550,7 @@ function computeRegimeTax(
   totalTax: number;
   salaryIncome: number;
   otherIncome: number;
+  dividendIncome: number;
   standardDeduction: number;
   totalDeductions: number;
   ordinaryTaxableIncome: number;
@@ -1539,7 +1577,8 @@ function computeRegimeTax(
 
   // Income stream decomposition
   const salaryGross = Math.max(0, input.salaryIncome ?? grossIncome ?? 0);
-  const otherGross = Math.max(0, (input.interestAndOtherIncome ?? 0) + (input.businessIncome ?? 0));
+  const dividendGross = Math.max(0, input.dividendIncome ?? 0);
+  const otherGross = Math.max(0, (input.interestAndOtherIncome ?? 0) + (input.businessIncome ?? 0) + dividendGross);
 
   let stdDed = 0;
   let totalDeductions = 0;
@@ -1557,24 +1596,32 @@ function computeRegimeTax(
     const capped80C = Math.min(Math.max(0, input.deduction80C ?? 0), 150000);
     const capped80D = Math.min(Math.max(0, input.deduction80D ?? 0), 100000);
     const capped80CCD1B = Math.min(Math.max(0, input.deduction80CCD1B ?? 0), 50000);
-    const hra = Math.max(0, input.hraExemption ?? 0);
+    // HRA exemption is strictly a deduction against salary income; if no salary, HRA allowed is ₹0
+    const rawHra = Math.max(0, input.hraExemption ?? 0);
+    const allowedHra = salaryGross > 0 ? Math.min(rawHra, Math.max(0, salaryGross - stdDed)) : 0;
     const other = Math.max(0, input.otherDeductions ?? 0);
 
-    const chapterVIA = capped80C + capped80D + capped80CCD1B + hra + other;
+    const chapterVIA = capped80C + capped80D + capped80CCD1B + allowedHra + other;
     totalDeductions = stdDed + chapterVIA;
 
     const totalOrdinaryGross = salaryGross + otherGross;
     ordinaryTaxableIncome = Math.max(0, totalOrdinaryGross - totalDeductions);
   }
 
-  // Select slabs for regime and age
+  // Select slabs for regime and age.
+  // CRITICAL STATUTORY RULE: Senior citizen higher exemption slabs (₹3L / ₹5L) under Old Regime apply ONLY to Resident Individuals.
+  // For NRIs, the basic exemption limit under Old Regime is strictly ₹2,50,000 regardless of age.
   let slabs = NEW_REGIME_SLABS;
   if (regime === "old") {
-    slabs = ageCategory === "super_senior_80_plus"
-      ? OLD_REGIME_SLABS_SUPER_SENIOR
-      : ageCategory === "senior_60_to_79"
-        ? OLD_REGIME_SLABS_SENIOR
-        : OLD_REGIME_SLABS_GENERAL;
+    if (isResident) {
+      slabs = ageCategory === "super_senior_80_plus"
+        ? OLD_REGIME_SLABS_SUPER_SENIOR
+        : ageCategory === "senior_60_to_79"
+          ? OLD_REGIME_SLABS_SENIOR
+          : OLD_REGIME_SLABS_GENERAL;
+    } else {
+      slabs = OLD_REGIME_SLABS_GENERAL;
+    }
   }
 
   const { rawTax, breakdown } = internalSlabCalc(ordinaryTaxableIncome, slabs);
@@ -1625,13 +1672,19 @@ function computeRegimeTax(
   const slabTaxAfterRebate = Math.max(0, rawTax - rebateAmount);
   const baseTax = slabTaxAfterRebate + specialRateTax;
 
+  // Compute dividend tax portion for 15% surcharge cap
+  const dividendTax = ordinaryTaxableIncome > 0 && dividendGross > 0
+    ? (slabTaxAfterRebate * Math.min(dividendGross, ordinaryTaxableIncome)) / ordinaryTaxableIncome
+    : 0;
+
   // High-income surcharge and marginal relief (computed on total taxable income after permitted deductions)
   const { marginalRelief, netSurcharge } = internalSurchargeCalc(
     slabTaxAfterRebate,
     specialRateTax,
     totalTaxableIncome,
     regime,
-    ageCategory
+    ageCategory,
+    dividendTax
   );
 
   // Health & Education Cess: 4% on (Base Tax + Net Surcharge)
@@ -1643,6 +1696,7 @@ function computeRegimeTax(
     totalTax: Math.round(totalTax),
     salaryIncome: Math.round(salaryGross),
     otherIncome: Math.round(otherGross),
+    dividendIncome: Math.round(dividendGross),
     standardDeduction: Math.round(stdDed),
     totalDeductions: Math.round(totalDeductions),
     ordinaryTaxableIncome: Math.round(ordinaryTaxableIncome),
@@ -1651,7 +1705,7 @@ function computeRegimeTax(
     taxableIncome: Math.round(totalTaxableIncome),
     slabTaxBeforeRebate: Math.round(rawTax),
     rebateAmount: Math.round(rebateAmount),
-    rebateSection: REBATE_SECTION_156.sectionName,
+    rebateSection: isMarginalRebateApplied ? "Section 156(2)(b) Marginal Relief" : "Section 156",
     isMarginalRebateApplied,
     specialRateTax: Math.round(specialRateTax),
     equityLtcgTax: Math.round(equityLtcgTax),
@@ -1710,6 +1764,7 @@ export function calcTax(input: TaxInput): TaxOutput {
     grossIncome: Math.round(totalEffectiveGross),
     salaryIncome: current.salaryIncome,
     otherIncome: current.otherIncome,
+    dividendIncome: current.dividendIncome,
     standardDeduction: current.standardDeduction,
     totalDeductions: current.totalDeductions,
     ordinaryTaxableIncome: current.ordinaryTaxableIncome,
@@ -3976,8 +4031,21 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
   function computeSection54F(): Section54SingleExemptionResult {
     const invAmount = Math.max(0, propertyInvestmentAmount || 0);
     const statutoryCap = 100000000; // ₹10 Crore cap on new house cost
-    const netSale = Math.max(initialLtcgGains, (input.netSaleConsideration !== undefined && input.netSaleConsideration > 0) ? input.netSaleConsideration : initialLtcgGains);
+    const rawNetSale = input.netSaleConsideration;
     const existingHouses = input.existingResidentialHousesCount ?? 0;
+
+    let disqualified = false;
+    let disqualificationReason: string | undefined = undefined;
+
+    if (existingHouses > 1) {
+      disqualified = true;
+      disqualificationReason = `Disqualified: Section 54F is not available if the taxpayer owns more than one residential house (currently owns ${existingHouses}) on the date of transfer.`;
+    } else if (rawNetSale !== undefined && rawNetSale > 0 && rawNetSale < initialLtcgGains) {
+      disqualified = true;
+      disqualificationReason = `Invalid Input: Net Sale Consideration (₹${rawNetSale.toLocaleString("en-IN")}) cannot be less than Long-Term Capital Gains (₹${initialLtcgGains.toLocaleString("en-IN")}).`;
+    }
+
+    const netSale = Math.max(initialLtcgGains, rawNetSale && rawNetSale > 0 ? rawNetSale : initialLtcgGains);
 
     let isValidTimeline = false;
     let timelineMessage = "";
@@ -3992,13 +4060,6 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
       timelineMessage = isValidTimeline
         ? `Valid construction timeline (${propertyTimelineMonths} months from sale date. Prescribed window: within 3 years after sale).`
         : `Invalid construction timeline (${propertyTimelineMonths} months). Section 54F requires construction completion within 3 years from transfer date.`;
-    }
-
-    let disqualified = false;
-    let disqualificationReason: string | undefined = undefined;
-    if (existingHouses > 1) {
-      disqualified = true;
-      disqualificationReason = `Disqualified: Section 54F is not available if the taxpayer owns more than one residential house (currently owns ${existingHouses}) on the date of transfer.`;
     }
 
     let exemptionAllowed = 0;
@@ -4066,6 +4127,9 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
       rec = `Section 54EC Bonds save ₹${taxDiff.toLocaleString("en-IN")} more in taxes given your current investment amounts.`;
     } else {
       rec = `Both Section 54 and Section 54EC provide equal tax savings of ₹${s54Result.taxSaved.toLocaleString("en-IN")}. Section 54EC offers zero real estate hassle with a 5-year bond lock-in.`;
+    }
+    if (s54fResult.disqualified) {
+      rec += ` Note: ${s54fResult.disqualificationReason}`;
     }
 
     comparison = {
@@ -4531,7 +4595,8 @@ export function calcXIRR(cashflows: CashFlowPoint[]): XirrOutput {
 
   const d0 = parsed[0].date.getTime();
   const dN = parsed[parsed.length - 1].date.getTime();
-  const durationYears = (dN - d0) / (365.25 * 24 * 3600 * 1000);
+  // Standardize on 365-day day-count convention
+  const durationYears = (dN - d0) / (365.0 * 24 * 3600 * 1000);
 
   // Normalized time fractions in years
   const normalized = parsed.map((cf) => ({
@@ -4559,69 +4624,69 @@ export function calcXIRR(cashflows: CashFlowPoint[]): XirrOutput {
     return sum;
   };
 
-  // Multi-start Newton-Raphson Solver
-  let convergedRate: number | null = null;
-  const initialGuesses = [0.10, 0.00, 0.25, -0.10, -0.50, 0.80, 1.50];
+  // Multi-root scanner across [-0.99, 10.0]
+  const discoveredRoots: number[] = [];
+  const scanStep = 0.05;
+  let prevR = -0.99;
+  let prevF = npv(prevR);
 
-  for (const guess of initialGuesses) {
-    let r = guess;
-    for (let iter = 0; iter < 80; iter++) {
-      const f = npv(r);
-      const df = dNpv(r);
-
-      if (!Number.isFinite(f) || !Number.isFinite(df)) break;
-      if (Math.abs(f) < 1e-5) {
-        convergedRate = r;
-        break;
+  for (let currR = -0.95; currR <= 10.0; currR = round4(currR + scanStep)) {
+    const currF = npv(currR);
+    if (Math.abs(currF) < 1e-5) {
+      if (!discoveredRoots.some((r) => Math.abs(r - currR) < 0.005)) {
+        discoveredRoots.push(round4(currR));
       }
-      if (Math.abs(df) < 1e-12) break; // Zero derivative, cannot step
+    } else if (Number.isFinite(prevF) && Number.isFinite(currF) && prevF * currF < 0) {
+      // Bisection inside [prevR, currR]
+      let bLow = prevR;
+      let bHigh = currR;
+      let fLow = prevF;
+      let rootCandidate: number | null = null;
 
-      const step = f / df;
-      r = Math.max(-0.999, Math.min(20.0, r - step));
-    }
-    if (convergedRate !== null) break;
-  }
-
-  // Fallback Bisection Search if Newton-Raphson did not converge
-  if (convergedRate === null) {
-    let low = -0.999;
-    let high = 10.0;
-    let fLow = npv(low);
-
-    // Search for sign change
-    const stepSize = 0.2;
-    let foundBracket = false;
-    for (let curr = -0.99; curr <= 10.0; curr += stepSize) {
-      const fCurr = npv(curr);
-      if (Math.abs(fCurr) < 1e-5) {
-        convergedRate = curr;
-        foundBracket = true;
-        break;
-      }
-      if (fLow * fCurr <= 0) {
-        high = curr;
-        foundBracket = true;
-        break;
-      }
-      low = curr;
-      fLow = fCurr;
-    }
-
-    if (foundBracket && convergedRate === null) {
-      for (let iter = 0; iter < 100; iter++) {
-        const mid = (low + high) / 2;
+      for (let iter = 0; iter < 60; iter++) {
+        const mid = (bLow + bHigh) / 2;
         const fMid = npv(mid);
-        if (Math.abs(fMid) < 1e-5 || (high - low) < 1e-7) {
-          convergedRate = mid;
+        if (Math.abs(fMid) < 1e-5 || (bHigh - bLow) < 1e-7) {
+          rootCandidate = mid;
           break;
         }
         if (fLow * fMid <= 0) {
-          high = mid;
+          bHigh = mid;
         } else {
-          low = mid;
+          bLow = mid;
           fLow = fMid;
         }
       }
+
+      if (rootCandidate !== null && !discoveredRoots.some((r) => Math.abs(r - rootCandidate!) < 0.005)) {
+        discoveredRoots.push(round4(rootCandidate));
+      }
+    }
+    prevR = currR;
+    prevF = currF;
+  }
+
+  // Multi-start Newton-Raphson Solver for primary root
+  let convergedRate: number | null = discoveredRoots.length > 0 ? discoveredRoots[0] : null;
+  if (convergedRate === null) {
+    const initialGuesses = [0.10, 0.00, 0.25, -0.10, -0.50, 0.80, 1.50];
+    for (const guess of initialGuesses) {
+      let r = guess;
+      for (let iter = 0; iter < 80; iter++) {
+        const f = npv(r);
+        const df = dNpv(r);
+
+        if (!Number.isFinite(f) || !Number.isFinite(df)) break;
+        if (Math.abs(f) < 1e-5) {
+          convergedRate = r;
+          break;
+        }
+        if (Math.abs(df) < 1e-12) break;
+
+        const step = f / df;
+        r = Math.max(-0.999, Math.min(20.0, r - step));
+      }
+      if (convergedRate !== null) break;
     }
   }
 
@@ -4636,6 +4701,15 @@ export function calcXIRR(cashflows: CashFlowPoint[]): XirrOutput {
     cagr = round2((Math.pow(totalInflows / totalOutflows, 1 / durationYears) - 1) * 100);
   }
 
+  const multipleRootsDetected = discoveredRoots.length > 1;
+  const rootCount = discoveredRoots.length;
+  const candidateRoots = discoveredRoots.map((r) => round2(r * 100));
+
+  let warning: string | undefined = undefined;
+  if (multipleRootsDetected) {
+    warning = `Ambiguity Notice: Multiple Internal Rates of Return detected (${candidateRoots.map((r) => `${r}%`).join(", ")}) due to alternating cash inflow/outflow directions (Descartes' Rule of Signs). Consider evaluating TWRR or MIRR.`;
+  }
+
   return {
     cashflows,
     xirr: xirrPercent,
@@ -4647,23 +4721,39 @@ export function calcXIRR(cashflows: CashFlowPoint[]): XirrOutput {
     firstDate: parsed[0].dateStr,
     lastDate: parsed[parsed.length - 1].dateStr,
     durationYears: round2(durationYears),
+    candidateRoots,
+    multipleRootsDetected,
+    rootCount,
+    warning,
     isValid,
     errorMessage: isValid ? undefined : "Could not compute XIRR for the provided cash flows (divergence or non-monotonic root).",
     summary: isValid
-      ? `XIRR: ${xirrPercent}% p.a. | Total Invested: ₹${Math.round(totalOutflows).toLocaleString("en-IN")} | Net Gain: ₹${Math.round(netGain).toLocaleString("en-IN")}`
+      ? `XIRR: ${xirrPercent}% p.a. | Total Invested: ₹${Math.round(totalOutflows).toLocaleString("en-IN")} | Net Gain: ₹${Math.round(netGain).toLocaleString("en-IN")}${multipleRootsDetected ? ` (${rootCount} roots detected)` : ""}`
       : "XIRR calculation did not converge for the provided cash flow sequence.",
   };
 }
 
 export function calcTWRR(periods: TwrrPeriod[]): TwrrOutput {
   if (!Array.isArray(periods) || periods.length === 0) {
-    return { periods: [], twrr: 0, summary: "No periods provided." };
+    return { periods: [], twrr: 0, isValid: false, errorMessage: "No periods provided.", summary: "No periods provided." };
+  }
+
+  // Validate start values
+  const hasInvalidStart = periods.some((p) => !Number.isFinite(p.startValue) || p.startValue <= 0);
+  if (hasInvalidStart) {
+    return {
+      periods: [],
+      twrr: 0,
+      isValid: false,
+      errorMessage: "Start value for each sub-period must be strictly positive (> 0).",
+      summary: "Invalid start value in sub-periods.",
+    };
   }
 
   let compoundFactor = 1.0;
-  const breakdown = periods.map((p, idx) => {
+  const breakdown: TwrrPeriodResult[] = periods.map((p, idx) => {
     const start = safePositive(p.startValue);
-    const end = safePositive(p.endValue);
+    const end = safeNum(p.endValue);
     const netCf = safeNum(p.netCashflow);
 
     // HPR = (End - Cashflow) / Start - 1
@@ -4684,6 +4774,7 @@ export function calcTWRR(periods: TwrrPeriod[]): TwrrOutput {
   return {
     periods: breakdown,
     twrr: totalTwrr,
+    isValid: true,
     summary: `Time-Weighted Rate of Return (TWRR): ${totalTwrr}% across ${periods.length} sub-periods.`,
   };
 }
@@ -5828,7 +5919,11 @@ export function calcNPS(input: NPSInput): NPSOutput {
     taxBracketPercent = 30,
     regime = "new",
     employerMonthlyContribution = 0,
+    eligibleSalaryFor80CCD2,
+    basicSalaryPlusEligibleDA,
+    isGovtEmployee = false,
     isPrematureExit = false,
+    exitOptionChoice = "standard",
   } = input;
 
   const safeAge = Math.max(18, safePositive(currentAge, 28));
@@ -5836,6 +5931,24 @@ export function calcNPS(input: NPSInput): NPSOutput {
   const safeContribution = safePositive(monthlyContribution, 10000);
   const safeEmployerContribution = Math.max(0, employerMonthlyContribution || 0);
   const totalMonthlyInflow = safeContribution + safeEmployerContribution;
+
+  // 80CCD(2) salary base
+  const safeEligibleSalary = Math.max(
+    0,
+    safePositive(
+      eligibleSalaryFor80CCD2 ?? basicSalaryPlusEligibleDA,
+      safeEmployerContribution > 0 ? (safeEmployerContribution * 12) / 0.1 : 1200000
+    )
+  );
+
+  // Authoritative statutory caps:
+  // New Regime: 14% of salary for all employer categories (Finance Act, 2024 / 2025 / 2026).
+  // Old Regime: 14% of salary for Central/State Govt; 10% for Private/PSU.
+  const salaryCap80CCD2Percent = regime === "new" ? 14 : (isGovtEmployee ? 14 : 10);
+  const annualEmployerContribution = safeEmployerContribution * 12;
+  const maxEligible80CCD2 = (safeEligibleSalary * salaryCap80CCD2Percent) / 100;
+  const eligibleDeduction80CCD2 = Math.min(annualEmployerContribution, maxEligible80CCD2);
+  const excessEmployerContributionNotDeductible = Math.max(0, annualEmployerContribution - eligibleDeduction80CCD2);
 
   const totalAlloc = equityAllocationPercent + corporateDebtAllocationPercent + govtBondsAllocationPercent;
   if (Math.abs(totalAlloc - 100) > 0.5) {
@@ -5856,12 +5969,19 @@ export function calcNPS(input: NPSInput): NPSOutput {
       annuityPurchasedAmount: 0,
       assumedAnnuityYieldPercent: 6.5,
       estimatedMonthlyPension: 0,
+      actualEmployerContribution: annualEmployerContribution,
+      eligibleSalaryFor80CCD2: safeEligibleSalary,
+      salaryCap80CCD2Percent,
+      eligibleDeduction80CCD2,
+      excessEmployerContributionNotDeductible,
+      taxSaving80CCD2: 0,
       annualTaxSavedUnder80CCD: 0,
       annualTaxSavedUnder80CCD1B: 0,
       annualTaxSavedUnder80CCD2: 0,
       lifetimeTaxSaved: 0,
       taxTreatmentNote: "",
       regulatoryExitCategory: "standard_superannuation",
+      exitOptionsAvailable: [],
       yearlyProgression: [],
       isValid: false,
       errorMessage: `Asset allocations must sum to exactly 100% (currently ${totalAlloc}%: Equity ${equityAllocationPercent}% + Corporate Debt ${corporateDebtAllocationPercent}% + Govt Bonds ${govtBondsAllocationPercent}%).`,
@@ -5884,55 +6004,127 @@ export function calcNPS(input: NPSInput): NPSOutput {
     ? totalMonthlyInflow * ((Math.pow(1 + monthlyRate, totalMonths) - 1) / monthlyRate) * (1 + monthlyRate)
     : totalInvested;
 
-  // Small corpus exception (PFRDA 2026 Rules: Normal retirement <= ₹8 Lakhs allows 100% lump sum; Premature exit <= ₹5 Lakhs allows 100% lump sum)
-  const smallCorpusLimit = isPrematureExit
-    ? NPS_CONSTANTS.smallCorpusPrematureExitLimit
-    : NPS_CONSTANTS.smallCorpusFullWithdrawalLimit;
-  const isSmallCorpus = totalCorpus <= smallCorpusLimit;
-  const regulatoryExitCategory: "small_corpus_full_payout" | "standard_superannuation" | "premature_exit" =
-    isSmallCorpus
-      ? "small_corpus_full_payout"
-      : isPrematureExit
-        ? "premature_exit"
-        : "standard_superannuation";
+  // PFRDA All Citizen Exit Model:
+  // 1. Normal Superannuation:
+  //    - Corpus <= ₹8 Lakhs: 100% lump sum permitted.
+  //    - Corpus > ₹8 Lakhs and <= ₹12 Lakhs: Option to take up to ₹6 Lakhs lump sum and balance in SUR/annuity (min 6 yrs), OR general up to 80% lump sum / min 20% annuity.
+  //    - Corpus > ₹12 Lakhs: Up to 80% lump sum / min 20% annuity.
+  // 2. Premature Exit:
+  //    - Corpus <= ₹5 Lakhs: 100% lump sum permitted.
+  //    - Corpus > ₹5 Lakhs: Max 20% lump sum / min 80% annuity.
+  let regulatoryExitCategory: "small_corpus_full_payout" | "corpus_8L_to_12L_special" | "standard_superannuation" | "premature_exit";
+  const exitOptionsAvailable: NPSExitOption[] = [];
 
-  // Regulatory limits:
-  // Superannuation (All Citizen): Max 80% lump sum, Min 20% annuity. Default 60% lump sum, 40% annuity.
-  // Premature exit: Max 20% lump sum, Min 80% annuity.
-  const maxPermittedLumpSumPct = isSmallCorpus ? 100 : (isPrematureExit ? 20 : NPS_CONSTANTS.superannuationMaxLumpSumPercent);
-  const minPermittedAnnuityPct = isSmallCorpus ? 0 : (isPrematureExit ? 80 : NPS_CONSTANTS.superannuationMinAnnuityPercent);
+  let maxPermittedLumpSumPct = 80;
+  let minPermittedAnnuityPct = 20;
 
-  const defaultLumpSumPct = isSmallCorpus ? 100 : 60;
+  if (isPrematureExit) {
+    if (totalCorpus <= NPS_CONSTANTS.smallCorpusPrematureExitLimit) { // <= 5L
+      regulatoryExitCategory = "small_corpus_full_payout";
+      maxPermittedLumpSumPct = 100;
+      minPermittedAnnuityPct = 0;
+      exitOptionsAvailable.push({
+        id: "small_premature_full",
+        name: "Small Corpus Premature Payout (≤ ₹5L)",
+        description: "100% lump sum withdrawal allowed without mandatory annuity purchase.",
+        maxLumpSumPercent: 100,
+        minAnnuityPercent: 0,
+      });
+    } else {
+      regulatoryExitCategory = "premature_exit";
+      maxPermittedLumpSumPct = 20;
+      minPermittedAnnuityPct = 80;
+      exitOptionsAvailable.push({
+        id: "standard_premature",
+        name: "Standard Premature Exit (> ₹5L)",
+        description: "Maximum 20% lump sum withdrawal, minimum 80% mandatory annuity purchase.",
+        maxLumpSumPercent: 20,
+        minAnnuityPercent: 80,
+      });
+    }
+  } else {
+    // Superannuation at 60
+    if (totalCorpus <= NPS_CONSTANTS.smallCorpusFullWithdrawalLimit) { // <= 8L
+      regulatoryExitCategory = "small_corpus_full_payout";
+      maxPermittedLumpSumPct = 100;
+      minPermittedAnnuityPct = 0;
+      exitOptionsAvailable.push({
+        id: "small_corpus_full",
+        name: "Small Corpus Full Exit (≤ ₹8 Lakh)",
+        description: "100% full lump sum withdrawal permitted without mandatory annuity purchase under PFRDA 2026 guidelines.",
+        maxLumpSumPercent: 100,
+        minAnnuityPercent: 0,
+      });
+    } else if (totalCorpus <= 1200000) { // > 8L and <= 12L
+      regulatoryExitCategory = "corpus_8L_to_12L_special";
+      exitOptionsAvailable.push(
+        {
+          id: "sur_6yr_split",
+          name: "₹6 Lakh Lump Sum + SUR / Annuity Split",
+          description: "Withdraw up to ₹6,00,000 lump sum and receive remaining balance through Systematic Unit Redemption (SUR) over minimum 6 years or annuity.",
+          maxLumpSumPercent: Math.min(100, (600000 / totalCorpus) * 100),
+          minAnnuityPercent: Math.max(0, 100 - (600000 / totalCorpus) * 100),
+          fixedLumpSumCap: 600000,
+        },
+        {
+          id: "standard",
+          name: "Standard Superannuation (80% Lump Sum / 20% Annuity)",
+          description: "Withdraw up to 80% lump sum and purchase mandatory annuity with at least 20% of corpus.",
+          maxLumpSumPercent: 80,
+          minAnnuityPercent: 20,
+        }
+      );
+      if (exitOptionChoice === "sur_6yr_split") {
+        maxPermittedLumpSumPct = Math.min(100, (600000 / totalCorpus) * 100);
+        minPermittedAnnuityPct = Math.max(0, 100 - maxPermittedLumpSumPct);
+      } else {
+        maxPermittedLumpSumPct = 80;
+        minPermittedAnnuityPct = 20;
+      }
+    } else {
+      regulatoryExitCategory = "standard_superannuation";
+      maxPermittedLumpSumPct = NPS_CONSTANTS.superannuationMaxLumpSumPercent; // 80%
+      minPermittedAnnuityPct = NPS_CONSTANTS.superannuationMinAnnuityPercent; // 20%
+      exitOptionsAvailable.push({
+        id: "standard",
+        name: "Standard Superannuation (> ₹12 Lakh)",
+        description: "Withdraw up to 80% as lump sum, minimum 20% mandatory annuity purchase.",
+        maxLumpSumPercent: 80,
+        minAnnuityPercent: 20,
+      });
+    }
+  }
+
+  const defaultLumpSumPct = totalCorpus <= 800000 ? 100 : (isPrematureExit ? 20 : 60);
   const userLumpSum = input.lumpSumWithdrawalPercent ?? defaultLumpSumPct;
   const safeLumpSumPct = Math.min(maxPermittedLumpSumPct, Math.max(0, safePositive(userLumpSum, defaultLumpSumPct)));
-  const safeAnnuityPct = isSmallCorpus ? Math.max(0, 100 - safeLumpSumPct) : Math.max(minPermittedAnnuityPct, 100 - safeLumpSumPct);
+  const safeAnnuityPct = Math.max(minPermittedAnnuityPct, 100 - safeLumpSumPct);
 
   const permittedLumpSumAmount = (totalCorpus * safeLumpSumPct) / 100;
   const annuityAmount = (totalCorpus * safeAnnuityPct) / 100;
 
-  // Tax treatment u/s 10(12A) (Income-tax Act, 2025):
-  // Up to 60% of total corpus is strictly TAX-FREE.
-  // Any lump sum chosen above 60% (e.g. up to 80% under PFRDA All Citizen rules, or 100% small corpus) is TAXABLE at slab rates.
+  // Statutory Tax Exemption u/s 10(12A):
+  // Up to 60% of total accumulated corpus is strictly TAX-FREE.
+  // Any lump sum chosen in excess of 60% is TAXABLE at marginal slab rates.
   const taxFreeLumpSumAmount = Math.min(permittedLumpSumAmount, (totalCorpus * NPS_CONSTANTS.taxFreeLumpSumPercent) / 100);
   const taxableLumpSumAmount = Math.max(0, permittedLumpSumAmount - taxFreeLumpSumAmount);
 
   const safeAnnuityRate = safePositive(assumedAnnuityYieldPercent, 6.5) / 100;
   const estimatedMonthlyPension = (annuityAmount * safeAnnuityRate) / 12;
 
-  // Tax deductions:
-  // 1. Section 80CCD(1B): ₹50,000 self contribution deduction available ONLY under Old Regime.
-  // 2. Section 80CCD(2): Employer contribution deduction (available in BOTH regimes).
+  // Tax Deductions:
+  // 1. 80CCD(1B): Self ₹50,000 deduction (Old Regime ONLY).
+  // 2. 80CCD(2): Employer deduction (Both regimes, subject to 14% / 10% salary ceiling).
   const safeTaxBracket = safePositive(taxBracketPercent, 30) / 100;
   const estimatedTaxOnLumpSum = Math.round(taxableLumpSumAmount * safeTaxBracket);
   const annualSelfContribution = safeContribution * 12;
-  const annualEmployerContribution = safeEmployerContribution * 12;
 
   const annual80Ccd1bSaved = regime === "old"
     ? Math.min(annualSelfContribution, NPS_CONSTANTS.sec80CCD1BMaxDeduction) * safeTaxBracket
     : 0;
 
-  const annual80Ccd2Saved = annualEmployerContribution * safeTaxBracket;
-  const totalAnnualTaxSaved = annual80Ccd1bSaved + annual80Ccd2Saved;
+  const taxSaving80CCD2 = Math.round(eligibleDeduction80CCD2 * safeTaxBracket);
+  const totalAnnualTaxSaved = annual80Ccd1bSaved + taxSaving80CCD2;
   const lifetimeTaxSaved = totalAnnualTaxSaved * totalYears;
 
   const yearlyProgression: NPSYearRow[] = [];
@@ -5953,11 +6145,11 @@ export function calcNPS(input: NPSInput): NPSOutput {
     });
   }
 
-  const taxTreatmentNote = isSmallCorpus
-    ? `Small corpus (≤ ₹${(smallCorpusLimit / 100000).toFixed(0)} Lakh): 100% lump sum exit permitted under PFRDA regulations. Under Section 10(12A), up to 60% (₹${Math.round(taxFreeLumpSumAmount).toLocaleString("en-IN")}) is strictly tax-free; the remaining 40% (₹${Math.round(taxableLumpSumAmount).toLocaleString("en-IN")}) is taxable at your applicable slab rate.`
+  const taxTreatmentNote = regulatoryExitCategory === "small_corpus_full_payout"
+    ? `Small corpus (≤ ₹${(totalCorpus <= 500000 && isPrematureExit ? 5 : 8)} Lakh): 100% lump sum exit permitted under PFRDA regulations. Under Section 10(12A), up to 60% (₹${Math.round(taxFreeLumpSumAmount).toLocaleString("en-IN")}) is strictly tax-free; the remaining 40% (₹${Math.round(taxableLumpSumAmount).toLocaleString("en-IN")}) is taxable at your applicable slab rate.`
     : taxableLumpSumAmount > 0
-      ? `Statutory Note: PFRDA permits up to ${safeLumpSumPct}% lump sum withdrawal. Section 10(12A) exempts up to 60% of total corpus (₹${Math.round(taxFreeLumpSumAmount).toLocaleString("en-IN")}). The remaining ₹${Math.round(taxableLumpSumAmount).toLocaleString("en-IN")} is added to your taxable income at retirement (Estimated tax: ₹${estimatedTaxOnLumpSum.toLocaleString("en-IN")}).`
-      : `Statutory Note: ${safeLumpSumPct}% lump sum (₹${Math.round(taxFreeLumpSumAmount).toLocaleString("en-IN")}) is 100% tax-free u/s 10(12A). Annuity income (₹${Math.round(estimatedMonthlyPension).toLocaleString("en-IN")}/mo) is taxable as salary/other income in the year of receipt.`;
+      ? `Statutory Note: PFRDA permits up to ${round2(safeLumpSumPct)}% lump sum withdrawal. Section 10(12A) exempts up to 60% of total corpus (₹${Math.round(taxFreeLumpSumAmount).toLocaleString("en-IN")}). The remaining ₹${Math.round(taxableLumpSumAmount).toLocaleString("en-IN")} is taxable at retirement (Estimated tax: ₹${estimatedTaxOnLumpSum.toLocaleString("en-IN")}).`
+      : `Statutory Note: ${round2(safeLumpSumPct)}% lump sum (₹${Math.round(taxFreeLumpSumAmount).toLocaleString("en-IN")}) is 100% tax-free u/s 10(12A). Annuity pension (₹${Math.round(estimatedMonthlyPension).toLocaleString("en-IN")}/mo) is taxable as income in the year of receipt.`;
 
   return {
     currentAge: safeAge,
@@ -5967,21 +6159,28 @@ export function calcNPS(input: NPSInput): NPSOutput {
     totalAmountInvested: Math.round(totalInvested),
     blendedExpectedReturnPercent: round2(blendedReturn),
     totalAccumulatedCorpus: Math.round(totalCorpus),
-    lumpSumWithdrawalPercent: safeLumpSumPct,
+    lumpSumWithdrawalPercent: round2(safeLumpSumPct),
     permittedLumpSumAmount: Math.round(permittedLumpSumAmount),
     lumpSumTaxFreeAmount: Math.round(taxFreeLumpSumAmount),
     taxableLumpSumAmount: Math.round(taxableLumpSumAmount),
     estimatedTaxOnLumpSum,
-    annuityReinvestmentPercent: safeAnnuityPct,
+    annuityReinvestmentPercent: round2(safeAnnuityPct),
     annuityPurchasedAmount: Math.round(annuityAmount),
     assumedAnnuityYieldPercent: round2(safeAnnuityRate * 100),
     estimatedMonthlyPension: Math.round(estimatedMonthlyPension),
+    actualEmployerContribution: Math.round(annualEmployerContribution),
+    eligibleSalaryFor80CCD2: Math.round(safeEligibleSalary),
+    salaryCap80CCD2Percent,
+    eligibleDeduction80CCD2: Math.round(eligibleDeduction80CCD2),
+    excessEmployerContributionNotDeductible: Math.round(excessEmployerContributionNotDeductible),
+    taxSaving80CCD2,
     annualTaxSavedUnder80CCD: Math.round(totalAnnualTaxSaved),
     annualTaxSavedUnder80CCD1B: Math.round(annual80Ccd1bSaved),
-    annualTaxSavedUnder80CCD2: Math.round(annual80Ccd2Saved),
+    annualTaxSavedUnder80CCD2: taxSaving80CCD2,
     lifetimeTaxSaved: Math.round(lifetimeTaxSaved),
     taxTreatmentNote,
     regulatoryExitCategory,
+    exitOptionsAvailable,
     yearlyProgression,
     isValid: true,
     summary: `NPS Corpus: ₹${Math.round(totalCorpus).toLocaleString("en-IN")} at Age ${safeRetirement} | Tax-Free Lump Sum: ₹${Math.round(taxFreeLumpSumAmount).toLocaleString("en-IN")} | Monthly Pension: ₹${Math.round(estimatedMonthlyPension).toLocaleString("en-IN")}/mo`,

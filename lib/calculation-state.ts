@@ -1,63 +1,123 @@
-const CODEC_VERSION = "1";
+/**
+ * Calculation State Serialization & Sharing Utility
+ *
+ * Provides safe, versioned URL-friendly encoding and decoding of calculation parameters
+ * with validation, Unicode preservation (including ₹ symbol), and protection against malformed payloads.
+ */
 
-export interface ScenarioSnapshot<T> {
-  id: string;
-  name: string;
-  inputs: T;
+export interface SerializedCalculationState<T = Record<string, unknown>> {
+  v: number; // Schema version
+  id: string; // Calculator route / identifier e.g. "sip", "tax"
+  ts: number; // Generation timestamp
+  data: T; // Input parameters
 }
 
-function encodeBase64(value: string): string {
-  if (typeof window !== "undefined") {
-    return window.btoa(encodeURIComponent(value));
+const CURRENT_SCHEMA_VERSION = 1;
+const MAX_DECODED_BYTES = 64 * 1024; // 64 KB safety ceiling
+
+/**
+ * Safely encodes calculation state to URL-safe Base64
+ */
+export function encodeCalculationState<T = Record<string, unknown>>(
+  calculatorId: string,
+  data: T,
+  version = CURRENT_SCHEMA_VERSION
+): string {
+  if (!calculatorId || typeof calculatorId !== "string") {
+    throw new Error("Invalid calculatorId: must be a non-empty string");
   }
-  return Buffer.from(value, "utf8").toString("base64");
-}
 
-function decodeBase64(value: string): string | null {
-  try {
-    if (typeof window !== "undefined") {
-      return decodeURIComponent(window.atob(value));
+  const payload: SerializedCalculationState<T> = {
+    v: version,
+    id: calculatorId.trim().toLowerCase(),
+    ts: Date.now(),
+    data,
+  };
+
+  const jsonString = JSON.stringify(payload);
+  // Robust UTF-8 to Base64 encoding supporting full Unicode spectrum
+  if (typeof window !== "undefined" && typeof window.btoa === "function") {
+    const bytes = new TextEncoder().encode(jsonString);
+    let binary = "";
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i]);
     }
-    return Buffer.from(value, "base64").toString("utf8");
-  } catch {
-    return null;
+    const base64 = window.btoa(binary);
+    return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  } else {
+    // Node.js fallback
+    return Buffer.from(jsonString, "utf-8")
+      .toString("base64")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
   }
 }
 
-function hasOnlyFiniteNumbers(value: unknown): boolean {
-  if (typeof value === "number") return Number.isFinite(value);
-  if (Array.isArray(value)) return value.every(hasOnlyFiniteNumbers);
-  if (value && typeof value === "object") return Object.values(value).every(hasOnlyFiniteNumbers);
-  return typeof value === "string" || typeof value === "boolean" || value === null;
-}
-
-export function encodeCalculationInputs<T extends Record<string, unknown>>(inputs: T): string {
-  return `?v=${CODEC_VERSION}&i=${encodeURIComponent(encodeBase64(JSON.stringify(inputs)))}`;
-}
-
-export function decodeCalculationInputs<T>(
-  search: string,
-  isValid: (value: unknown) => value is T,
-): T | null {
-  const params = new URLSearchParams(search);
-  if (params.get("v") !== CODEC_VERSION || !params.get("i") || [...params.keys()].some((key) => key !== "v" && key !== "i")) {
+/**
+ * Safely decodes a URL-safe Base64 calculation state with integrity checks
+ */
+export function decodeCalculationState<T = Record<string, unknown>>(
+  encoded: string
+): SerializedCalculationState<T> | null {
+  if (!encoded || typeof encoded !== "string") {
     return null;
   }
 
-  const decoded = decodeBase64(params.get("i")!);
-  if (!decoded) return null;
+  // Guard against massive payloads
+  if (encoded.length > MAX_DECODED_BYTES) {
+    return null;
+  }
 
   try {
-    const value: unknown = JSON.parse(decoded);
-    return hasOnlyFiniteNumbers(value) && isValid(value) ? value : null;
+    // Convert URL-safe base64 back to standard base64 with padding
+    let base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
+    while (base64.length % 4 !== 0) {
+      base64 += "=";
+    }
+
+    let jsonString = "";
+    if (typeof window !== "undefined" && typeof window.atob === "function") {
+      const binary = window.atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      jsonString = new TextDecoder().decode(bytes);
+    } else {
+      jsonString = Buffer.from(base64, "base64").toString("utf-8");
+    }
+
+    if (!jsonString || jsonString.length > MAX_DECODED_BYTES) {
+      return null;
+    }
+
+    const parsed = JSON.parse(jsonString);
+    if (!parsed || typeof parsed !== "object") {
+      return null;
+    }
+
+    if (typeof parsed.v !== "number" || typeof parsed.id !== "string" || !parsed.data) {
+      return null;
+    }
+
+    return parsed as SerializedCalculationState<T>;
   } catch {
     return null;
   }
 }
 
-export function saveScenario<T>(
-  items: ScenarioSnapshot<T>[],
-  next: ScenarioSnapshot<T>,
-): ScenarioSnapshot<T>[] {
-  return [...items.filter((item) => item.id !== next.id), next].slice(-3);
+/**
+ * Builds a complete shareable URL with embedded state
+ */
+export function buildShareableUrl<T = Record<string, unknown>>(
+  baseUrl: string,
+  route: string,
+  data: T
+): string {
+  const normalizedBase = baseUrl.replace(/\/+$/, "");
+  const normalizedRoute = route.replace(/^\/+/, "");
+  const encoded = encodeCalculationState(normalizedRoute, data);
+  return `${normalizedBase}/${normalizedRoute}?state=${encodeURIComponent(encoded)}`;
 }

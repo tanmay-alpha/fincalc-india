@@ -51,16 +51,16 @@ FinCalc India is a unified, statutorily verified mathematical engine complying w
 22. **NRI NRE vs NRO vs FCNR Deposit Comparator**: Triple-option yield comparator modeling 31.2% NRO TDS, 100% tax-free NRE repatriation, and USD FCNR exchange rate normalization.
 
 ### 4. 📈 Trading, Derivatives & Quantitative Risk
-23. **F&O Brokerage & STT Calculator**: Updated STT rates (0.02% on futures turnover, 0.1% on options premium turnover), exchange transaction charges, SEBI turnover fees, stamp duty, and 18% GST with breakeven ticks.
-24. **Option Strategy Payoff Visualizer**: Multi-leg Option Greeks & PnL payoff curve across underlying spot prices for Bull Call Spreads, Bear Put Spreads, Straddles, Strangles, and Iron Condors.
+23. **F&O Brokerage & STT Calculator**: Finance Act 2026 statutory rates (0.05% on futures sell turnover, 0.15% on options premium sell turnover, 0.15% on options exercise settlement value), exchange transaction charges, SEBI turnover fees, stamp duty, and 18% GST with breakeven tick analytics.
+24. **Option Strategy Payoff Visualizer**: Multi-leg Option Greeks & PnL payoff curves across underlying spot prices for Bull Call Spreads, Bear Put Spreads, Straddles, Strangles, and Iron Condors.
 25. **Black-Scholes Option Pricing & Greeks**: Exact European Call/Put pricing model with Delta, Gamma, Theta, Vega, and Rho analytical Greeks.
-26. **Position Size & Risk Calculator**: Fixed fractional risk management ($R\%$), stop-loss distance sizing, buying power allocation, and long/short trade inversion.
+26. **Position Size & Risk Calculator**: Fixed fractional risk management ($R\%$), stop-loss distance sizing, buying power allocation, and long/short trade risk inversion.
 27. **Futures & Options Margin Estimator**: SPAN margin + Exposure margin requirements across Nifty, BankNifty, FinNifty, and Equity derivatives with Margin Trading Facility (MTF) leverage costs.
 28. **Portfolio Risk & Performance Suite**: Sharpe Ratio, Sortino Ratio (with $\infty$ handling for zero downside), Downside Deviation ($\sigma_d$), empirical Beta ($\beta$), Treynor Ratio, and Maximum Drawdown.
 29. **Returns Suite (XIRR / CAGR / TWRR)**:
-    - **XIRR**: Money-weighted return for irregular cashflows using multi-start Newton-Raphson with bisection fallback.
+    - **XIRR**: Money-weighted return for irregular cashflows using multi-root scanning and Newton-Raphson solver.
     - **CAGR**: Point-to-point compound annual growth rate.
-    - **TWRR**: Time-weighted rate of return isolating fund manager alpha from cashflow timing.
+    - **TWRR**: Time-weighted rate of return isolating investment management alpha from cashflow timing.
 
 ### 5. 🏢 Corporate Finance & Valuation
 30. **DCF Valuation (Discounted Cash Flow)**: Multi-stage Free Cash Flow to Firm (FCFF) discounting, Gordon Growth terminal value, net debt bridge, and 2D WACC vs Terminal Growth sensitivity matrix.
