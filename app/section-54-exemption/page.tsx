@@ -6,13 +6,13 @@ import RelatedCalculators from "@/components/shared/RelatedCalculators";
 import CalculatorDisclaimer from "@/components/ui/CalculatorDisclaimer";
 
 export const metadata: Metadata = {
-  title: "Section 54, 54EC & 54F Capital Gains Exemption Planner — Tax Year 2026-27",
+  title: "Sections 82, 85 & 86 (formerly Sec 54, 54EC & 54F) Exemption Planner — Tax Year 2026-27",
   description:
-    "Calculate statutory capital gains exemptions under Section 54 (Residential house), Section 54EC (Specified bonds up to ₹50L), and Section 54F (Shares/Gold/Plot to House). Statutory eligibility depends strictly on the original asset sold.",
+    "Calculate statutory capital gains exemptions under the Income-tax Act, 2025: Section 82 (formerly Section 54 — Residential house), Section 85 (formerly Section 54EC — Specified bonds up to ₹50L), and Section 86 (formerly Section 54F — Other LTCG asset to house).",
   openGraph: {
-    title: "Section 54, 54EC & 54F Capital Gains Exemption Planner — Tax Year 2026-27 — FinCalc India",
+    title: "Sections 82, 85 & 86 (formerly Sec 54, 54EC & 54F) Exemption Planner — Tax Year 2026-27 — FinCalc India",
     description:
-      "Statutory capital gains tax exemption planner under Sections 54, 54EC, and 54F. Compare eligible routes based on the original asset sold under Tax Year 2026-27 rules.",
+      "Statutory capital gains exemption planner under the Income-tax Act, 2025 Sections 82, 85, and 86 (formerly Sections 54, 54EC, and 54F). Compare eligible routes based on the original asset sold.",
   },
 };
 
@@ -25,17 +25,17 @@ export default function Section54ExemptionPage() {
             items={[
               { label: "Home", href: "/" },
               { label: "Capital Gains Tax", href: "/capital-gains-tax" },
-              { label: "Section 54 / 54EC / 54F Planner" },
+              { label: "Sections 82, 85 & 86 (Sec 54 / 54EC / 54F)" },
             ]}
           />
           <div className="flex items-center gap-3 mb-1.5">
             <span className="text-3xl" aria-hidden="true">🏡</span>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
-              Section 54, 54EC & 54F Exemption Planner — Tax Year 2026-27
+              Sections 82, 85 & 86 Capital Gains Exemption Planner — Tax Year 2026-27
             </h1>
           </div>
-          <p className="text-muted-foreground text-sm mt-1 max-w-2xl">
-            Save tax on long-term capital gains by planning statutory reinvestment under Section 54 (residential house), Section 54EC (specified bonds up to ₹50L), or Section 54F (shares, gold, or plot reinvested into a residential house). Available statutory routes depend strictly on the original asset transferred.
+          <p className="text-muted-foreground text-sm mt-1 max-w-3xl leading-relaxed">
+            Statutory exemptions under the <strong>Income-tax Act, 2025 as amended by Finance Act, 2026</strong> (formerly Sections 54, 54EC & 54F of the 1961 Act). Plan reinvestment in a residential house (Section 82, up to ₹10 Cr), specified bonds (Section 85, up to ₹50L aggregate), or non-residential assets into a house (Section 86).
           </p>
         </div>
 

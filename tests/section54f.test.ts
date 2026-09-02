@@ -138,8 +138,8 @@ describe("Section 54F Capital Gains Statutory Exemption Tests (AY 2026-27)", () 
       expect(res.comparison?.worstStrategy).toBe("54EC");
       expect(res.comparison?.bestVsSecondBestTaxDifference).toBe(390000);
       expect(res.comparison?.taxDifference).toBe(390000);
-      expect(res.comparison?.recommendation).toContain("saves ₹3,90,000 more than the next-best option (Section 54EC Bonds");
-      expect(res.comparison?.recommendation).toContain("Note (54F): Ineligible: Section 54F is statutorily restricted to long-term capital assets other than a residential house");
+      expect(res.comparison?.recommendation).toContain("saves ₹3,90,000 more than the next-best option (Section 85 (formerly Section 54EC Bonds");
+      expect(res.comparison?.recommendation).toContain("Note (54F / Section 86): Ineligible: Section 86 (formerly Section 54F) is statutorily restricted to long-term capital assets other than a residential house");
     });
 
     it("Scenario B. Commercial property: 54 ineligible, 54EC eligible, 54F eligible", () => {
@@ -175,7 +175,7 @@ describe("Section 54F Capital Gains Statutory Exemption Tests (AY 2026-27)", () 
       expect(res.comparison?.worstStrategy).toBe("54F");
       expect(res.comparison?.bestVsSecondBestTaxDifference).toBe(325000);
       expect(res.comparison?.taxDifference).toBe(325000);
-      expect(res.comparison?.recommendation).toContain("Note (54): Ineligible: Section 54 is statutorily restricted to LTCG from the transfer of a residential house property");
+      expect(res.comparison?.recommendation).toContain("Note (54 / Section 82): Ineligible: Section 82 (formerly Section 54) is statutorily restricted to LTCG from the transfer of a residential house property");
     });
 
     it("Scenario C. Plot: 54 ineligible, 54EC eligible, 54F eligible (and tie_54ec_54f)", () => {
@@ -202,9 +202,9 @@ describe("Section 54F Capital Gains Statutory Exemption Tests (AY 2026-27)", () 
       expect(res.comparison?.section54f?.isStatutorilyEligible).toBe(true);
       expect(res.comparison?.bestStrategy).toBe("tie_54ec_54f");
       expect(res.comparison?.secondBestStrategy).toBe("none");
-      expect(res.comparison?.recommendation).toContain("Section 54EC Bonds (NHAI/REC/PFC/IRFC) and Section 54F (Reinvestment in House)");
+      expect(res.comparison?.recommendation).toContain("Section 85 (formerly Section 54EC Bonds (NHAI/REC/PFC/IRFC)) and Section 86 (formerly Section 54F (Reinvestment in House))");
       expect(res.comparison?.recommendation).toContain("provide equal tax savings");
-      expect(res.comparison?.recommendation).toContain("Note (54): Ineligible");
+      expect(res.comparison?.recommendation).toContain("Note (54 / Section 82): Ineligible");
     });
 
     it("Scenario D. Shares: 54 ineligible, 54EC ineligible, 54F eligible", () => {
@@ -237,9 +237,9 @@ describe("Section 54F Capital Gains Statutory Exemption Tests (AY 2026-27)", () 
       expect(res.comparison?.bestStrategy).toBe("54F");
       expect(res.comparison?.secondBestStrategy).toBe("none");
       expect(res.comparison?.worstStrategy).toBe("54F");
-      expect(res.comparison?.recommendation).toContain("Section 54F (Reinvestment in House) is the only eligible strategy");
-      expect(res.comparison?.recommendation).toContain("Note (54): Ineligible");
-      expect(res.comparison?.recommendation).toContain("Note (54EC): Ineligible: Section 54EC is statutorily restricted to capital gains arising from the transfer of land or building");
+      expect(res.comparison?.recommendation).toContain("Section 86 (formerly Section 54F (Reinvestment in House)) is the only eligible strategy");
+      expect(res.comparison?.recommendation).toContain("Note (54 / Section 82): Ineligible");
+      expect(res.comparison?.recommendation).toContain("Note (54EC / Section 85): Ineligible: Section 85 (formerly Section 54EC) is statutorily restricted to capital gains arising from the transfer of land or building");
     });
 
     it("Scenario E. Gold: 54 ineligible, 54EC ineligible, 54F eligible", () => {
@@ -283,7 +283,7 @@ describe("Section 54F Capital Gains Statutory Exemption Tests (AY 2026-27)", () 
       expect(res.comparison?.section54.isStatutorilyEligible).toBe(true);
       expect(res.comparison?.section54f?.isStatutorilyEligible).toBe(false);
       expect(res.comparison?.section54f?.exemptionAllowed).toBe(0);
-      expect(res.comparison?.section54f?.ineligibilityReason).toContain("Section 54F is statutorily restricted to long-term capital assets other than a residential house");
+      expect(res.comparison?.section54f?.ineligibilityReason).toContain("Section 86 (formerly Section 54F) is statutorily restricted to long-term capital assets other than a residential house");
       expect(res.comparison?.bestStrategy).toBe("54");
     });
 
@@ -301,7 +301,7 @@ describe("Section 54F Capital Gains Statutory Exemption Tests (AY 2026-27)", () 
       expect(res.comparison?.section54ec.isStatutorilyEligible).toBe(false);
       expect(res.comparison?.section54ec.isValidTimeline).toBe(true);
       expect(res.comparison?.section54ec.exemptionAllowed).toBe(0);
-      expect(res.comparison?.section54ec.ineligibilityReason).toContain("statutorily restricted to capital gains arising from the transfer of land or building");
+      expect(res.comparison?.section54ec.ineligibilityReason).toContain("Section 85 (formerly Section 54EC) is statutorily restricted to capital gains arising from the transfer of land or building");
       expect(res.comparison?.bestStrategy).toBe("none"); // 54F also not configured
     });
 
@@ -318,7 +318,7 @@ describe("Section 54F Capital Gains Statutory Exemption Tests (AY 2026-27)", () 
       });
 
       expect(res.comparison?.section54f?.disqualified).toBe(true);
-      expect(res.comparison?.section54f?.disqualificationReason).toContain("Net Sale Consideration is required for Section 54F proportionate exemption calculation in Compare mode");
+      expect(res.comparison?.section54f?.disqualificationReason).toContain("Net Sale Consideration is required for Section 86 (formerly Section 54F) proportionate exemption calculation in Compare mode");
       expect(res.comparison?.section54f?.exemptionAllowed).toBe(0);
       expect(res.comparison?.bestStrategy).toBe("none");
     });
@@ -345,9 +345,77 @@ describe("Section 54F Capital Gains Statutory Exemption Tests (AY 2026-27)", () 
       expect(res.comparison?.worstStrategy).toBe("none");
       expect(res.comparison?.taxDifference).toBe(0);
       expect(res.comparison?.recommendation).toContain("No eligible statutory exemption strategy available for residential house property");
-      expect(res.comparison?.recommendation).toContain("Note (54): Invalid purchase timeline");
-      expect(res.comparison?.recommendation).toContain("Note (54EC): Invalid timeline");
-      expect(res.comparison?.recommendation).toContain("Note (54F): Ineligible");
+      expect(res.comparison?.recommendation).toContain("Note (54 / Section 82): Invalid purchase timeline");
+      expect(res.comparison?.recommendation).toContain("Note (54EC / Section 85): Invalid timeline");
+      expect(res.comparison?.recommendation).toContain("Note (54F / Section 86): Ineligible");
+    });
+  });
+
+  describe("Section 82 Once-in-a-Lifetime Two-Residential-House Option Tests", () => {
+    it("permits combined investment in two residential houses when LTCG <= ₹2 Crore and option never previously exercised", () => {
+      // Capital gain = ₹1.8 Crore (<= ₹2 Cr)
+      // House 1: ₹1.2 Crore, House 2: ₹60 Lakh -> Total ₹1.8 Crore
+      const res = calcSection54Exemption({
+        sectionType: "section_54_property",
+        capitalGainsAmount: 18000000,
+        section54InvestmentAmount: 12000000, // House 1
+        secondPropertyInvestmentAmount: 6000000, // House 2
+        useTwoResidentialHousesOption: true,
+        twoHousesOptionExercisedPreviously: false,
+        propertyMode: "purchase",
+        propertyTimelineMonths: 12,
+      });
+
+      expect(res.activeResult.isStatutorilyEligible).toBe(true);
+      expect(res.activeResult.twoHousesOptionApplied).toBe(true);
+      expect(res.activeResult.investmentAmount).toBe(18000000);
+      expect(res.activeResult.exemptionAllowed).toBe(18000000);
+      expect(res.activeResult.taxAfterExemption).toBe(0);
+      expect(res.activeResult.twoHousesOptionMessage).toContain("Once-in-a-lifetime Section 82 option applied");
+    });
+
+    it("rejects two-house option when capital gain exceeds ₹2 Crore, restricting exemption to single house", () => {
+      // Capital gain = ₹2.5 Crore (> ₹2 Cr statutory ceiling)
+      // House 1: ₹1.5 Crore, House 2: ₹1.0 Crore
+      const res = calcSection54Exemption({
+        sectionType: "section_54_property",
+        capitalGainsAmount: 25000000,
+        section54InvestmentAmount: 15000000,
+        secondPropertyInvestmentAmount: 10000000,
+        useTwoResidentialHousesOption: true,
+        twoHousesOptionExercisedPreviously: false,
+        propertyMode: "purchase",
+        propertyTimelineMonths: 12,
+      });
+
+      expect(res.activeResult.isStatutorilyEligible).toBe(true);
+      expect(res.activeResult.twoHousesOptionApplied).toBe(false);
+      // Only House 1 is eligible: ₹1.5 Crore
+      expect(res.activeResult.investmentAmount).toBe(15000000);
+      expect(res.activeResult.exemptionAllowed).toBe(15000000);
+      expect(res.activeResult.taxableGainsRemaining).toBe(10000000);
+      expect(res.activeResult.twoHousesOptionMessage).toContain("statutorily restricted to cases where Long-Term Capital Gains do not exceed ₹2 Crore");
+    });
+
+    it("rejects two-house option when taxpayer previously exercised it in any prior tax year", () => {
+      // Capital gain = ₹1.5 Crore (<= ₹2 Cr), but already exercised once
+      const res = calcSection54Exemption({
+        sectionType: "section_54_property",
+        capitalGainsAmount: 15000000,
+        section54InvestmentAmount: 10000000,
+        secondPropertyInvestmentAmount: 5000000,
+        useTwoResidentialHousesOption: true,
+        twoHousesOptionExercisedPreviously: true, // Previously exercised
+        propertyMode: "purchase",
+        propertyTimelineMonths: 12,
+      });
+
+      expect(res.activeResult.isStatutorilyEligible).toBe(true);
+      expect(res.activeResult.twoHousesOptionApplied).toBe(false);
+      // Only single house permitted
+      expect(res.activeResult.investmentAmount).toBe(10000000);
+      expect(res.activeResult.exemptionAllowed).toBe(10000000);
+      expect(res.activeResult.twoHousesOptionMessage).toContain("strictly once-in-a-lifetime");
     });
   });
 });
