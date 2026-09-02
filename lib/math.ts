@@ -1719,6 +1719,7 @@ export function calcTax(input: TaxInput): TaxOutput {
     (input.salaryIncome ?? input.grossIncome ?? 0) +
     (input.interestAndOtherIncome ?? 0) +
     (input.businessIncome ?? 0) +
+    (input.dividendIncome ?? 0) +   // Bug 1 fix: dividendIncome was excluded from gross
     (input.equityLtcg ?? 0) +
     (input.equityStcg ?? 0) +
     (input.otherLtcg ?? 0);
@@ -3968,17 +3969,47 @@ export function calcSection54Exemption(input: Section54ExemptionInput): Section5
 
   let comparison: Section54ExemptionOutput["comparison"] | undefined = undefined;
   if (sectionType === "compare_both") {
-    const taxDiff = Math.abs(s54Result.taxAfterExemption - s54ecResult.taxAfterExemption);
+    // Bug 3 fix: rank ALL THREE strategies — 54, 54EC, 54F — not just 54 vs 54EC.
+    // Collect all eligible (non-disqualified) strategies and find the best (lowest tax after exemption).
+    type RankedStrategy = { label: string; result: Section54SingleExemptionResult };
+    const eligibleStrategies: RankedStrategy[] = [
+      { label: "Section 54 (Residential Property)", result: s54Result },
+      { label: "Section 54EC Bonds (NHAI/REC/PFC/IRFC)", result: s54ecResult },
+      ...(!s54fResult.disqualified ? [{ label: "Section 54F (Any Long-Term Asset → Residential Property)", result: s54fResult }] : []),
+    ];
+
+    // Sort ascending by taxAfterExemption (lower = better)
+    const sorted = [...eligibleStrategies].sort(
+      (a, b) => a.result.taxAfterExemption - b.result.taxAfterExemption
+    );
+    const best = sorted[0];
+    const worst = sorted[sorted.length - 1];
+    // taxDifference = span between best and worst eligible strategy
+    const taxDiff = worst.result.taxAfterExemption - best.result.taxAfterExemption;
+
     let rec = "";
-    if (s54Result.taxAfterExemption < s54ecResult.taxAfterExemption) {
-      rec = `Section 54 (Residential Property) saves ₹${taxDiff.toLocaleString("en-IN")} more in taxes because it covers gains beyond the ₹50 Lakh statutory cap of Section 54EC bonds.`;
-    } else if (s54ecResult.taxAfterExemption < s54Result.taxAfterExemption) {
-      rec = `Section 54EC Bonds save ₹${taxDiff.toLocaleString("en-IN")} more in taxes given your current investment amounts.`;
+    if (eligibleStrategies.length === 1) {
+      // Only one strategy is eligible
+      rec = `${best.label} is the only eligible strategy for your situation. Tax after exemption: ₹${best.result.taxAfterExemption.toLocaleString("en-IN")}.`;
+    } else if (taxDiff === 0) {
+      rec = `All eligible strategies provide equal tax savings of ₹${best.result.taxSaved.toLocaleString("en-IN")}. ${
+        !s54fResult.disqualified
+          ? "Consider Section 54F if the transferred asset is not a residential house."
+          : "Section 54EC bonds offer the simplest path (no new property required)."
+      }`;
     } else {
-      rec = `Both Section 54 and Section 54EC provide equal tax savings of ₹${s54Result.taxSaved.toLocaleString("en-IN")}. Section 54EC offers zero real estate hassle with a 5-year bond lock-in.`;
+      rec = `${best.label} saves ₹${taxDiff.toLocaleString("en-IN")} more than the next-best option (${sorted[1].label}). `;
+      if (best.result.section === "54EC") {
+        rec += "Bond investment is simpler than buying a new property and avoids real-estate execution risk.";
+      } else if (best.result.section === "54F") {
+        rec += "Section 54F applies proportionate exemption when the full net sale consideration is reinvested; partial reinvestment reduces the exemption proportionately.";
+      } else {
+        rec += "Section 54 covers gains beyond the ₹50 Lakh statutory cap of Section 54EC bonds.";
+      }
     }
-    if (s54fResult.disqualified) {
-      rec += ` Note: ${s54fResult.disqualificationReason}`;
+    // Always append 54F disqualification reason if it was excluded
+    if (s54fResult.disqualified && s54fResult.disqualificationReason) {
+      rec += ` Note (54F): ${s54fResult.disqualificationReason}`;
     }
 
     comparison = {

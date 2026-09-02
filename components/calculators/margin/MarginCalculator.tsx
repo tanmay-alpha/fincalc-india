@@ -115,9 +115,9 @@ export default function MarginCalculator() {
                 <option value="nifty_futures">Nifty 50 Index Futures (10.5% SPAN + 2% Exposure)</option>
                 <option value="banknifty_futures">Bank Nifty Futures (12.5% SPAN + 2.5% Exposure)</option>
                 <option value="finnifty_futures">FinNifty Futures (11.0% SPAN + 2% Exposure)</option>
-                <option value="tier1_equity">Tier-1 Large Cap Stock MTF (20% SPAN + 3.5% Exposure)</option>
-                <option value="tier2_equity">Tier-2 Mid Cap Stock MTF (25% SPAN + 5% Exposure)</option>
-                <option value="intraday_equity">Intraday MIS Cash Equity (5x Max SEBI Leverage)</option>
+                <option value="tier1_equity">Tier-1 Large Cap Stock Futures (14% SPAN + 3.5% Exposure)</option>
+                <option value="tier2_equity">Tier-2 Mid/Small Cap Stock Futures (20% SPAN + 5% Exposure)</option>
+                <option value="intraday_equity">Intraday MIS Cash Equity (15% SPAN + 5% Exposure / 5x SEBI Cap)</option>
                 <option value="custom">Custom SPAN + Exposure Rates</option>
               </select>
             </div>

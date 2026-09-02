@@ -44,6 +44,8 @@ export default function NpsCalculator() {
   const [exitOptionChoice, setExitOptionChoice] = useState<"standard" | "sur_6yr_split">("standard");
   const [showAdvancedTax, setShowAdvancedTax] = useState(false);
   const [shareId, setShareId] = useState<string | null>(null);
+  // Bug 4 fix: max allowed lump-sum is engine-driven (e.g. 100% for small corpus, 80% standard)
+  const [maxAllowedLumpSum, setMaxAllowedLumpSum] = useState(80);
 
   useEffect(() => {
     setMounted(true);
@@ -96,6 +98,18 @@ export default function NpsCalculator() {
   const debouncedInputs = useDebounce(inputs, 150);
   const result = useMemo(() => calcNPS(debouncedInputs), [debouncedInputs]);
   const insights = useMemo(() => getNPSInsights(result), [result]);
+
+  // Bug 4 fix: sync slider cap from engine's regulatory exit category
+  useEffect(() => {
+    const engineMax = result.exitOptionsAvailable[0]?.maxLumpSumPercent ?? 80;
+    const newMax = Math.round(Math.min(100, Math.max(0, engineMax)));
+    setMaxAllowedLumpSum(newMax);
+    // Clamp the user's current selection if it now exceeds the regulatory cap
+    if (lumpSumWithdrawalPercent > newMax) {
+      setLumpSumWithdrawalPercent(newMax);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result.exitOptionsAvailable]);
 
   if (!mounted) {
     return <CalcPageSkeleton />;
@@ -220,17 +234,21 @@ export default function NpsCalculator() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <HybridInput
                   label="Lump Sum Withdrawal (%)"
-                  hint="PFRDA permits up to 80% (60% tax-free u/s 10(12A), remaining 20% taxable)"
+                  hint={
+                    maxAllowedLumpSum === 100
+                      ? "Small corpus (<₹6L): PFRDA allows 100% lump sum (fully tax-free)"
+                      : `PFRDA permits up to ${maxAllowedLumpSum}% (60% tax-free u/s 10(12A), remaining taxable)`
+                  }
                   value={lumpSumWithdrawalPercent}
                   onChange={setLumpSumWithdrawalPercent}
                   min={0}
-                  max={80}
+                  max={maxAllowedLumpSum}
                   step={5}
                   suffix="%"
                   quickChips={[
-                    { label: "60% (Tax-Free)", value: 60 },
-                    { label: "70%", value: 70 },
-                    { label: "80% (Max)", value: 80 },
+                    ...(maxAllowedLumpSum >= 60 ? [{ label: "60% (Tax-Free)", value: 60 }] : []),
+                    ...(maxAllowedLumpSum >= 70 ? [{ label: "70%", value: 70 }] : []),
+                    { label: `${maxAllowedLumpSum}% (Max)`, value: maxAllowedLumpSum },
                   ]}
                 />
 

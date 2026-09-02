@@ -3594,8 +3594,116 @@ describe('calcNPS', () => {
     expect(res.lifetimeTaxSaved).toBe(res.annualTaxSavedUnder80CCD * 30)
   })
 })
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  REGRESSION TESTS — Engine Freeze Audit V4.1 Corrections
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+/**
+ * Bug 1 Regression: calcTax dividendIncome must be included in totalEffectiveGross.
+ * Without the fix, grossIncome, effectiveRate, and monthlyTakeHome were understated
+ * when dividend income was present.
+ */
+describe('calcTax — Bug 1 Regression: dividendIncome included in grossIncome', () => {
+  it('grossIncome includes dividendIncome so effectiveRate and monthlyTakeHome are correct', () => {
+    // Salary: ₹10L, Dividend: ₹5L, Regime: new
+    // totalEffectiveGross must be ₹15L (not ₹10L)
+    const result = calcTax({
+      salaryIncome: 1000000,
+      dividendIncome: 500000,
+      regime: 'new',
+    })
+    // grossIncome in output must equal salary + dividend (ignoring CG which are 0 here)
+    expect(result.grossIncome).toBe(1500000)
 
+    // monthlyTakeHome must be (totalEffectiveGross - totalTax) / 12
+    const expectedMonthly = Math.round((1500000 - result.totalTax) / 12)
+    expect(result.monthlyTakeHome).toBe(expectedMonthly)
 
+    // effectiveRate must use totalEffectiveGross (15L) not just salary (10L)
+    const expectedRate = Math.round((result.totalTax / 1500000) * 10000) / 100
+    expect(result.effectiveRate).toBeCloseTo(expectedRate, 1)
 
+    // dividendIncome is reflected in the output field
+    expect(result.dividendIncome).toBe(500000)
+  })
+
+  it('grossIncome with ONLY dividend income (no salary) is correct', () => {
+    const result = calcTax({
+      dividendIncome: 800000,
+      regime: 'new',
+    })
+    // No salary → no standard deduction. dividendIncome goes into otherGross.
+    expect(result.grossIncome).toBe(800000)
+    expect(result.dividendIncome).toBe(800000)
+    // monthlyTakeHome must be (800000 - totalTax) / 12
+    const expected = Math.round((800000 - result.totalTax) / 12)
+    expect(result.monthlyTakeHome).toBe(expected)
+  })
+})
+
+/**
+ * Bug 3 Regression: Section 54 compare-all must rank all three strategies (54, 54EC, 54F).
+ * Without the fix, 54F was computed but not considered in the recommendation or taxDifference.
+ */
+describe('calcSection54Exemption — Bug 3 Regression: compare-all ranks 54, 54EC, and 54F', () => {
+  it('when 54F provides full exemption and 54EC is capped, recommendation correctly names 54F as best', () => {
+    // Scenario: Large LTCG of ₹1 Crore.
+    // Section 54: invest 1Cr in residential house → exemption 1Cr, tax = 0
+    // Section 54EC: only 50L cap → 50L taxable, tax = 6.5L
+    // Section 54F: invest 1Cr, netSaleConsideration = 1Cr → full proportionate exemption, tax = 0
+    const result = calcSection54Exemption({
+      capitalGainsAmount: 10000000, // ₹1Cr LTCG
+      sectionType: 'compare_both',
+      propertyInvestmentAmount: 10000000,
+      propertyMode: 'purchase',
+      propertyTimelineMonths: 12,
+      bondsInvestmentAmount: 5000000,  // 54EC capped at ₹50L
+      bondsTimelineMonths: 3,
+      netSaleConsideration: 10000000,  // required for proportionate 54F calc
+      existingResidentialHousesCount: 0, // 54F eligible
+    })
+
+    expect(result.comparison).toBeDefined()
+    // 54 provides full exemption
+    expect(result.comparison?.section54.taxAfterExemption).toBe(0)
+    // 54EC is capped at 50L, so 50L taxable → 6.5L tax
+    expect(result.comparison?.section54ec.taxAfterExemption).toBe(650000)
+    // 54F provides full exemption (invAmount >= netSaleConsideration)
+    expect(result.comparison?.section54f?.taxAfterExemption).toBe(0)
+    expect(result.comparison?.section54f?.disqualified).toBe(false)
+
+    // taxDifference = worst (54EC=6.5L) - best (0) = 6.5L
+    expect(result.comparison?.taxDifference).toBe(650000)
+
+    // Recommendation must NOT say only "54 saves over 54EC" — it must acknowledge all strategies
+    const rec = result.comparison?.recommendation ?? ''
+    expect(rec.length).toBeGreaterThan(20)
+    // The best strategy (54 or 54F — both at 0) is mentioned
+    expect(rec).toMatch(/Section 54|Section 54F|equal/)
+  })
+
+  it('when 54F is disqualified, compare-all recommendation still works correctly with 54 vs 54EC only', () => {
+    const result = calcSection54Exemption({
+      capitalGainsAmount: 5000000,
+      sectionType: 'compare_both',
+      propertyInvestmentAmount: 5000000,
+      propertyMode: 'purchase',
+      propertyTimelineMonths: 6,
+      bondsInvestmentAmount: 5000000,
+      bondsTimelineMonths: 3,
+      existingResidentialHousesCount: 2, // 54F disqualified: owns 2 houses
+    })
+
+    expect(result.comparison).toBeDefined()
+    expect(result.comparison?.section54f?.disqualified).toBe(true)
+    // taxDifference should be between 54 and 54EC only (54F excluded)
+    const diff54vs54ec = Math.abs(
+      (result.comparison?.section54.taxAfterExemption ?? 0) -
+      (result.comparison?.section54ec.taxAfterExemption ?? 0)
+    )
+    expect(result.comparison?.taxDifference).toBe(diff54vs54ec)
+    // Disqualification reason is appended to recommendation
+    expect(result.comparison?.recommendation).toContain('54F')
+  })
+})
 
