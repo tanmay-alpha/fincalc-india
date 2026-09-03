@@ -57,6 +57,9 @@ jobs:
       - name: Verify Migration Deployment Status
         run: npx prisma migrate status
 
+      - name: Verify Prisma Schema and Migration Drift Check
+        run: npx prisma migrate diff --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --exit-code
+
       - name: ESLint Code Quality Check
         run: npm run lint
 
