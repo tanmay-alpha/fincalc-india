@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 
 // Shared results are public to anyone with the link. Make sure the page is
@@ -17,7 +18,7 @@ export default async function ResultPage({
   const { shareId } = await params;
 
   if (!SHARE_ID_PATTERN.test(shareId)) {
-    return <NotFoundShell />;
+    notFound();
   }
 
   const calc = await prisma.calculation
@@ -34,7 +35,7 @@ export default async function ResultPage({
     .catch(() => null);
 
   if (!calc) {
-    return <NotFoundShell />;
+    notFound();
   }
 
   const calcTypeNames: Record<string, string> = {

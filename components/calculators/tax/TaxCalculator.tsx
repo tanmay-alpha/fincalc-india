@@ -268,7 +268,12 @@ export default function TaxCalculator() {
                   <span>{r === "new" ? "⚡ New Regime" : "📋 Old Regime"}</span>
                   {inputs.regime === r && <span className="text-xs font-bold">✓</span>}
                 </div>
-                <span className="block text-[11px] font-normal opacity-85 mt-0.5">
+                <span
+                  className={clsx(
+                    "block text-[11px] font-medium mt-0.5",
+                    inputs.regime === r ? "text-white" : "text-slate-600 dark:text-slate-400"
+                  )}
+                >
                   {r === "new" ? "₹75,000 std ded + ₹12L rebate" : "Itemized Chapter VI-A deductions"}
                 </span>
               </button>
@@ -410,9 +415,9 @@ export default function TaxCalculator() {
             </div>
             <div
               className={clsx(
-                "mt-4 rounded-xl p-3 text-xs sm:text-sm text-center font-medium",
+                "mt-4 rounded-xl p-3 text-xs sm:text-sm text-center font-semibold",
                 results.comparison.savings > 0
-                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                  ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800"
                   : "bg-muted text-muted-foreground"
               )}
             >
@@ -424,8 +429,8 @@ export default function TaxCalculator() {
 
           {/* 80C Tax Saving Suggestion (Engine Recomputed) */}
           {inputs.regime === "old" && (inputs.deduction80C ?? 0) < 150000 && potential80CSavings > 0 && (
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
-              <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+            <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-4">
+              <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
                 💡 Recomputed Tax-Saving Opportunity
               </p>
               <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
