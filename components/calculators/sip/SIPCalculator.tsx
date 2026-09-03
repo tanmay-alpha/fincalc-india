@@ -16,6 +16,7 @@ import { generateSIPInsights } from "@/lib/insights";
 import { useDebounce } from "@/hooks/useDebounce";
 import { SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
+import SIPScenarioMilestones from "@/components/calculators/sip/SIPScenarioMilestones";
 
 const SIPChart = dynamic(
   () => import("@/components/calculators/sip/SIPChart"),
@@ -189,6 +190,16 @@ export default function SIPCalculator() {
               <InsightCard key={i} {...ins} />
             ))}
           </div>
+
+          {/* Interactive Milestone Roadmap & Scenarios */}
+          <SIPScenarioMilestones
+            monthlyAmount={debouncedInputs.monthlyAmount}
+            annualRate={debouncedInputs.annualRate}
+            years={debouncedInputs.years}
+            totalCorpus={results.totalCorpus}
+            totalInvested={results.totalInvested}
+            estimatedReturns={results.estimatedReturns}
+          />
 
           {/* Growth Projection Chart */}
           <div className="bg-card rounded-2xl border border-border/80 p-5 sm:p-6 shadow-sm">
