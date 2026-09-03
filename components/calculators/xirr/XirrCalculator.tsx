@@ -179,6 +179,7 @@ export default function XirrCalculator() {
                 >
                   <input
                     type="date"
+                    aria-label={`Cash flow ${idx + 1} date`}
                     value={cf.date}
                     onChange={(e) => handleUpdateRow(idx, "date", e.target.value)}
                     className="bg-card border border-border/60 rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary w-36"
@@ -189,6 +190,7 @@ export default function XirrCalculator() {
                     </span>
                     <input
                       type="number"
+                      aria-label={`Cash flow ${idx + 1} amount`}
                       value={cf.amount}
                       onChange={(e) =>
                         handleUpdateRow(idx, "amount", parseFloat(e.target.value) || 0)
@@ -199,6 +201,7 @@ export default function XirrCalculator() {
                   </div>
                   <button
                     type="button"
+                    aria-label={`Delete cash flow ${idx + 1}`}
                     onClick={() => handleRemoveRow(idx)}
                     disabled={cashflows.length <= 2}
                     className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
@@ -432,6 +435,7 @@ export default function XirrCalculator() {
                     <span>Period {idx + 1}</span>
                     <button
                       type="button"
+                      aria-label={`Delete period ${idx + 1}`}
                       onClick={() => handleRemoveTwrrRow(idx)}
                       disabled={twrrPeriods.length <= 1}
                       className="text-muted-foreground hover:text-destructive disabled:opacity-30"
@@ -444,6 +448,7 @@ export default function XirrCalculator() {
                       <label className="text-[10px] text-muted-foreground block">Start Value</label>
                       <input
                         type="number"
+                        aria-label={`Period ${idx + 1} Start Value`}
                         value={p.startValue}
                         onChange={(e) => handleUpdateTwrrRow(idx, "startValue", parseFloat(e.target.value) || 0)}
                         className="w-full bg-card border border-border/60 rounded-lg px-2 py-1 text-xs text-foreground font-mono"
@@ -453,6 +458,7 @@ export default function XirrCalculator() {
                       <label className="text-[10px] text-muted-foreground block">Net Cashflow</label>
                       <input
                         type="number"
+                        aria-label={`Period ${idx + 1} Net Cashflow`}
                         value={p.netCashflow}
                         onChange={(e) => handleUpdateTwrrRow(idx, "netCashflow", parseFloat(e.target.value) || 0)}
                         className="w-full bg-card border border-border/60 rounded-lg px-2 py-1 text-xs text-foreground font-mono"
@@ -463,6 +469,7 @@ export default function XirrCalculator() {
                       <label className="text-[10px] text-muted-foreground block">End Value</label>
                       <input
                         type="number"
+                        aria-label={`Period ${idx + 1} End Value`}
                         value={p.endValue}
                         onChange={(e) => handleUpdateTwrrRow(idx, "endValue", parseFloat(e.target.value) || 0)}
                         className="w-full bg-card border border-border/60 rounded-lg px-2 py-1 text-xs text-foreground font-mono"

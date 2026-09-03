@@ -165,7 +165,10 @@ export async function generateMetadata({
   const { shareId } = await params;
 
   if (!SHARE_ID_PATTERN.test(shareId)) {
-    notFound();
+    return {
+      title: "Calculation Not Found",
+      robots: { index: false, follow: false },
+    };
   }
 
   const calc = await prisma.calculation
@@ -176,7 +179,10 @@ export async function generateMetadata({
     .catch(() => null);
 
   if (!calc) {
-    notFound();
+    return {
+      title: "Calculation Not Found",
+      robots: { index: false, follow: false },
+    };
   }
 
   const typeNames: Record<string, string> = {

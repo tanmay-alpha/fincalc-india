@@ -69,10 +69,12 @@ export default function LrsTcsCalculator() {
 
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-foreground">
+              <label htmlFor="remittance-purpose-category" className="text-xs font-semibold text-foreground">
                 Remittance Purpose Category
               </label>
               <select
+                id="remittance-purpose-category"
+                aria-label="Remittance Purpose Category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value as LrsCategory)}
                 className="w-full bg-card border border-border/60 rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
