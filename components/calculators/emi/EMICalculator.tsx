@@ -159,7 +159,12 @@ export default function EMICalculator() {
               <div className="px-6 py-4 border-b border-border">
                 <h3 className="font-semibold text-card-foreground">Amortization Schedule</h3>
               </div>
-              <div className="overflow-x-auto">
+              <div
+                className="overflow-x-auto"
+                tabIndex={0}
+                role="region"
+                aria-label="Amortization Schedule Table"
+              >
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="table-head">

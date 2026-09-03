@@ -160,7 +160,12 @@ export default function SIPCalculator() {
                   Year-by-Year Breakdown
                 </h3>
               </div>
-              <div className="overflow-x-auto">
+              <div
+                className="overflow-x-auto"
+                tabIndex={0}
+                role="region"
+                aria-label="Year-by-Year Breakdown Table"
+              >
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="table-head">

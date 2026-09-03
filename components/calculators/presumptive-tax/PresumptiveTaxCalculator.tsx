@@ -418,7 +418,12 @@ export default function PresumptiveTaxCalculator() {
                 </h3>
               </div>
 
-              <div className="overflow-x-auto">
+              <div
+                className="overflow-x-auto"
+                tabIndex={0}
+                role="region"
+                aria-label="Presumptive vs Actual Profit Comparison Table"
+              >
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-border text-muted-foreground text-left">

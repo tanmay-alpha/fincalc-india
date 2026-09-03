@@ -165,7 +165,12 @@ export default function LumpsumCalculator() {
               <div className="px-6 py-4 border-b border-border">
                 <h3 className="font-semibold text-card-foreground">Year-by-Year Growth</h3>
               </div>
-              <div className="overflow-x-auto">
+              <div
+                className="overflow-x-auto"
+                tabIndex={0}
+                role="region"
+                aria-label="Year-by-Year Growth Table"
+              >
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="table-head">

@@ -472,7 +472,12 @@ export default function TaxCalculator() {
             <div className="px-6 py-4 border-b border-border">
               <h3 className="font-semibold text-card-foreground">Detailed Statutory Breakdown</h3>
             </div>
-            <div className="overflow-x-auto">
+            <div
+              className="overflow-x-auto"
+              tabIndex={0}
+              role="region"
+              aria-label="Detailed Statutory Breakdown Table"
+            >
               <table className="w-full text-sm">
                 <thead>
                   <tr className="table-head">
