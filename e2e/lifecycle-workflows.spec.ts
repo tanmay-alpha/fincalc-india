@@ -88,7 +88,7 @@ test.describe.serial("Calculation Lifecycle E2E Workflows", () => {
 
       // Visit public result page in browser
       await page.goto(`/result/${shareToken}`, { waitUntil: "domcontentloaded" });
-      const heading = page.locator("h1");
+      const heading = page.locator("h1").first();
       await expect(heading).toBeVisible();
 
       const bodyText = await page.innerText("body");

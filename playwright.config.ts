@@ -1,5 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const PORT = process.env.PORT || "3000";
+const BASE_URL = process.env.PLAYWRIGHT_TEST_BASE_URL || `http://localhost:${PORT}`;
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -9,7 +12,7 @@ export default defineConfig({
   timeout: 45000,
   reporter: "list",
   use: {
-    baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || "http://localhost:3000",
+    baseURL: BASE_URL,
     trace: "on-first-retry",
   },
   projects: [
@@ -23,13 +26,14 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run start",
-    url: "http://localhost:3000",
+    command: `npm run start -- -p ${PORT}`,
+    url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
     env: {
+      PORT,
       NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || "ci-testing-secret-at-least-32-characters-long",
-      NEXTAUTH_URL: process.env.NEXTAUTH_URL || "http://localhost:3000",
+      NEXTAUTH_URL: process.env.NEXTAUTH_URL || BASE_URL,
       DATABASE_URL: process.env.DATABASE_URL || "postgresql://postgres:postgrespassword@localhost:5432/fincalc_test",
     },
   },

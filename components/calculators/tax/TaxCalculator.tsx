@@ -491,15 +491,15 @@ export default function TaxCalculator() {
                       <td className="px-6 py-3">{s.slab}</td>
                       <td className="px-6 py-3 text-right">{s.rate}%</td>
                       <td className="px-6 py-3 text-right">{formatINR(s.amount)}</td>
-                      <td className="px-6 py-3 text-right font-medium text-destructive">{formatINR(s.tax)}</td>
+                      <td className="px-6 py-3 text-right font-medium text-red-700 dark:text-red-400">{formatINR(s.tax)}</td>
                     </tr>
                   ))}
                   {results.rebateAmount > 0 && (
-                    <tr className="table-row text-emerald-600 dark:text-emerald-400">
+                    <tr className="table-row text-emerald-800 dark:text-emerald-300 font-semibold">
                       <td className="px-6 py-3" colSpan={3}>
                         Tax Rebate ({results.isMarginalRebateApplied ? "Section 156(2)(b) Marginal Relief" : "Section 156"})
                       </td>
-                      <td className="px-6 py-3 text-right font-medium text-emerald-600 dark:text-emerald-400">
+                      <td className="px-6 py-3 text-right font-semibold text-emerald-800 dark:text-emerald-300">
                         - {formatINR(results.rebateAmount)}
                       </td>
                     </tr>
@@ -522,7 +522,7 @@ export default function TaxCalculator() {
                     <td className="px-6 py-3.5" colSpan={3}>
                       Total Net Tax Payable
                     </td>
-                    <td className="px-6 py-3.5 text-right text-destructive">{formatINR(results.totalTax)}</td>
+                    <td className="px-6 py-3.5 text-right font-bold text-red-700 dark:text-red-400">{formatINR(results.totalTax)}</td>
                   </tr>
                 </tbody>
               </table>
