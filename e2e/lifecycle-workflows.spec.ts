@@ -28,13 +28,13 @@ test.describe("Calculation Lifecycle E2E Workflows", () => {
         data: {
           userId: testUserId,
           type: "sip",
-          title: "E2E Lifecycle SIP Calculation",
+          label: "E2E Lifecycle SIP Calculation",
           inputs: {
             monthlyInvestment: 15000,
             expectedReturnRate: 12,
             timePeriodYears: 10,
           },
-          results: {
+          outputs: {
             investedAmount: 1800000,
             estimatedReturns: 1685121,
             totalValue: 3485121,
@@ -80,7 +80,6 @@ test.describe("Calculation Lifecycle E2E Workflows", () => {
         data: {
           isShared: true,
           shareId: shareToken,
-          sharedAt: new Date(),
         },
       });
 
@@ -114,7 +113,6 @@ test.describe("Calculation Lifecycle E2E Workflows", () => {
         data: {
           isShared: false,
           shareId: null,
-          sharedAt: null,
         },
       });
     }

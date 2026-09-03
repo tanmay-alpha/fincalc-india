@@ -50,6 +50,7 @@ describe("Zero vs Missing Numeric Handling (Audit Compliance)", () => {
         tenureMonths: 6,
         bankInterestRate: 0,
         processingFee: 0,
+        upfrontDiscountForfeited: 0,
         gstRatePercent: 0,
       });
 
