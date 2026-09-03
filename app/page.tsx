@@ -58,16 +58,16 @@ export default function HomePage() {
       {/* ── PLATFORM TRUST SIGNALS (compact, once) ───────────────── */}
       <div className="border-t border-border/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
-          <dl className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground shrink-0">
                 <FileCode2 className="w-4 h-4" />
               </div>
               <div>
-                <dt className="text-sm font-semibold text-foreground">31 Calculators</dt>
-                <dd className="text-xs text-muted-foreground leading-relaxed mt-0.5">
+                <h3 className="text-sm font-semibold text-foreground">31 Calculators</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
                   Investments, tax, loans, trading, and valuation.
-                </dd>
+                </p>
               </div>
             </div>
 
@@ -76,10 +76,10 @@ export default function HomePage() {
                 <Calendar className="w-4 h-4" />
               </div>
               <div>
-                <dt className="text-sm font-semibold text-foreground">Tax Year 2026–27</dt>
-                <dd className="text-xs text-muted-foreground leading-relaxed mt-0.5">
+                <h3 className="text-sm font-semibold text-foreground">Tax Year 2026–27</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
                   Finance Act 2026, Section 157 rebate, updated STT.
-                </dd>
+                </p>
               </div>
             </div>
 
@@ -88,10 +88,10 @@ export default function HomePage() {
                 <Lock className="w-4 h-4" />
               </div>
               <div>
-                <dt className="text-sm font-semibold text-foreground">Private by Default</dt>
-                <dd className="text-xs text-muted-foreground leading-relaxed mt-0.5">
+                <h3 className="text-sm font-semibold text-foreground">Private by Default</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
                   Instant browser calculations. Sign-in optional.
-                </dd>
+                </p>
               </div>
             </div>
 
@@ -100,13 +100,13 @@ export default function HomePage() {
                 <ShieldCheck className="w-4 h-4" />
               </div>
               <div>
-                <dt className="text-sm font-semibold text-foreground">Transparent Assumptions</dt>
-                <dd className="text-xs text-muted-foreground leading-relaxed mt-0.5">
+                <h3 className="text-sm font-semibold text-foreground">Transparent Assumptions</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
                   Statutory citations and assumption drawers on every page.
-                </dd>
+                </p>
               </div>
             </div>
-          </dl>
+          </div>
         </div>
       </div>
     </main>

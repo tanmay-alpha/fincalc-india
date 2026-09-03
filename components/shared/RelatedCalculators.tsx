@@ -71,7 +71,7 @@ export default function RelatedCalculators({ current }: Props) {
                   <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
                     <Icon className="w-4 h-4" />
                   </div>
-                  <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground bg-muted px-2 py-0.5 rounded-md">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-border/50">
                     {calc.shortName}
                   </span>
                 </div>

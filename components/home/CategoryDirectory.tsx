@@ -62,7 +62,7 @@ function CalculatorCard({ calc }: { calc: CalculatorMeta }) {
           <Icon className="w-4 h-4" />
         </div>
         {calc.badge && (
-          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 shrink-0">
+          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shrink-0">
             {calc.badge}
           </span>
         )}
@@ -209,7 +209,7 @@ export default function CategoryDirectory() {
                       })()}
                     </div>
                     {calc.badge && (
-                      <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 shrink-0">
+                      <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shrink-0">
                         {calc.badge}
                       </span>
                     )}
