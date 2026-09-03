@@ -29,8 +29,8 @@ yarn-error.log*
 .chrome*
 
 # local env files
-.env
-.env*.local
+.env*
+!.env.example
 
 # vercel
 .vercel

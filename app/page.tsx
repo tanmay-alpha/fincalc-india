@@ -181,7 +181,7 @@ export default function HomePage() {
               </div>
               <h3 className="text-sm font-bold text-foreground">Tax Year 2026–27</h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Incorporates Finance Act 2026, Section 156 rebate (₹12L), updated STT, and capital gains rules.
+                Incorporates Finance Act 2026, Section 157 rebate (₹12L), updated STT, and capital gains rules.
               </p>
             </div>
 

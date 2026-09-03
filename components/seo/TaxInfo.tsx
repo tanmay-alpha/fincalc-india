@@ -146,7 +146,7 @@ export default function TaxInfo() {
           <p className="text-xs text-slate-500
             dark:text-slate-400 mt-3">
             * Tax Year 2026-27 (FY 2026-27): New Regime makes income up to ₹12L
-            effectively tax-free (Section 156 rebate up to ₹60,000 with marginal relief). Old Regime
+            effectively tax-free (Section 157 rebate up to ₹60,000 with marginal relief). Old Regime
             saves more only with high itemized deductions (₹3.5L+).
           </p>
         </div>
@@ -164,8 +164,8 @@ export default function TaxInfo() {
               a: 'New Regime is better if your deductions are less than ₹3.75 lakh (for ₹15L income). If you have HRA, home loan interest, and full 80C investments, Old Regime often saves more. Use this calculator to compare.'
             },
             {
-              q: 'What is Rebate under Section 156 (formerly 87A)?',
-              a: 'Under the New Regime for Tax Year 2026-27 (Income-tax Act, 2025 as amended by Finance Act, 2026), if your taxable income is ₹12 lakh or below, you pay zero slab tax due to Section 156 rebate (up to ₹60,000). With the ₹75,000 standard deduction, income up to ₹12.75 lakh is effectively tax-free on slab income, with Section 156(2)(b) marginal relief tapering above ₹12L.'
+              q: 'What is Rebate under Section 157 (formerly 87A)?',
+              a: 'Under the New Regime for Tax Year 2026-27 (Income-tax Act, 2025 as amended by Finance Act, 2026), if your taxable income is ₹12 lakh or below, you pay zero slab tax due to Section 157 rebate (up to ₹60,000). With the ₹75,000 standard deduction, income up to ₹12.75 lakh is effectively tax-free on slab income, with Section 157(2)(b) marginal relief tapering above ₹12L.'
             },
             {
               q: 'Can I switch between Old and New regime every year?',

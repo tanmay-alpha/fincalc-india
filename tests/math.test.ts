@@ -210,7 +210,7 @@ describe('calcTax — Tax Year 2026-27 New Regime', () => {
   it('1. Total income of ₹12,75,000 with standard deduction — final tax payable is ₹0 under new regime', () => {
     // 12.75L gross - 75K std ded = 12.00L taxable.
     // Slab tax on 12L = 0-4L (0) + 4-8L (20k) + 8-12L (40k) = ₹60,000.
-    // Section 156 (formerly 87A) rebate = ₹60,000. Net tax = ₹0.
+    // Section 157 (formerly 87A) rebate = ₹60,000. Net tax = ₹0.
     const result = calcTax({
       grossIncome: 1275000,
       regime: 'new',
@@ -222,7 +222,7 @@ describe('calcTax — Tax Year 2026-27 New Regime', () => {
     expect(result.taxYear).toContain('Tax Year 2026-27')
     expect(result.taxableIncome).toBe(1200000)
     expect(result.slabTaxBeforeRebate).toBe(60000)
-    expect(result.rebateSection).toContain('Section 156')
+    expect(result.rebateSection).toContain('Section 157')
     expect(result.totalTax).toBe(0)
     expect(result.cess).toBe(0)
   })
@@ -230,7 +230,7 @@ describe('calcTax — Tax Year 2026-27 New Regime', () => {
   it('2. Total income of ₹10,00,000 salary + ₹2,00,000 equity LTCG — rebate reduces tax ONLY on ₹10L slab portion, and LTCG tax is charged in full', () => {
     // Salary: 10L - 75K std ded = 9.25L taxable slab income.
     // Slab tax: 4L @ 5% (20k) + 1.25L @ 10% (12.5k) = ₹32,500.
-    // Section 156 rebate wipes out slab tax: ₹32,500. Net slab tax = ₹0.
+    // Section 157 rebate wipes out slab tax: ₹32,500. Net slab tax = ₹0.
     // Equity LTCG: 2,00,000. Exemption: 1,25,000. Taxable LTCG = 75,000.
     // LTCG Tax @ 12.5% = ₹9,375. (Rebate does NOT wipe this out).
     // Cess @ 4% on ₹9,375 = ₹375.
@@ -251,7 +251,7 @@ describe('calcTax — Tax Year 2026-27 New Regime', () => {
     expect(result.totalTax).toBe(9750)
   })
 
-  it('3. Income above ₹12L taxable (>12.75L gross) attracts Section 156(2)(b) marginal relief tapering', () => {
+  it('3. Income above ₹12L taxable (>12.75L gross) attracts Section 157(2)(b) marginal relief tapering', () => {
     // Gross 15L - 75K std ded = 14.25L taxable → above 12L rebate threshold and above marginal relief zone
     const result = calcTax({
       grossIncome: 1500000,

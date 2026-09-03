@@ -161,14 +161,14 @@ describe("SECTION 5: Full Regression Audit — Adversarial Edge-Case Suite", () 
 
   // ─── 6. Income Tax Calculator ───────────────────────────────────
   describe("6. calcTax Adversarial Tests", () => {
-    it("Tax Year 2026-27: ₹12,75,000 gross with ₹75k std ded gives exact ₹0 tax via Section 156 rebate", () => {
+    it("Tax Year 2026-27: ₹12,75,000 gross with ₹75k std ded gives exact ₹0 tax via Section 157 rebate", () => {
       const res = calcTax({ grossIncome: 1275000, regime: "new" });
       expect(res.taxableIncome).toBe(1200000);
       expect(res.totalTax).toBe(0);
       expect(res.rebateAmount).toBe(60000);
     });
 
-    it("Tax Year 2026-27: ₹12,75,100 gross with ₹75k std ded applies Section 156(2)(b) marginal rebate (capping tax to excess income + cess)", () => {
+    it("Tax Year 2026-27: ₹12,75,100 gross with ₹75k std ded applies Section 157(2)(b) marginal rebate (capping tax to excess income + cess)", () => {
       const res = calcTax({ grossIncome: 1275100, regime: "new" });
       expect(res.taxableIncome).toBe(1200100);
       expect(res.isMarginalRebateApplied).toBe(true);
@@ -652,9 +652,9 @@ describe("SECTION 5: Full Regression Audit — Adversarial Edge-Case Suite", () 
     });
   });
 
-  // ─── 19. calcTax Statutory Section 156 & Surcharge Hardening ─────
-  describe("19. calcTax Statutory Section 156 & Surcharge Hardening", () => {
-    it("Section 156 Rebate: Total income ₹12L (₹10L salary + ₹2L equity LTCG) reduces slab tax to ₹0 but charges LTCG in full", () => {
+  // ─── 19. calcTax Statutory Section 157 & Surcharge Hardening ─────
+  describe("19. calcTax Statutory Section 157 & Surcharge Hardening", () => {
+    it("Section 157 Rebate: Total income ₹12L (₹10L salary + ₹2L equity LTCG) reduces slab tax to ₹0 but charges LTCG in full", () => {
       const res = calcTax({
         grossIncome: 1000000, // 9.25L taxable slab after 75k std ded
         equityLtcg: 200000, // 75k taxable after 1.25L exemption
@@ -672,7 +672,7 @@ describe("SECTION 5: Full Regression Audit — Adversarial Edge-Case Suite", () 
       expect(res.totalTax).toBe(9750);
     });
 
-    it("Section 156 Rebate: Total taxable income exceeding ₹12L by ₹1 receives Section 156(2)(b) marginal rebate", () => {
+    it("Section 157 Rebate: Total taxable income exceeding ₹12L by ₹1 receives Section 157(2)(b) marginal rebate", () => {
       const res = calcTax({
         grossIncome: 1275001, // 12,00,001 taxable after 75k std ded
         regime: "new",

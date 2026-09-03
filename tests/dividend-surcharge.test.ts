@@ -10,7 +10,7 @@ describe("Dividend Income & 15% Surcharge Cap (CBDT Statutory Rules)", () => {
     });
 
     // Total income = 8L - 75k std ded + 2L div = 9.25L.
-    // Total income <= 12L => Section 156 full rebate applies => ₹0 tax.
+    // Total income <= 12L => Section 157 full rebate applies => ₹0 tax.
     expect(res.totalTax).toBe(0);
     expect(res.surcharge).toBe(0);
   });

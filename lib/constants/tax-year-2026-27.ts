@@ -55,20 +55,20 @@ export const STANDARD_DEDUCTION_NEW_REGIME = 75000; // ₹75,000 for salaried & 
 export const STANDARD_DEDUCTION_OLD_REGIME = 50000; // ₹50,000 in Old Regime
 
 /**
- * Section 156 (formerly Section 87A under Income-tax Act, 1961) Tax Rebate:
- * Source: Income-tax Act, 2025 Section 156 / Finance Act, 2026
+ * Section 157 (formerly Section 87A under Income-tax Act, 1961) Tax Rebate:
+ * Source: Income-tax Act, 2025 Section 157 / Finance Act, 2026
  * - Eligibility: Resident Individuals only (NRIs, HUFs, firms are ineligible).
  * - New Regime:
  *   1. Full Rebate (Total Income <= ₹12,00,000): Maximum ₹60,000 (reduces eligible slab tax to ₹0).
- *   2. Marginal Rebate u/s 156(2)(b) (Total Income > ₹12,00,000):
+ *   2. Marginal Rebate u/s 157(2)(b) (Total Income > ₹12,00,000):
  *      Tax payable before cess cannot exceed (Total Income - ₹12,00,000).
  *      Applies up to ₹12,70,588 where marginal relief naturally tapers to zero.
- *   CRITICAL STATUTORY MANDATE: Section 156 rebate NEVER reduces tax on special-rate income
+ *   CRITICAL STATUTORY MANDATE: Section 157 rebate NEVER reduces tax on special-rate income
  *   (e.g., Section 111A STCG, Section 112A LTCG, Section 112 LTCG).
  * - Old Regime: Available if Total Income <= ₹5,00,000. Maximum rebate = ₹12,500.
  */
-export const REBATE_SECTION_156 = {
-  sectionName: "Section 156 (formerly Section 87A under 1961 Act)",
+export const REBATE_SECTION_157 = {
+  sectionName: "Section 157 (formerly Section 87A under 1961 Act)",
   newRegimeIncomeLimit: 1200000,
   newRegimeMaxRebate: 60000,
   newRegimeMarginalTaperLimit: 1270588, // 12,00,000 + 60,000 / 0.85
@@ -77,7 +77,7 @@ export const REBATE_SECTION_156 = {
 } as const;
 
 // Backward-compatibility alias
-export const REBATE_SECTION_157 = REBATE_SECTION_156;
+export const REBATE_SECTION_156 = REBATE_SECTION_157;
 
 export const HEALTH_AND_EDUCATION_CESS_RATE = 0.04; // 4% flat on (Tax + Surcharge after Marginal Relief)
 

@@ -7,6 +7,67 @@ export const dynamic = "force-dynamic";
 // Cuid id format — restrict to expected shape to avoid DB bloat.
 const ID_PATTERN = /^[a-z0-9]{20,32}$/i;
 
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const { id } = await params;
+
+    if (!ID_PATTERN.test(id)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid id" },
+        { status: 400 }
+      );
+    }
+
+    // Scoped strictly to authenticated owning user at DB query level (IDOR prevention)
+    const calculation = await prisma.calculation.findFirst({
+      where: {
+        id,
+        userId: session.user.id,
+      },
+      select: {
+        id: true,
+        type: true,
+        inputs: true,
+        outputs: true,
+        isShared: true,
+        shareId: true,
+        label: true,
+        createdAt: true,
+      },
+    });
+
+    if (!calculation) {
+      return NextResponse.json(
+        { success: false, error: "Record not found or forbidden" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: calculation,
+    });
+  } catch (error) {
+    console.error("[history] fetch item error:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to fetch record" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }

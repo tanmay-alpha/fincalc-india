@@ -223,7 +223,7 @@ export interface TaxInput {
 
   // Regime, Residency & Age Category
   regime: TaxRegime;
-  residency?: TaxpayerResidency; // default: "resident_individual" (Section 156 rebate is ONLY for resident individuals)
+  residency?: TaxpayerResidency; // default: "resident_individual" (Section 157 rebate is ONLY for resident individuals)
   ageCategory?: TaxpayerAgeCategory; // default: "below_60" (for Old Regime age slabs)
 
   // Old Regime deductions
@@ -1417,8 +1417,8 @@ interface InternalSlab {
 
 /**
  * Tax Year 2026-27 New Regime Slabs (Income-tax Act, 2025)
- * Nil tax up to ₹4L; Section 156 (formerly 87A) rebate makes taxable income ≤ ₹12L effectively tax-free,
- * with Section 156(2)(b) marginal relief for total income slightly above ₹12L.
+ * Nil tax up to ₹4L; Section 157 (formerly 87A) rebate makes taxable income ≤ ₹12L effectively tax-free,
+ * with Section 157(2)(b) marginal relief for total income slightly above ₹12L.
  */
 const NEW_REGIME_SLABS: InternalSlab[] = NEW_REGIME_SLABS_2026_27.map((s) => ({
   limit: s.max,
@@ -1679,22 +1679,22 @@ function computeRegimeTax(
   const specialRateTax = equityLtcgTax + equityStcgTax + otherLtcgTax;
   const specialRateTaxableIncome = equityLtcgChargeableAtSpecialRate + equityStcg + otherLtcg;
 
-  // Total Taxable Income for statutory thresholds (Section 156 and Surcharge)
+  // Total Taxable Income for statutory thresholds (Section 157 and Surcharge)
   const totalTaxableIncome = ordinaryTaxableIncome + equityLtcg + equityStcg + otherLtcg;
 
-  // ─── SECTION 156 (FORMERLY 87A) REBATE & MARGINAL RELIEF ─────────
+  // ─── SECTION 157 (FORMERLY 87A) REBATE & MARGINAL RELIEF ─────────
   let rebateAmount = 0;
   let isMarginalRebateApplied = false;
 
   if (isResident) {
     if (regime === "new") {
-      if (totalTaxableIncome <= REBATE_SECTION_156.newRegimeIncomeLimit) {
+      if (totalTaxableIncome <= REBATE_SECTION_157.newRegimeIncomeLimit) {
         // Full standard rebate: wipes out up to ₹60,000 of ordinary slab tax. Special-rate gains are NOT rebated.
-        rebateAmount = Math.min(rawTax, REBATE_SECTION_156.newRegimeMaxRebate);
-      } else if (totalTaxableIncome > REBATE_SECTION_156.newRegimeIncomeLimit) {
-        // Section 156(2)(b) Marginal Rebate for total income exceeding ₹12 Lakhs:
+        rebateAmount = Math.min(rawTax, REBATE_SECTION_157.newRegimeMaxRebate);
+      } else if (totalTaxableIncome > REBATE_SECTION_157.newRegimeIncomeLimit) {
+        // Section 157(2)(b) Marginal Rebate for total income exceeding ₹12 Lakhs:
         // Eligible income tax payable on ordinary slab-rate income shall not exceed the amount by which total income exceeds ₹12,00,000.
-        const excessIncomeOver12L = totalTaxableIncome - REBATE_SECTION_156.newRegimeIncomeLimit;
+        const excessIncomeOver12L = totalTaxableIncome - REBATE_SECTION_157.newRegimeIncomeLimit;
         const maxPermissibleSlabTax = Math.max(0, excessIncomeOver12L);
 
         if (rawTax > maxPermissibleSlabTax) {
@@ -1704,8 +1704,8 @@ function computeRegimeTax(
       }
     } else {
       // Old Regime rebate: up to ₹12,500 if total taxable income <= ₹5,00,000
-      if (totalTaxableIncome <= REBATE_SECTION_156.oldRegimeIncomeLimit) {
-        rebateAmount = Math.min(rawTax, REBATE_SECTION_156.oldRegimeMaxRebate);
+      if (totalTaxableIncome <= REBATE_SECTION_157.oldRegimeIncomeLimit) {
+        rebateAmount = Math.min(rawTax, REBATE_SECTION_157.oldRegimeMaxRebate);
       }
     }
   }
@@ -1746,7 +1746,7 @@ function computeRegimeTax(
     taxableIncome: Math.round(totalTaxableIncome),
     slabTaxBeforeRebate: Math.round(rawTax),
     rebateAmount: Math.round(rebateAmount),
-    rebateSection: isMarginalRebateApplied ? "Section 156(2)(b) Marginal Relief" : "Section 156",
+    rebateSection: isMarginalRebateApplied ? "Section 157(2)(b) Marginal Relief" : "Section 157",
     isMarginalRebateApplied,
     specialRateTax: Math.round(specialRateTax),
     equityLtcgIncludedInTotalIncome: Math.round(equityLtcg),
@@ -1769,8 +1769,8 @@ function computeRegimeTax(
  * Supports New Regime (default) and Old Regime with full statutory fidelity:
  * - New Regime Slabs: 0–4L nil, 4–8L 5%, 8–12L 10%, 12–16L 15%, 16–20L 20%, 20–24L 25%, 24L+ 30%.
  * - Standard deduction: ₹75,000 (New) / ₹50,000 (Old) applied exclusively to salary/pension income.
- * - Section 156 (formerly 87A) Rebate: Full slab tax waiver for total income ≤ ₹12L (max ₹60,000).
- * - Section 156(2)(b) Marginal Rebate: Tapers tax cliff for income above ₹12L up to ₹12,70,588.
+ * - Section 157 (formerly 87A) Rebate: Full slab tax waiver for total income ≤ ₹12L (max ₹60,000).
+ * - Section 157(2)(b) Marginal Rebate: Tapers tax cliff for income above ₹12L up to ₹12,70,588.
  * - Special-rate capital gains (111A, 112A, 112) are isolated and never rebated.
  * - Surcharge capped at 25% in New Regime (NO 37% tier); 15% cap on equity LTCG/STCG & dividends.
  */

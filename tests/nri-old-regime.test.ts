@@ -41,7 +41,7 @@ describe("Residency & Old Regime Slabs (CBDT Senior Exemption Rules)", () => {
     });
 
     // NRI gets only ₹2.5L nil slab; ₹50,000 is taxed @ 5% = ₹2,500 + cess.
-    // Also NRIs are not eligible for Section 156 / 87A rebate.
+    // Also NRIs are not eligible for Section 157 / 87A rebate.
     expect(nriSenior.slabTaxBeforeRebate).toBe(2500);
     expect(nriSenior.totalTax).toBe(2600); // 2500 + 4% cess
   });
@@ -55,7 +55,7 @@ describe("Residency & Old Regime Slabs (CBDT Senior Exemption Rules)", () => {
       ageCategory: "super_senior_80_plus",
     });
 
-    // 0-2.5L nil, 2.5L-5.0L @ 5% = ₹12,500 + cess = ₹13,000 (No Section 156 rebate for NRI)
+    // 0-2.5L nil, 2.5L-5.0L @ 5% = ₹12,500 + cess = ₹13,000 (No Section 157 rebate for NRI)
     expect(nriSuperSenior.slabTaxBeforeRebate).toBe(12500);
     expect(nriSuperSenior.totalTax).toBe(13000);
   });

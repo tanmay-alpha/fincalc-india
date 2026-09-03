@@ -305,7 +305,7 @@ export default function TaxCalculator() {
                         className="w-full bg-card border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                       >
                         <option value="resident_individual">
-                          Resident Individual (Section 156 Rebate Eligible)
+                          Resident Individual (Section 157 Rebate Eligible)
                         </option>
                         <option value="non_resident">
                           Non-Resident Indian (NRI)
@@ -494,7 +494,7 @@ export default function TaxCalculator() {
                     className="w-full bg-card border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     <option value="resident_individual">
-                      Resident Individual (Section 156 Rebate Eligible)
+                      Resident Individual (Section 157 Rebate Eligible)
                     </option>
                     <option value="non_resident">
                       Non-Resident Indian (NRI)
@@ -680,7 +680,7 @@ export default function TaxCalculator() {
                 </p>
                 <ul className="list-disc pl-4 space-y-1 text-muted-foreground leading-relaxed">
                   <li>
-                    <strong>New Regime:</strong> Benefits from the enhanced ₹75,000 standard deduction (for salary income) and the Section 156 full tax rebate up to ₹12 Lakh taxable ordinary income.
+                    <strong>New Regime:</strong> Benefits from the enhanced ₹75,000 standard deduction (for salary income) and the Section 157 full tax rebate up to ₹12 Lakh taxable ordinary income.
                   </li>
                   <li>
                     <strong>Old Regime:</strong> Slabs are steeper, but it allows itemized deductions under Chapter VI-A (Section 80C up to ₹1.5L, Section 80D up to ₹1L, and HRA exemption).
@@ -785,7 +785,7 @@ export default function TaxCalculator() {
                   {results.rebateAmount > 0 && (
                     <tr className="bg-emerald-500/10 font-semibold text-emerald-800 dark:text-emerald-300">
                       <td className="px-4 py-3" colSpan={3}>
-                        Tax Rebate ({results.isMarginalRebateApplied ? "Section 156(2)(b) Marginal Relief" : "Section 156"})
+                        Tax Rebate ({results.isMarginalRebateApplied ? "Section 157(2)(b) Marginal Relief" : "Section 157"})
                       </td>
                       <td className="px-4 py-3 text-right tabular-nums">
                         - {formatINR(results.rebateAmount)}

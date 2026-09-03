@@ -12,22 +12,24 @@ import {
 } from "../lib/math";
 
 describe("FINCALC INDIA — STATUTORY AUDIT V3 COMPREHENSIVE SUITE", () => {
-  // ─── 1. SECTION 156 REBATE & MARGINAL RELIEF ───────────────────
-  describe("1. Section 156 Rebate & Section 156(2)(b) Marginal Relief", () => {
+  // ─── 1. SECTION 157 REBATE & MARGINAL RELIEF ───────────────────
+  describe("1. Section 157 Rebate & Section 157(2)(b) Marginal Relief", () => {
     it("1.1. Exact ₹12,00,000 taxable income gets 100% slab tax rebate (₹60,000) -> ₹0 Tax", () => {
       const res = calcTax({ grossIncome: 1275000, salaryIncome: 1275000, regime: "new" });
       expect(res.taxableIncome).toBe(1200000);
       expect(res.slabTaxBeforeRebate).toBe(60000);
       expect(res.rebateAmount).toBe(60000);
+      expect(res.rebateSection).toBe("Section 157");
       expect(res.isMarginalRebateApplied).toBe(false);
       expect(res.totalTax).toBe(0);
       expect(res.cess).toBe(0);
     });
 
-    it("1.2. Taxable income ₹12,00,100 applies Section 156(2)(b) marginal rebate (tax before cess = ₹100)", () => {
+    it("1.2. Taxable income ₹12,00,100 applies Section 157(2)(b) marginal rebate (tax before cess = ₹100)", () => {
       const res = calcTax({ grossIncome: 1275100, salaryIncome: 1275100, regime: "new" });
       expect(res.taxableIncome).toBe(1200100);
       expect(res.isMarginalRebateApplied).toBe(true);
+      expect(res.rebateSection).toBe("Section 157(2)(b) Marginal Relief");
       // Slab tax without rebate would be 60,000 + 15% of 100 = 60,015
       // Tax capped at excess income = ₹100
       // Cess @ 4% on ₹100 = ₹4
@@ -35,7 +37,7 @@ describe("FINCALC INDIA — STATUTORY AUDIT V3 COMPREHENSIVE SUITE", () => {
       expect(res.rebateAmount).toBe(60015 - 100); // 59,915
     });
 
-    it("1.3. Taxable income ₹12,50,000 applies Section 156(2)(b) marginal rebate (tax before cess = ₹50,000)", () => {
+    it("1.3. Taxable income ₹12,50,000 applies Section 157(2)(b) marginal rebate (tax before cess = ₹50,000)", () => {
       const res = calcTax({ grossIncome: 1325000, salaryIncome: 1325000, regime: "new" });
       expect(res.taxableIncome).toBe(1250000);
       expect(res.isMarginalRebateApplied).toBe(true);
@@ -46,7 +48,7 @@ describe("FINCALC INDIA — STATUTORY AUDIT V3 COMPREHENSIVE SUITE", () => {
       expect(res.rebateAmount).toBe(17500); // 67,500 - 50,000
     });
 
-    it("1.4. Taxable income ₹12,70,588 is the exact breakeven boundary of Section 156(2)(b)", () => {
+    it("1.4. Taxable income ₹12,70,588 is the exact breakeven boundary of Section 157(2)(b)", () => {
       const res = calcTax({ grossIncome: 1270588 + 75000, salaryIncome: 1270588 + 75000, regime: "new" });
       expect(res.taxableIncome).toBe(1270588);
       // Slab tax = 60,000 + 15% of 70,588 = 70,588.2
@@ -63,7 +65,7 @@ describe("FINCALC INDIA — STATUTORY AUDIT V3 COMPREHENSIVE SUITE", () => {
       expect(res.totalTax).toBe(78000);
     });
 
-    it("1.6. Non-Resident Individual (NRI) receives ₹0 Section 156 rebate regardless of income", () => {
+    it("1.6. Non-Resident Individual (NRI) receives ₹0 Section 157 rebate regardless of income", () => {
       const res = calcTax({
         grossIncome: 800000,
         salaryIncome: 800000,

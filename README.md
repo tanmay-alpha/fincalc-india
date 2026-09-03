@@ -32,7 +32,7 @@ FinCalc India is a unified, statutorily verified mathematical engine complying w
 14. **Income Tax Calculator (AY 2026-27 / AY 2027-28)**:
     - **New Tax Regime**: ₹0–₹4L (Nil), ₹4L–₹8L (5%), ₹8L–₹12L (10%), ₹12L–₹16L (15%), ₹16L–₹20L (20%), ₹20L–₹24L (25%), >₹24L (30%).
     - **Standard Deduction**: ₹75,000 under New Regime (exclusively on salary/pension income); ₹50,000 under Old Regime.
-    - **Section 156 Tax Rebate & Marginal Relief**: Full tax rebate up to ₹12,00,000 taxable ordinary income (Resident Individuals). Smooth marginal tapering from ₹12,00,001 to ₹12,70,588 ensuring tax never exceeds excess income over ₹12 Lakh.
+    - **Section 157 Tax Rebate & Marginal Relief**: Full tax rebate up to ₹12,00,000 taxable ordinary income (Resident Individuals). Smooth marginal tapering from ₹12,00,001 to ₹12,70,588 ensuring tax never exceeds excess income over ₹12 Lakh.
     - **Multiple Income Streams**: Decomposes Salary, Business/PGBP, Interest/Other, Equity LTCG (12.5% > ₹1.25L), Equity STCG (20%), and Other LTCG (12.5%).
 15. **Marginal Relief & High-Income Surcharge**: High-income surcharge tiers (10% > ₹50L, 15% > ₹1Cr, 25% > ₹2Cr max under New Regime) with statutory boundary marginal relief.
 16. **Capital Gains Tax**: Unified post-July 23, 2024 regime with Equity LTCG @ 12.5% (> ₹1.25L exemption), Equity STCG @ 20%, unlisted assets @ 12.5%, official Cost Inflation Index series (FY 2024-25 = 363, FY 2025-26 = 376, FY 2026-27 = 384), and dual-calculation grandfathering for pre-July 23, 2024 real estate.
