@@ -5,7 +5,7 @@ import type { CSSProperties } from "react";
 import { clsx } from "clsx";
 import { clampSafe, formatINR } from "@/lib/format";
 
-interface HybridInputProps {
+export interface HybridInputProps {
   label: string;
   value: number;
   // eslint-disable-next-line no-unused-vars
@@ -19,6 +19,7 @@ interface HybridInputProps {
   hint?: string;
   error?: string;
   disabled?: boolean;
+  hideSlider?: boolean;
 }
 
 type SliderStyle = CSSProperties & {
@@ -55,8 +56,7 @@ function parseInput(raw: string): number {
 
 function formatDisplayValue(value: number, prefix?: string): string {
   if (prefix === "₹") {
-    // Show without the rupee symbol — the prefix is rendered separately.
-    return formatINR(value).replace("₹", "");
+    return formatINR(value).replace("₹", "").trim();
   }
   return Number.isInteger(value) ? value.toString() : value.toString();
 }
@@ -74,6 +74,7 @@ export default function HybridInput({
   hint,
   error,
   disabled = false,
+  hideSlider = false,
 }: HybridInputProps) {
   const [rawText, setRawText] = useState(value.toString());
   const [isFocused, setIsFocused] = useState(false);
@@ -129,14 +130,15 @@ export default function HybridInput({
   const displayError = error ?? localError ?? undefined;
 
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-2">
+      {/* Label and Formatted Output Header */}
       <div className="flex items-center justify-between gap-2">
-        <label className="text-sm font-medium text-foreground">
+        <label className="text-xs sm:text-sm font-medium text-foreground">
           {label}
         </label>
         <span
           className={clsx(
-            "text-sm font-semibold truncate",
+            "text-xs sm:text-sm font-semibold tabular-nums truncate transition-colors",
             isFocused ? "text-primary" : "text-foreground"
           )}
         >
@@ -146,72 +148,76 @@ export default function HybridInput({
         </span>
       </div>
 
-      <div className="relative h-5 flex items-center">
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={step || 1}
-          value={value}
-          disabled={disabled}
-          aria-label={label}
-          onPointerDown={() => setIsDragging(true)}
-          onPointerUp={() => setIsDragging(false)}
-          onPointerCancel={() => setIsDragging(false)}
-          onBlur={() => setIsDragging(false)}
-          onChange={(e) => {
-            const v = Number(e.target.value);
-            const clamped = commitValue(v);
-            setRawText(clamped.toString());
-          }}
-          style={
-            {
-              "--slider-value": `${sliderValue}%`,
-              background:
-                "linear-gradient(to right, rgb(var(--primary)) 0%, rgb(var(--primary)) var(--slider-value), rgb(var(--input)) var(--slider-value), rgb(var(--input)) 100%)",
-            } as SliderStyle
-          }
-          className={clsx(
-            "w-full h-1.5 rounded-full appearance-none cursor-pointer",
-            "disabled:opacity-50 disabled:cursor-not-allowed",
-            "[&::-webkit-slider-thumb]:appearance-none",
-            "[&::-webkit-slider-thumb]:w-5",
-            "[&::-webkit-slider-thumb]:h-5",
-            "[&::-webkit-slider-thumb]:rounded-full",
-            "[&::-webkit-slider-thumb]:bg-background",
-            "[&::-webkit-slider-thumb]:ring-2",
-            "[&::-webkit-slider-thumb]:ring-primary",
-            "[&::-webkit-slider-thumb]:shadow-md",
-            "[&::-webkit-slider-thumb]:cursor-grab",
-            "[&::-webkit-slider-thumb]:active:cursor-grabbing",
-            "[&::-webkit-slider-thumb]:active:scale-110",
-            "[&::-webkit-slider-thumb]:transition-transform",
-            "[&::-moz-range-thumb]:w-5",
-            "[&::-moz-range-thumb]:h-5",
-            "[&::-moz-range-thumb]:rounded-full",
-            "[&::-moz-range-thumb]:bg-background",
-            "[&::-moz-range-thumb]:border-2",
-            "[&::-moz-range-thumb]:border-primary",
-            "[&::-moz-range-thumb]:shadow-md"
-          )}
-        />
-      </div>
+      {/* Interactive Range Slider (if not disabled via hideSlider) */}
+      {!hideSlider && (
+        <div className="relative h-5 flex items-center">
+          <input
+            type="range"
+            min={min}
+            max={max}
+            step={step || 1}
+            value={value}
+            disabled={disabled}
+            aria-label={label}
+            onPointerDown={() => setIsDragging(true)}
+            onPointerUp={() => setIsDragging(false)}
+            onPointerCancel={() => setIsDragging(false)}
+            onBlur={() => setIsDragging(false)}
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              const clamped = commitValue(v);
+              setRawText(clamped.toString());
+            }}
+            style={
+              {
+                "--slider-value": `${sliderValue}%`,
+                background:
+                  "linear-gradient(to right, rgb(var(--primary)) 0%, rgb(var(--primary)) var(--slider-value), rgb(var(--input)) var(--slider-value), rgb(var(--input)) 100%)",
+              } as SliderStyle
+            }
+            className={clsx(
+              "w-full h-1.5 rounded-full appearance-none cursor-pointer",
+              "disabled:opacity-50 disabled:cursor-not-allowed",
+              "[&::-webkit-slider-thumb]:appearance-none",
+              "[&::-webkit-slider-thumb]:w-4.5",
+              "[&::-webkit-slider-thumb]:h-4.5",
+              "[&::-webkit-slider-thumb]:rounded-full",
+              "[&::-webkit-slider-thumb]:bg-background",
+              "[&::-webkit-slider-thumb]:ring-2",
+              "[&::-webkit-slider-thumb]:ring-primary",
+              "[&::-webkit-slider-thumb]:shadow-sm",
+              "[&::-webkit-slider-thumb]:cursor-grab",
+              "[&::-webkit-slider-thumb]:active:cursor-grabbing",
+              "[&::-webkit-slider-thumb]:active:scale-110",
+              "[&::-webkit-slider-thumb]:transition-transform",
+              "[&::-moz-range-thumb]:w-4.5",
+              "[&::-moz-range-thumb]:h-4.5",
+              "[&::-moz-range-thumb]:rounded-full",
+              "[&::-moz-range-thumb]:bg-background",
+              "[&::-moz-range-thumb]:border-2",
+              "[&::-moz-range-thumb]:border-primary",
+              "[&::-moz-range-thumb]:shadow-sm"
+            )}
+          />
+        </div>
+      )}
 
+      {/* Numeric Direct Input Field */}
       <div
         className={clsx(
           "flex items-center rounded-lg border",
-          "bg-white dark:bg-slate-800/50 transition-all duration-150",
-          "h-11 px-3 gap-2",
+          "bg-card text-foreground transition-all duration-150",
+          "h-10 px-3 gap-2",
           disabled && "opacity-50",
           displayError
             ? "border-destructive ring-2 ring-destructive/15"
             : isFocused
-              ? "border-blue-500 ring-2 ring-blue-500/20"
-              : "border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500"
+              ? "border-primary ring-2 ring-primary/20"
+              : "border-border hover:border-border/80"
         )}
       >
         {prefix && (
-          <span className="select-none text-sm font-medium text-slate-500 dark:text-slate-400">
+          <span className="select-none text-xs font-semibold text-muted-foreground">
             {prefix}
           </span>
         )}
@@ -248,17 +254,18 @@ export default function HybridInput({
               e.currentTarget.blur();
             }
           }}
-          className="flex-1 min-w-0 bg-transparent text-right text-sm font-medium text-slate-900 dark:text-white outline-none disabled:cursor-not-allowed"
+          className="flex-1 min-w-0 bg-transparent text-right text-xs sm:text-sm font-semibold tabular-nums text-foreground outline-none disabled:cursor-not-allowed"
         />
         {suffix && (
-          <span className="select-none text-sm text-slate-500 dark:text-slate-400">
+          <span className="select-none text-xs text-muted-foreground">
             {suffix}
           </span>
         )}
       </div>
 
+      {/* Optional Quick Choice Chips */}
       {chips.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5 pt-0.5">
           {chips.map((chip) => (
             <button
               key={chip.value}
@@ -269,12 +276,12 @@ export default function HybridInput({
                 setRawText(clamped.toString());
               }}
               className={clsx(
-                "text-xs rounded-full px-3 py-1",
+                "text-[11px] rounded-md px-2.5 py-0.5",
                 "border transition-all duration-150",
                 "font-medium disabled:opacity-50 disabled:cursor-not-allowed",
                 value === chip.value
-                  ? "border-blue-600 bg-blue-600 text-white"
-                  : "border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400"
+                  ? "border-primary bg-primary text-primary-foreground font-semibold"
+                  : "border-border text-muted-foreground hover:text-foreground hover:bg-muted"
               )}
             >
               {chip.label}
@@ -283,11 +290,12 @@ export default function HybridInput({
         </div>
       )}
 
+      {/* Field Hint or Error */}
       {(hint || displayError) && (
         <p
           className={clsx(
-            "text-xs",
-            displayError ? "text-destructive" : "text-muted-foreground"
+            "text-[11px]",
+            displayError ? "text-destructive font-medium" : "text-muted-foreground"
           )}
         >
           {displayError || hint}
