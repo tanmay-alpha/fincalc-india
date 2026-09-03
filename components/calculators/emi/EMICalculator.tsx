@@ -105,7 +105,7 @@ export default function EMICalculator() {
                 </button>
               </div>
               {tenureUnit === "years" ? (
-                <HybridInput label="" value={Math.round(inputs.tenureMonths / 12)} onChange={onTenureYears}
+                <HybridInput label="" ariaLabel="Loan Tenure in Years" value={Math.round(inputs.tenureMonths / 12)} onChange={onTenureYears}
                   min={1} max={30} step={1} suffix=" Yrs"
                   quickChips={[
                     { label: "5 Yr", value: 5 }, { label: "10 Yr", value: 10 },
@@ -114,7 +114,7 @@ export default function EMICalculator() {
                   ]}
                 />
               ) : (
-                <HybridInput label="" value={inputs.tenureMonths} onChange={onTenureMonths}
+                <HybridInput label="" ariaLabel="Loan Tenure in Months" value={inputs.tenureMonths} onChange={onTenureMonths}
                   min={12} max={360} step={1} suffix=" Mo"
                   quickChips={[
                     { label: "60", value: 60 }, { label: "120", value: 120 },

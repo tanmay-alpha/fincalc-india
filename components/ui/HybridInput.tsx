@@ -20,6 +20,7 @@ export interface HybridInputProps {
   error?: string;
   disabled?: boolean;
   hideSlider?: boolean;
+  ariaLabel?: string;
 }
 
 type SliderStyle = CSSProperties & {
@@ -75,6 +76,7 @@ export default function HybridInput({
   error,
   disabled = false,
   hideSlider = false,
+  ariaLabel,
 }: HybridInputProps) {
   const [rawText, setRawText] = useState(value.toString());
   const [isFocused, setIsFocused] = useState(false);
@@ -128,25 +130,28 @@ export default function HybridInput({
 
   const chips = quickChips ?? [];
   const displayError = error ?? localError ?? undefined;
+  const effectiveAriaLabel = ariaLabel || label || (suffix ? `Value in ${suffix.trim()}` : "Numeric value");
 
   return (
     <div className="space-y-2">
       {/* Label and Formatted Output Header */}
-      <div className="flex items-center justify-between gap-2">
-        <label className="text-xs sm:text-sm font-medium text-foreground">
-          {label}
-        </label>
-        <span
-          className={clsx(
-            "text-xs sm:text-sm font-semibold tabular-nums truncate transition-colors",
-            isFocused ? "text-primary" : "text-foreground"
-          )}
-        >
-          {prefix}
-          {isFocused ? rawText : formatDisplayValue(value, prefix)}
-          {suffix}
-        </span>
-      </div>
+      {label && (
+        <div className="flex items-center justify-between gap-2">
+          <label className="text-xs sm:text-sm font-medium text-foreground">
+            {label}
+          </label>
+          <span
+            className={clsx(
+              "text-xs sm:text-sm font-semibold tabular-nums truncate transition-colors",
+              isFocused ? "text-primary" : "text-foreground"
+            )}
+          >
+            {prefix}
+            {isFocused ? rawText : formatDisplayValue(value, prefix)}
+            {suffix}
+          </span>
+        </div>
+      )}
 
       {/* Interactive Range Slider (if not disabled via hideSlider) */}
       {!hideSlider && (
@@ -158,7 +163,7 @@ export default function HybridInput({
             step={step || 1}
             value={value}
             disabled={disabled}
-            aria-label={label}
+            aria-label={effectiveAriaLabel}
             onPointerDown={() => setIsDragging(true)}
             onPointerUp={() => setIsDragging(false)}
             onPointerCancel={() => setIsDragging(false)}
@@ -226,7 +231,7 @@ export default function HybridInput({
           inputMode="decimal"
           autoComplete="off"
           spellCheck={false}
-          aria-label={label || "value"}
+          aria-label={effectiveAriaLabel}
           value={isFocused ? rawText : formatDisplayValue(value, prefix)}
           disabled={disabled}
           onFocus={() => {

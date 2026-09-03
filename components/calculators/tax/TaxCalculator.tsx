@@ -126,7 +126,7 @@ export default function TaxCalculator() {
               <h2 className="font-semibold text-foreground text-sm uppercase tracking-wider">
                 Tax Parameters (AY 2026-27)
               </h2>
-              <span className="text-[11px] font-medium bg-primary/10 text-primary border border-primary/20 rounded-full px-2.5 py-0.5">
+              <span className="text-[11px] font-medium bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-full px-2.5 py-0.5">
                 Finance Act, 2026
               </span>
             </div>
@@ -777,7 +777,7 @@ export default function TaxCalculator() {
                       <td className="px-4 py-3 text-right text-foreground/80 tabular-nums">
                         {formatINR(s.amount)}
                       </td>
-                      <td className="px-4 py-3 text-right font-semibold text-rose-600 dark:text-rose-400 tabular-nums">
+                      <td className="px-4 py-3 text-right font-semibold text-rose-700 dark:text-rose-300 tabular-nums">
                         {formatINR(s.tax)}
                       </td>
                     </tr>
@@ -814,7 +814,7 @@ export default function TaxCalculator() {
                     <td className="px-4 py-3.5" colSpan={3}>
                       Total Net Tax Payable
                     </td>
-                    <td className="px-4 py-3.5 text-right font-extrabold text-rose-600 dark:text-rose-400 tabular-nums text-sm sm:text-base">
+                    <td className="px-4 py-3.5 text-right font-extrabold text-rose-700 dark:text-rose-300 tabular-nums text-sm sm:text-base">
                       ₹{results.totalTax.toLocaleString("en-IN")}
                     </td>
                   </tr>

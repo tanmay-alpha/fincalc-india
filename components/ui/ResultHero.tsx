@@ -82,12 +82,12 @@ export default function ResultHero({
           {label}
         </p>
         {resolvedTone === "negative" && (
-          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400">
+          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
             Net Loss / Expense
           </span>
         )}
         {resolvedTone === "positive" && (
-          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
             Positive Gain
           </span>
         )}
@@ -104,9 +104,9 @@ export default function ResultHero({
           className={cn(
             "text-4xl sm:text-5xl font-extrabold tracking-tight tabular-nums",
             resolvedTone === "negative"
-              ? "text-rose-600 dark:text-rose-400"
+              ? "text-rose-700 dark:text-rose-300"
               : resolvedTone === "positive"
-              ? "text-emerald-600 dark:text-emerald-400"
+              ? "text-emerald-700 dark:text-emerald-300"
               : "text-foreground"
           )}
         >
