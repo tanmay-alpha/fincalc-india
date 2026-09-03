@@ -108,7 +108,7 @@ export default function CapitalGainsCalculator() {
                   className={clsx(
                     "flex items-center gap-2 px-3 py-2.5 rounded-xl border text-left text-xs font-medium transition-all",
                     inputs.assetClass === ac.id
-                      ? "border-primary bg-primary/10 text-primary font-semibold shadow-sm"
+                      ? "border-primary bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold shadow-sm"
                       : "border-border text-muted-foreground hover:border-primary/40 hover:bg-accent/40"
                   )}
                 >
