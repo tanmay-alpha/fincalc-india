@@ -629,7 +629,7 @@ export default function Section54Calculator() {
                     </div>
                   </div>
                 </div>
-                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-0.5 rounded">
+                <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-0.5 rounded">
                   Max Cap: ₹50 Lakh (Sec 85(2))
                 </span>
               </div>
@@ -809,14 +809,14 @@ export default function Section54Calculator() {
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div className="surface-card p-3.5 text-center">
               <div className="text-xs text-muted-foreground">Exemption Allowed</div>
-              <div className="text-base font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+              <div className="text-base font-bold text-emerald-800 dark:text-emerald-300 mt-1">
                 {formatINR(result.activeResult.exemptionAllowed)}
               </div>
               {result.activeResult.twoHousesOptionApplied && (
                 <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium block">2 Houses (Sec 82 Proviso)</span>
               )}
               {result.activeResult.proportionateExemptionApplied && (
-                <span className="text-[10px] text-amber-500 font-medium block">Proportionate u/s 86</span>
+                <span className="text-[10px] text-amber-700 dark:text-amber-400 font-medium block">Proportionate u/s 86</span>
               )}
             </div>
 
@@ -842,7 +842,7 @@ export default function Section54Calculator() {
                     <AlertCircle className="w-3.5 h-3.5" /> Disqualified
                   </span>
                 ) : result.activeResult.isValidTimeline ? (
-                  <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                  <span className="text-emerald-800 dark:text-emerald-300 flex items-center gap-1">
                     <CheckCircle2 className="w-3.5 h-3.5" /> Valid Window
                   </span>
                 ) : (
@@ -927,21 +927,21 @@ export default function Section54Calculator() {
                       <td className="py-2 pr-2 text-muted-foreground font-medium">Statutory Eligibility</td>
                       <td className="py-2 px-2">
                         {result.comparison.section54.isStatutorilyEligible ? (
-                          <span className="text-emerald-600 font-bold">Eligible</span>
+                          <span className="text-emerald-800 dark:text-emerald-300 font-bold">Eligible</span>
                         ) : (
                           <span className="text-muted-foreground italic">Ineligible</span>
                         )}
                       </td>
                       <td className="py-2 px-2">
                         {result.comparison.section54ec.isStatutorilyEligible ? (
-                          <span className="text-emerald-600 font-bold">Eligible</span>
+                          <span className="text-emerald-800 dark:text-emerald-300 font-bold">Eligible</span>
                         ) : (
                           <span className="text-muted-foreground italic">Ineligible</span>
                         )}
                       </td>
                       <td className="py-2 pl-2">
                         {result.comparison.section54f?.isStatutorilyEligible ? (
-                          <span className="text-emerald-600 font-bold">Eligible</span>
+                          <span className="text-emerald-800 dark:text-emerald-300 font-bold">Eligible</span>
                         ) : (
                           <span className="text-muted-foreground italic">Ineligible</span>
                         )}
@@ -949,13 +949,13 @@ export default function Section54Calculator() {
                     </tr>
                     <tr>
                       <td className="py-2 pr-2 text-muted-foreground">Exemption Allowed</td>
-                      <td className="py-2 px-2 font-bold text-emerald-600">
+                      <td className="py-2 px-2 font-bold text-emerald-800 dark:text-emerald-300">
                         {formatINR(result.comparison.section54.exemptionAllowed)}
                       </td>
-                      <td className="py-2 px-2 font-bold text-emerald-600">
+                      <td className="py-2 px-2 font-bold text-emerald-800 dark:text-emerald-300">
                         {formatINR(result.comparison.section54ec.exemptionAllowed)}
                       </td>
-                      <td className="py-2 pl-2 font-bold text-emerald-600">
+                      <td className="py-2 pl-2 font-bold text-emerald-800 dark:text-emerald-300">
                         {formatINR(result.comparison.section54f?.exemptionAllowed ?? 0)}
                       </td>
                     </tr>

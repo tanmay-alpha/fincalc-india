@@ -41,7 +41,7 @@ export function Button({
       type={type}
       className={cn(
         "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200",
-        "disabled:pointer-events-none disabled:opacity-50",
+        "disabled:pointer-events-none disabled:bg-slate-200 disabled:text-slate-600 dark:disabled:bg-slate-800 dark:disabled:text-slate-400 disabled:shadow-none",
         variants[variant],
         sizes[size],
         className
