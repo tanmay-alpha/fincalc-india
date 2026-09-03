@@ -115,8 +115,13 @@ test.describe.serial("Calculation Lifecycle E2E Workflows", () => {
     expect(apiRes.headers()["cache-control"]).toContain("no-store");
     expect(apiRes.headers()["x-robots-tag"]).toContain("noindex");
 
-    // Browser navigation to old link returns 404
-    const pageRes = await page.goto(`/result/${shareToken}`);
-    expect(pageRes?.status()).toBe(404);
+    // Direct HTTP request to HTML route returns 404
+    const htmlRes = await request.get(`/result/${shareToken}`);
+    expect(htmlRes.status()).toBe(404);
+
+    // Browser navigation to old link renders not-found state
+    await page.goto(`/result/${shareToken}`);
+    const bodyText = await page.innerText("body");
+    expect(bodyText).toMatch(/404|not found/i);
   });
 });
