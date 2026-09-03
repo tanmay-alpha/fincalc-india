@@ -40,10 +40,7 @@ import {
   GET as getHistoryItem,
   DELETE as deleteHistoryItem,
 } from "@/app/api/history/[id]/route";
-import {
-  POST as publishShare,
-  DELETE as unshareCalculation,
-} from "@/app/api/history/[id]/share/route";
+import { POST as publishShare } from "@/app/api/history/[id]/share/route";
 import { POST as saveCalculation } from "@/app/api/calculate/[type]/route";
 import {
   GET as getAccount,

@@ -9,7 +9,7 @@ import CategoryDirectory from "@/components/home/CategoryDirectory";
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen">
+    <main id="main-content" className="min-h-screen">
       {/* ── HERO ─────────────────────────────────────────────────── */}
       <section className="relative pt-12 pb-16 md:pt-20 md:pb-24 overflow-hidden border-b border-border/60">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
@@ -109,6 +109,6 @@ export default function HomePage() {
           </dl>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
