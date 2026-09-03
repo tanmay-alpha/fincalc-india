@@ -98,7 +98,7 @@ const calculatorContractDefinitions: Record<string, ContractDefinition> = {
     regulatoryMetadata: {
       taxYear: "Tax Year 2026-27",
       currentAct: "Income-tax Act, 2025",
-      currentSections: ["156"],
+      currentSections: ["157"],
       legacySections: ["87A"],
       effectiveFrom: "2026-04-01",
       officialSources: ["https://www.incometax.gov.in/iec/foportal/help/all-topics/e-filing-services/general-questions-0"],

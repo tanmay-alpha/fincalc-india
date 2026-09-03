@@ -15,7 +15,8 @@ import type { DcfInput } from "@/lib/math";
 import { getDCFInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
-import { Building2, TrendingUp, ShieldAlert } from "lucide-react";
+import { SlidersHorizontal, ShieldAlert, BarChart2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const DcfChart = dynamic(
   () => import("@/components/calculators/dcf/DcfChart"),
@@ -74,63 +75,110 @@ export default function DcfCalculator() {
   const result = useMemo(() => calcDCF(debouncedInputs), [debouncedInputs]);
   const insights = useMemo(() => getDCFInsights(result), [result]);
 
-  if (!mounted) {
-    return <CalcPageSkeleton />;
-  }
+  // Sensitivity Matrix Calculations (Discount Rate vs Terminal Growth)
+  const sensitivityData = useMemo(() => {
+    if (!result.isValid) return null;
+    const discountRates = [
+      Math.max(5, discountRate - 1.5),
+      discountRate,
+      discountRate + 1.5,
+    ];
+    const terminalRates = [
+      Math.max(1, terminalGrowthRate - 0.5),
+      terminalGrowthRate,
+      terminalGrowthRate + 0.5,
+    ];
+
+    return discountRates.map((dRate) => {
+      return {
+        discountRate: dRate,
+        values: terminalRates.map((tRate) => {
+          if (dRate <= tRate) return null;
+          const matrixRes = calcDCF({
+            ...debouncedInputs,
+            discountRate: dRate,
+            terminalGrowthRate: tRate,
+          });
+          return matrixRes.isValid ? matrixRes.intrinsicValuePerShare : null;
+        }),
+      };
+    });
+  }, [debouncedInputs, discountRate, terminalGrowthRate, result.isValid]);
+
+  if (!mounted) return <CalcPageSkeleton />;
 
   return (
-    <div className="space-y-6">
-      {/* 2-Column Responsive Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Inputs */}
-        <div className="lg:col-span-6 space-y-5 bg-card/60 backdrop-blur border border-border/60 rounded-2xl p-5 md:p-6 shadow-sm">
-          <div className="flex items-center gap-2 pb-2 border-b border-border/40">
-            <Building2 className="w-5 h-5 text-primary" />
-            <h2 className="font-semibold text-foreground text-base">
-              Cash Flow & Valuation Inputs
-            </h2>
-          </div>
+    <>
+      <StickyResultBar
+        label="Fair Value / Share"
+        value={result.intrinsicValuePerShare}
+        prefix="₹"
+        color="blue"
+      />
 
-          <div className="space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+        {/* ────── FINANCIAL MODEL ASSUMPTIONS (~45%) ────── */}
+        <div className="lg:col-span-5 space-y-5">
+          <div className="bg-card rounded-2xl border border-border/80 p-5 sm:p-6 shadow-sm space-y-5">
+            <div className="flex items-center gap-2 pb-2 border-b border-border/60">
+              <SlidersHorizontal className="w-4 h-4 text-primary" />
+              <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                Explicit Cash Flow Forecast
+              </h2>
+            </div>
+
             <HybridInput
               label="Starting Free Cash Flow (FCF Year 1)"
-              hint="Base year projected free cash flow to firm (FCFF) in INR"
+              hint="Projected free cash flow to firm (FCFF) in base forecast year"
               value={cashFlowYear1}
               onChange={setCashFlowYear1}
               min={100000}
               max={10000000000}
               step={500000}
               prefix="₹"
+              quickChips={[
+                { label: "₹1 Cr", value: 10000000 },
+                { label: "₹5 Cr", value: 50000000 },
+                { label: "₹25 Cr", value: 250000000 },
+                { label: "₹100 Cr", value: 1000000000 },
+              ]}
             />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <HybridInput
-                label="Forecast Duration (Years)"
-                hint="Explicit projection horizon (typical: 5-10 years)"
+                label="Forecast Period"
                 value={forecastYears}
                 onChange={setForecastYears}
                 min={3}
                 max={15}
                 step={1}
-                suffix="Y"
+                suffix=" Years"
               />
 
               <HybridInput
-                label="Initial Growth Rate (% p.a.)"
-                hint="Compounded growth rate during explicit period"
+                label="FCF Growth Rate"
                 value={growthRateYears1to5}
                 onChange={setGrowthRateYears1to5}
                 min={-20}
                 max={100}
                 step={0.5}
-                suffix="%"
+                suffix="% p.a."
               />
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="bg-card rounded-2xl border border-border/80 p-5 sm:p-6 shadow-sm space-y-5">
+            <div className="flex items-center gap-2 pb-2 border-b border-border/60">
+              <SlidersHorizontal className="w-4 h-4 text-primary" />
+              <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                Cost of Capital & Terminal Stage
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <HybridInput
-                label="Discount Rate (WACC %)"
-                hint="Required Rate of Return"
+                label="Discount Rate (WACC)"
+                hint="Cost of Capital"
                 value={discountRate}
                 onChange={setDiscountRate}
                 min={5}
@@ -140,8 +188,8 @@ export default function DcfCalculator() {
               />
 
               <HybridInput
-                label="Terminal Growth Rate (% p.a.)"
-                hint="Perpetual long-term GDP growth rate (4.0 - 5.5%)"
+                label="Terminal Growth Rate"
+                hint="Long-term GDP rate"
                 value={terminalGrowthRate}
                 onChange={setTerminalGrowthRate}
                 min={1}
@@ -150,113 +198,206 @@ export default function DcfCalculator() {
                 suffix="%"
               />
             </div>
+          </div>
 
-            <div className="pt-2 border-t border-border/40 space-y-4">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Balance Sheet Adjustments & Share Count
-              </h3>
+          <div className="bg-card rounded-2xl border border-border/80 p-5 sm:p-6 shadow-sm space-y-5">
+            <div className="flex items-center gap-2 pb-2 border-b border-border/60">
+              <SlidersHorizontal className="w-4 h-4 text-primary" />
+              <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                Balance Sheet & Share Count Bridge
+              </h2>
+            </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <HybridInput
-                  label="Total Debt"
-                  hint="Total interest-bearing debt on balance sheet"
-                  value={totalDebt}
-                  onChange={setTotalDebt}
-                  min={0}
-                  max={5000000000}
-                  step={500000}
-                  prefix="₹"
-                />
-
-                <HybridInput
-                  label="Cash & Liquid Equivalents"
-                  hint="Cash, bank balances, and liquid securities"
-                  value={cashAndEquivalents}
-                  onChange={setCashAndEquivalents}
-                  min={0}
-                  max={5000000000}
-                  step={500000}
-                  prefix="₹"
-                />
-              </div>
+            <div className="grid grid-cols-2 gap-3">
+              <HybridInput
+                label="Total Debt"
+                value={totalDebt}
+                onChange={setTotalDebt}
+                min={0}
+                max={5000000000}
+                step={500000}
+                prefix="₹"
+              />
 
               <HybridInput
-                label="Total Shares Outstanding"
-                hint="Diluted total share count for per-share fair value"
-                value={sharesOutstanding}
-                onChange={setSharesOutstanding}
-                min={1000}
-                max={1000000000}
-                step={10000}
+                label="Cash & Liquid Assets"
+                value={cashAndEquivalents}
+                onChange={setCashAndEquivalents}
+                min={0}
+                max={5000000000}
+                step={500000}
+                prefix="₹"
               />
             </div>
+
+            <HybridInput
+              label="Shares Outstanding"
+              hint="Diluted total share count for per-share valuation"
+              value={sharesOutstanding}
+              onChange={setSharesOutstanding}
+              min={1000}
+              max={1000000000}
+              step={10000}
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-3 pt-1">
+            <SaveCalculationButton
+              calcType="dcf-valuation"
+              data={{
+                inputs: inputs as unknown as Record<string, unknown>,
+                results: result as unknown as Record<string, unknown>,
+              }}
+              onSaved={(id) => setShareId(id)}
+            />
+            <ShareButton shareId={shareId} />
           </div>
         </div>
 
-        {/* Right Column: Output Hero, Visualizations & Insights */}
-        <div className="lg:col-span-6 space-y-5">
+        {/* ────── VALUATION RESULTS & SENSITIVITY (~55%) ────── */}
+        <div className="lg:col-span-7 space-y-6" data-result-hero>
           {result.isValid ? (
             <>
+              {/* Intrinsic Value Hero */}
               <ResultHero
                 label="Fair Intrinsic Value Per Share"
                 value={result.intrinsicValuePerShare}
-                formatValue={(val) => `₹${val.toLocaleString("en-IN")}`}
+                tone="neutral"
+                prefix="₹"
+                formatValue={(val) => val.toLocaleString("en-IN")}
+                interpretation={`Based on ${forecastYears}-year projected cash flows discounted at ${discountRate}% WACC and a perpetual terminal growth rate of ${terminalGrowthRate}%, the fair equity value per share is estimated at ₹${result.intrinsicValuePerShare.toLocaleString("en-IN")}.`}
+                secondaryMetrics={[
+                  {
+                    label: "Enterprise Value",
+                    value: formatINR(result.enterpriseValue),
+                  },
+                  {
+                    label: "Equity Value",
+                    value: formatINR(result.equityValue),
+                  },
+                  {
+                    label: "PV Explicit FCF",
+                    value: formatINR(result.presentValueExplicitFcf),
+                  },
+                  {
+                    label: "PV Terminal Value",
+                    value: formatINR(result.presentValueTerminalValue),
+                  },
+                ]}
                 breakdown={[
-                  { label: "PV Explicit Cash Flows", value: result.presentValueExplicitFcf, color: "blue" },
-                  { label: "PV Terminal Value", value: result.presentValueTerminalValue, color: "green" },
+                  {
+                    label: "PV Explicit FCF",
+                    value: result.presentValueExplicitFcf,
+                    color: "blue",
+                    formattedValue: formatINR(result.presentValueExplicitFcf),
+                  },
+                  {
+                    label: "PV Terminal Value",
+                    value: result.presentValueTerminalValue,
+                    color: "green",
+                    formattedValue: formatINR(result.presentValueTerminalValue),
+                  },
                 ]}
               />
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
-                  <p className="text-[11px] text-muted-foreground">Enterprise Value</p>
-                  <p className="text-base font-bold text-foreground mt-0.5">
-                    {formatINR(result.enterpriseValue)}
-                  </p>
+              {/* 2D Valuation Sensitivity Matrix */}
+              {sensitivityData && (
+                <div className="bg-card rounded-2xl border border-border/80 overflow-hidden shadow-sm">
+                  <div className="px-5 py-4 border-b border-border/60">
+                    <h3 className="text-sm font-bold text-foreground">
+                      Valuation Sensitivity Matrix (Fair Value / Share in ₹)
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Discount Rate (WACC) vs Terminal Growth Rate
+                    </p>
+                  </div>
+
+                  <div
+                    className="overflow-x-auto"
+                    tabIndex={0}
+                    role="region"
+                    aria-label="Valuation Sensitivity Matrix"
+                  >
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-border bg-muted/40 text-muted-foreground">
+                          <th className="px-4 py-2.5 text-left font-semibold">
+                            WACC \ Terminal g
+                          </th>
+                          <th className="px-4 py-2.5 text-center font-semibold">
+                            {(terminalGrowthRate - 0.5).toFixed(1)}%
+                          </th>
+                          <th className="px-4 py-2.5 text-center font-semibold text-primary">
+                            {terminalGrowthRate.toFixed(1)}% (Base)
+                          </th>
+                          <th className="px-4 py-2.5 text-center font-semibold">
+                            {(terminalGrowthRate + 0.5).toFixed(1)}%
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/40">
+                        {sensitivityData.map((row, idx) => {
+                          const isBaseWacc = row.discountRate === discountRate;
+                          return (
+                            <tr
+                              key={idx}
+                              className={cn(
+                                "hover:bg-muted/30 transition-colors",
+                                isBaseWacc && "bg-primary/5 font-semibold"
+                              )}
+                            >
+                              <td className="px-4 py-2.5 text-muted-foreground font-mono">
+                                {row.discountRate.toFixed(1)}% {isBaseWacc && "(Base)"}
+                              </td>
+                              {row.values.map((val, cIdx) => {
+                                const isExactBase = isBaseWacc && cIdx === 1;
+                                return (
+                                  <td
+                                    key={cIdx}
+                                    className={cn(
+                                      "px-4 py-2.5 text-center tabular-nums font-mono",
+                                      isExactBase
+                                        ? "text-primary font-bold bg-primary/10 rounded"
+                                        : "text-foreground/90"
+                                    )}
+                                  >
+                                    {val ? `₹${val.toLocaleString("en-IN")}` : "N/A"}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-                <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
-                  <p className="text-[11px] text-muted-foreground">Equity Value</p>
-                  <p className="text-base font-bold text-emerald-400 mt-0.5">
-                    {formatINR(result.equityValue)}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
-                  <p className="text-[11px] text-muted-foreground">Discount (WACC)</p>
-                  <p className="text-base font-bold text-primary mt-0.5">
-                    {result.discountRate}%
-                  </p>
-                </div>
-              </div>
+              )}
 
               {/* Chart Card */}
-              <div className="bg-card/60 backdrop-blur border border-border/60 rounded-2xl p-5 shadow-sm">
-                <h3 className="font-semibold text-sm text-foreground mb-3 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-primary" />
-                  Explicit Projected vs Discounted Cash Flows
-                </h3>
-                <div className="h-56">
+              <div className="bg-card rounded-2xl border border-border/80 p-5 sm:p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">
+                      Cash Flow Trajectory (Explicit vs Discounted)
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Nominal Free Cash Flow vs Present Value at {discountRate}% WACC
+                    </p>
+                  </div>
+                  <BarChart2 className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="h-[260px]">
                   <DcfChart yearlyBreakdown={result.yearlyBreakdown} />
                 </div>
               </div>
 
-              {/* Dynamic Insights */}
+              {/* Analytical Insights */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {insights.map((item, idx) => (
                   <InsightCard key={idx} {...item} />
                 ))}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-3 pt-2">
-                <SaveCalculationButton
-                  calcType="dcf-valuation"
-                  data={{
-                    inputs: inputs as unknown as Record<string, unknown>,
-                    results: result as unknown as Record<string, unknown>,
-                  }}
-                  onSaved={(id) => setShareId(id)}
-                />
-                <ShareButton shareId={shareId} />
               </div>
             </>
           ) : (
@@ -268,12 +409,6 @@ export default function DcfCalculator() {
           )}
         </div>
       </div>
-
-      {/* Sticky Mobile Bar */}
-      <StickyResultBar
-        label="DCF Fair Value / Share"
-        value={result.intrinsicValuePerShare}
-      />
-    </div>
+    </>
   );
 }

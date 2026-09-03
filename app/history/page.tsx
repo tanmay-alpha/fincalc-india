@@ -1,12 +1,13 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Lock, History, Calculator } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import type { Metadata } from "next";
 import HistoryClient from "./HistoryClient";
 
 export const metadata: Metadata = {
-  title: "Calculation History",
+  title: "Calculation History | FinCalc India",
+  description: "View and manage your securely saved financial calculations.",
 };
 
 export default async function HistoryPage() {
@@ -14,21 +15,28 @@ export default async function HistoryPage() {
 
   if (!session?.user) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 text-center max-w-sm w-full shadow-sm">
-          <div className="text-4xl mb-4">{'\uD83D\uDD10'}</div>
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Sign in to see your history</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
-            Your saved calculations will appear here. Sign in with Google to save and access your calculation history anytime.
+      <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
+        <div className="bg-card rounded-2xl border border-border/80 p-8 text-center max-w-sm w-full shadow-sm">
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
+            <Lock className="w-6 h-6" />
+          </div>
+          <h2 className="text-lg font-bold text-foreground mb-2">
+            Sign in to view your history
+          </h2>
+          <p className="text-xs sm:text-sm text-muted-foreground mb-6 leading-relaxed">
+            Your saved calculations will appear here. Sign in with Google to securely save, share, and access your calculation history across devices.
           </p>
           <Link
             href="/api/auth/signin"
-            className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-3 rounded-xl transition-colors"
+            className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-sm"
           >
             Sign in with Google
           </Link>
-          <Link href="/" className="block mt-3 text-sm text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition">
-            {'\u2190'} Back to calculators
+          <Link
+            href="/"
+            className="block mt-3 text-xs text-muted-foreground hover:text-foreground transition"
+          >
+            ← Back to calculators
           </Link>
         </div>
       </div>
@@ -53,28 +61,31 @@ export default async function HistoryPage() {
   }));
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950">
-      <div className="max-w-3xl mx-auto px-4 py-10">
-
+    <div className="min-h-screen py-10 px-4">
+      <div className="max-w-4xl mx-auto">
         {serialized.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="text-5xl mb-4">{'\uD83D\uDCCA'}</div>
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">No saved calculations yet</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 max-w-xs mx-auto">
-              Use any calculator and click the Save button to build your history
+          <div className="bg-card rounded-2xl border border-border/80 p-12 text-center max-w-md mx-auto shadow-sm">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
+              <History className="w-6 h-6" />
+            </div>
+            <h3 className="text-lg font-bold text-foreground mb-2">
+              No saved calculations yet
+            </h3>
+            <p className="text-xs sm:text-sm text-muted-foreground mb-6 leading-relaxed">
+              Use any financial calculator and click &quot;Save Calculation&quot; to record scenarios and build your personalized history.
             </p>
             <Link
               href="/"
-              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
+              className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-sm"
             >
-              Go to Calculators
-              <ArrowRight size={14} />
+              <Calculator className="w-4 h-4" />
+              <span>Explore Calculators</span>
+              <ArrowRight className="w-4 h-4 ml-1" />
             </Link>
           </div>
         ) : (
           <HistoryClient calculations={serialized} />
         )}
-
       </div>
     </div>
   );

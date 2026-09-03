@@ -1,385 +1,538 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { useTheme } from "next-themes";
 import { useSession, signIn, signOut } from "next-auth/react";
 import {
-  BadgeIndianRupee,
   Building2,
   ChevronDown,
-  Coins,
   FileText,
-  Globe,
   History,
   LineChart,
   LogOut,
   Menu,
   Moon,
   Scale,
+  Search,
   Sun,
   TrendingUp,
   X,
+  Command,
 } from "lucide-react";
+import { CALCULATOR_REGISTRY, CalculatorCategory } from "@/lib/calculators";
+import CommandSearch from "@/components/ui/CommandSearch";
 import { cn } from "@/lib/utils";
 
-export const CALCULATOR_CATEGORIES = [
-  {
-    name: "Investments & Wealth",
-    icon: TrendingUp,
-    color: "text-emerald-600 dark:text-emerald-400",
-    bgColor: "bg-emerald-50 dark:bg-emerald-950/40",
-    items: [
-      { href: "/sip", label: "SIP Calculator", desc: "Monthly mutual fund growth" },
-      { href: "/step-up-sip", label: "Step-Up & Goal SIP", desc: "Annual increments & target goals" },
-      { href: "/lumpsum", label: "Lumpsum Calculator", desc: "One-time investment compounding" },
-      { href: "/fd", label: "Fixed Deposit (FD)", desc: "Quarterly compounding & yield" },
-      { href: "/ppf", label: "PPF Calculator", desc: "15-year tax-free maturity" },
-      { href: "/fire", label: "FIRE Calculator", desc: "Early retirement corpus & SWR" },
-      { href: "/xirr-cagr-twrr", label: "XIRR / CAGR / TWRR", desc: "Portfolio returns & irregular cashflows" },
-    ],
-  },
-  {
-    name: "Tax & Compliance (2026-27)",
-    icon: FileText,
-    color: "text-blue-600 dark:text-blue-400",
-    bgColor: "bg-blue-50 dark:bg-blue-950/40",
-    items: [
-      { href: "/tax", label: "Income Tax (Old vs New)", desc: "Tax Year 2026-27 slabs & Sec 156" },
-      { href: "/capital-gains-tax", label: "Capital Gains Tax", desc: "12.5% LTCG, ₹1.25L exemption, real estate" },
-      { href: "/hra-exemption", label: "HRA & Rent Optimizer", desc: "Section 10(13A) & parent rent" },
-      { href: "/presumptive-tax", label: "Presumptive Tax (44AD/ADA)", desc: "Freelancers, CAs, doctors & business" },
-      { href: "/section-54-exemption", label: "Section 54 / 54EC / 54F", desc: "Property sale capital gain exemption" },
-      { href: "/marginal-relief", label: "Marginal Relief & Surcharge", desc: "High income surcharge relief" },
-      { href: "/lrs-tcs", label: "LRS TCS Remittance", desc: "Section 394 foreign remittance tax" },
-    ],
-  },
-  {
-    name: "Trading & Derivatives",
-    icon: LineChart,
-    color: "text-purple-600 dark:text-purple-400",
-    bgColor: "bg-purple-50 dark:bg-purple-950/40",
-    items: [
-      { href: "/fno-brokerage", label: "F&O Brokerage & Breakeven", desc: "Updated STT & itemized charges" },
-      { href: "/option-payoff", label: "Option Strategy Visualizer", desc: "Multi-leg expiry payoff curves" },
-      { href: "/black-scholes", label: "Black-Scholes & Greeks", desc: "Theoretical pricing & Option Greeks" },
-      { href: "/position-size", label: "Position Size & Risk", desc: "1% Risk management rule" },
-      { href: "/margin-calculator", label: "SPAN Margin & MTF", desc: "SEBI peak margin & MTF interest" },
-    ],
-  },
-  {
-    name: "Loans & Real Estate",
-    icon: Building2,
-    color: "text-amber-600 dark:text-amber-400",
-    bgColor: "bg-amber-50 dark:bg-amber-950/40",
-    items: [
-      { href: "/emi", label: "Loan EMI Calculator", desc: "Amortization schedule & interest split" },
-      { href: "/loan-prepayment", label: "Loan Prepayment vs Invest", desc: "Save tenure & interest" },
-      { href: "/no-cost-emi", label: "No-Cost EMI Revealer", desc: "Unmask hidden 18% GST & true APR" },
-      { href: "/car-loan-tco", label: "Car Loan Total Cost (TCO)", desc: "Fuel, maintenance & cost per km" },
-      { href: "/balance-transfer", label: "Home Loan Balance Transfer", desc: "Refinancing savings & breakeven" },
-    ],
-  },
-  {
-    name: "Corporate & Valuation",
-    icon: Scale,
-    color: "text-cyan-600 dark:text-cyan-400",
-    bgColor: "bg-cyan-50 dark:bg-cyan-950/40",
-    items: [
-      { href: "/dcf-valuation", label: "DCF Valuation Model", desc: "Intrinsic value & sensitivity matrix" },
-      { href: "/wacc", label: "WACC Calculator", desc: "Cost of capital & tax shield" },
-      { href: "/dupont-analysis", label: "DuPont ROE Analysis", desc: "3-step & 5-step decomposition" },
-    ],
-  },
-  {
-    name: "NRI & Global Wealth",
-    icon: Globe,
-    color: "text-rose-600 dark:text-rose-400",
-    bgColor: "bg-rose-50 dark:bg-rose-950/40",
-    items: [
-      { href: "/us-stock-tax", label: "US Stock Returns & DTAA", desc: "Section 90 FTC & currency gains" },
-      { href: "/nre-nro-fcnr", label: "NRI Deposit Comparator", desc: "NRE vs NRO vs FCNR post-tax yield" },
-      { href: "/nps", label: "NPS & Pension Modeler", desc: "PFRDA 2026 exit rules & 80CCD" },
-      { href: "/portfolio-risk", label: "Portfolio Risk Ratios", desc: "Sharpe, Sortino, Treynor & Beta" },
-    ],
-  },
-];
-
-const quickLinks = [
-  { href: "/tax", label: "Tax 2026-27", icon: FileText, highlight: true },
-  { href: "/sip", label: "SIP", icon: TrendingUp },
-  { href: "/capital-gains-tax", label: "Cap Gains", icon: BadgeIndianRupee },
-  { href: "/fno-brokerage", label: "F&O", icon: LineChart },
-  { href: "/emi", label: "EMI", icon: Building2 },
-];
+const CATEGORY_CONFIG: Record<
+  CalculatorCategory,
+  { label: string; icon: typeof TrendingUp }
+> = {
+  investments: { label: "Invest & Grow", icon: TrendingUp },
+  taxation: { label: "Tax & Compliance", icon: FileText },
+  trading: { label: "Trading & Risk", icon: LineChart },
+  loans: { label: "Loans & Credit", icon: Building2 },
+  corporate: { label: "Corporate & NRI", icon: Scale },
+};
 
 export default function Navbar() {
   const pathname = usePathname();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [megaOpen, setMegaOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
-  const { data: session } = useSession();
-  const megaRef = useRef<HTMLDivElement>(null);
+  const { data: session, status } = useSession();
 
-  useEffect(() => {
-    setMenuOpen(false);
-    setMegaOpen(false);
-  }, [pathname]);
+  const [mounted, setMounted] = useState(false);
+  const [isCalculatorsOpen, setIsCalculatorsOpen] = useState(false);
+  const [isCommandSearchOpen, setIsCommandSearchOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<CalculatorCategory>("investments");
+
+  const calcDropdownRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Close menus on route change
+  useEffect(() => {
+    setIsCalculatorsOpen(false);
+    setIsMobileMenuOpen(false);
+    setIsUserMenuOpen(false);
+  }, [pathname]);
+
+  // Click outside handlers
+  useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (megaRef.current && !megaRef.current.contains(e.target as Node)) {
-        setMegaOpen(false);
+      if (
+        calcDropdownRef.current &&
+        !calcDropdownRef.current.contains(e.target as Node)
+      ) {
+        setIsCalculatorsOpen(false);
+      }
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(e.target as Node)
+      ) {
+        setIsUserMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Filter calculators by active category in mega menu
+  const categoryCalculators = CALCULATOR_REGISTRY.filter(
+    (c) => c.category === activeCategory
+  );
+
+  const popularCalculators = CALCULATOR_REGISTRY.filter((c) => c.isPopular).slice(0, 6);
+
   return (
-    <header className="sticky top-0 z-50 w-full bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 transition-colors duration-200">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center gap-6">
-            <Link href="/" className="flex items-center gap-1.5 focus:outline-none">
-              <span className="text-xl font-black tracking-tight text-slate-900 dark:text-white">FinCalc</span>
-              <span className="text-xl font-black tracking-tight text-blue-600">India</span>
-              <span className="hidden sm:inline-block ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
-                FY 2026-27
-              </span>
+    <>
+      <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-card/90 backdrop-blur-md transition-colors">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
+          {/* Logo */}
+          <div className="flex items-center gap-8">
+            <Link
+              href="/"
+              className="flex items-center gap-2.5 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
+              aria-label="FinCalc India Home"
+            >
+              <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg shadow-sm group-hover:scale-105 transition-transform">
+                ₹
+              </div>
+              <div className="flex flex-col">
+                <span className="font-bold text-base tracking-tight text-foreground leading-tight">
+                  FinCalc <span className="text-primary font-extrabold">India</span>
+                </span>
+                <span className="text-[10px] text-muted-foreground font-medium">
+                  Financial Workspace
+                </span>
+              </div>
             </Link>
 
-            {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-1.5" ref={megaRef}>
-              {/* All Calculators Mega Menu Trigger */}
-              <div className="relative">
+            {/* Desktop Navigation Links */}
+            <nav className="hidden lg:flex items-center gap-1" aria-label="Main Navigation">
+              {/* Calculators Dropdown */}
+              <div ref={calcDropdownRef} className="relative">
                 <button
-                  onClick={() => setMegaOpen(!megaOpen)}
+                  type="button"
+                  onClick={() => setIsCalculatorsOpen(!isCalculatorsOpen)}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all",
-                    megaOpen
-                      ? "bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 shadow-sm"
-                      : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                    isCalculatorsOpen
+                      ? "bg-accent text-accent-foreground"
+                      : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
                   )}
+                  aria-expanded={isCalculatorsOpen}
+                  aria-haspopup="true"
                 >
-                  <Coins className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                  <span>All 31 Calculators</span>
-                  <ChevronDown className={cn("h-4 w-4 transition-transform duration-200", megaOpen && "rotate-180")} />
+                  <span>Calculators</span>
+                  <ChevronDown
+                    className={cn(
+                      "w-4 h-4 transition-transform duration-200",
+                      isCalculatorsOpen && "rotate-180"
+                    )}
+                  />
                 </button>
 
-                {/* Mega Dropdown Panel */}
-                {megaOpen && (
-                  <div className="absolute left-0 top-full mt-2 w-[850px] max-h-[80vh] overflow-y-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-6 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                    <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100 dark:border-slate-800">
-                      <div>
-                        <h3 className="text-base font-bold text-slate-900 dark:text-white">Financial Calculation Directory</h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">31 statutory calculators conforming to Finance Act, 2026 & Income-tax Act, 2025</p>
+                {/* Calculators Mega Menu Popover */}
+                {isCalculatorsOpen && (
+                  <div className="absolute top-full left-0 mt-2 w-[720px] bg-card rounded-xl border border-border shadow-xl p-4 animate-in fade-in-50 zoom-in-95 duration-150 z-50">
+                    <div className="flex items-center justify-between pb-3 mb-3 border-b border-border">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          Calculator Directory
+                        </span>
+                        <span className="text-[10px] bg-primary/10 text-primary font-bold px-1.5 py-0.5 rounded">
+                          31 Tools
+                        </span>
                       </div>
-                      <Link
-                        href="/"
-                        onClick={() => setMegaOpen(false)}
-                        className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                      <button
+                        onClick={() => {
+                          setIsCalculatorsOpen(false);
+                          setIsCommandSearchOpen(true);
+                        }}
+                        className="text-xs text-primary hover:underline flex items-center gap-1 font-medium"
                       >
-                        View Directory Grid →
-                      </Link>
+                        <Search className="w-3.5 h-3.5" />
+                        <span>Search all calculators</span>
+                      </button>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-6">
-                      {CALCULATOR_CATEGORIES.map((category) => (
-                        <div key={category.name} className="space-y-2">
-                          <div className="flex items-center gap-2 pb-1 border-b border-slate-100 dark:border-slate-800">
-                            <category.icon className={cn("h-4 w-4", category.color)} />
-                            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                              {category.name}
-                            </h4>
-                          </div>
-                          <ul className="space-y-1">
-                            {category.items.map((item) => (
-                              <li key={item.href}>
-                                <Link
-                                  href={item.href}
-                                  onClick={() => setMegaOpen(false)}
-                                  className={cn(
-                                    "group block rounded-lg px-2.5 py-1.5 transition-colors",
-                                    pathname === item.href
-                                      ? "bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-semibold"
-                                      : "hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300"
-                                  )}
-                                >
-                                  <div className="text-xs font-medium group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                                    {item.label}
-                                  </div>
-                                  <div className="text-[10px] text-slate-600 dark:text-slate-400 line-clamp-1">
-                                    {item.desc}
-                                  </div>
-                                </Link>
-                              </li>
-                            ))}
-                          </ul>
+                    <div className="grid grid-cols-12 gap-4">
+                      {/* Category Sidebar */}
+                      <div className="col-span-4 border-r border-border pr-2 space-y-1">
+                        {(
+                          Object.keys(CATEGORY_CONFIG) as CalculatorCategory[]
+                        ).map((catKey) => {
+                          const conf = CATEGORY_CONFIG[catKey];
+                          const Icon = conf.icon;
+                          const isActive = activeCategory === catKey;
+
+                          return (
+                            <button
+                              key={catKey}
+                              onClick={() => setActiveCategory(catKey)}
+                              className={cn(
+                                "w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors text-left",
+                                isActive
+                                  ? "bg-primary text-primary-foreground"
+                                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                              )}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Icon className="w-3.5 h-3.5" />
+                                <span>{conf.label}</span>
+                              </div>
+                            </button>
+                          );
+                        })}
+
+                        {/* Quick View Popular Tools */}
+                        <div className="pt-3 border-t border-border/60">
+                          <p className="text-[11px] font-semibold text-muted-foreground px-3 mb-1">
+                            Popular Tools
+                          </p>
+                          {popularCalculators.slice(0, 3).map((calc) => (
+                            <Link
+                              key={calc.id}
+                              href={calc.route}
+                              className="block px-3 py-1.5 text-xs text-foreground/80 hover:text-primary transition-colors truncate"
+                            >
+                              {calc.shortName}
+                            </Link>
+                          ))}
                         </div>
-                      ))}
+                      </div>
+
+                      {/* Calculators in selected Category */}
+                      <div className="col-span-8 pl-1 max-h-[360px] overflow-y-auto pr-1">
+                        <div className="grid grid-cols-2 gap-2">
+                          {categoryCalculators.map((calc) => (
+                            <Link
+                              key={calc.id}
+                              href={calc.route}
+                              className="p-2.5 rounded-lg border border-transparent hover:border-border hover:bg-muted/40 transition-all group"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                                  {calc.name}
+                                </span>
+                                {calc.badge && (
+                                  <span className="text-[9px] uppercase font-bold tracking-wider px-1 py-0.2 bg-primary/10 text-primary rounded shrink-0 ml-1">
+                                    {calc.badge}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+                                {calc.description}
+                              </p>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Quick direct links */}
-              {quickLinks.map((link) => {
-                const isActive = pathname === link.href;
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={cn(
-                      "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-semibold"
-                        : link.highlight
-                          ? "text-blue-600 dark:text-blue-400 font-semibold hover:bg-blue-50 dark:hover:bg-blue-950/30"
-                          : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
-                    )}
-                  >
-                    <link.icon className="h-4 w-4" />
-                    <span>{link.label}</span>
-                  </Link>
-                );
-              })}
+              {/* Direct First-Layer Links */}
+              <Link
+                href="/tax"
+                className={cn(
+                  "px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                  pathname === "/tax"
+                    ? "text-primary bg-primary/10 font-semibold"
+                    : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
+                )}
+              >
+                Tax
+              </Link>
+              <Link
+                href="/sip"
+                className={cn(
+                  "px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                  pathname === "/sip"
+                    ? "text-primary bg-primary/10 font-semibold"
+                    : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
+                )}
+              >
+                Investing
+              </Link>
+              <Link
+                href="/fno-brokerage"
+                className={cn(
+                  "px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                  pathname === "/fno-brokerage"
+                    ? "text-primary bg-primary/10 font-semibold"
+                    : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
+                )}
+              >
+                Trading
+              </Link>
+              <Link
+                href="/emi"
+                className={cn(
+                  "px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                  pathname === "/emi"
+                    ? "text-primary bg-primary/10 font-semibold"
+                    : "text-foreground/80 hover:text-foreground hover:bg-muted/60"
+                )}
+              >
+                Loans
+              </Link>
             </nav>
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Right Action Controls */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Global Search Button (Cmd+K) */}
+            <button
+              onClick={() => setIsCommandSearchOpen(true)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors text-xs"
+              aria-label="Search calculators"
+            >
+              <Search className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="hidden sm:inline">Search...</span>
+              <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono bg-background text-muted-foreground rounded border border-border">
+                <Command className="w-2.5 h-2.5" />K
+              </kbd>
+            </button>
+
+            {/* Theme Toggle Button */}
             {mounted && (
               <button
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                aria-label="Toggle dark mode"
-                className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
               >
-                {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+                {theme === "dark" ? (
+                  <Sun className="w-4 h-4 text-amber-400" />
+                ) : (
+                  <Moon className="w-4 h-4 text-slate-600" />
+                )}
               </button>
             )}
 
-            {!session ? (
+            {/* Account CTA / User Menu */}
+            {status === "authenticated" && session ? (
+              <div ref={userMenuRef} className="relative">
+                <button
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-muted transition-colors"
+                  aria-label="User menu"
+                  aria-expanded={isUserMenuOpen}
+                >
+                  <div className="w-7 h-7 rounded-full bg-primary/15 text-primary flex items-center justify-center font-bold text-xs">
+                    {session.user?.name ? session.user.name[0].toUpperCase() : "U"}
+                  </div>
+                </button>
+
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-52 bg-card rounded-xl border border-border shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100">
+                    <div className="px-3 py-2 border-b border-border/80">
+                      <p className="text-xs font-semibold text-foreground truncate">
+                        {session.user?.name || "Investor"}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground truncate">
+                        {session.user?.email}
+                      </p>
+                    </div>
+                    <div className="py-1">
+                      <Link
+                        href="/history"
+                        className="flex items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-muted rounded-lg transition-colors"
+                      >
+                        <History className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span>Saved Calculations</span>
+                      </Link>
+                      <button
+                        onClick={() => signOut()}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-destructive hover:bg-destructive/10 rounded-lg transition-colors text-left"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
               <button
                 onClick={() => signIn("google")}
-                className="hidden sm:flex items-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm transition-all duration-150 whitespace-nowrap"
+                className="hidden sm:inline-flex items-center justify-center px-3.5 py-1.5 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" className="shrink-0" aria-hidden="true">
-                  <path fill="white" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="white" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="white" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="white" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                Sign in
+                Sign In
               </button>
-            ) : (
-              <div className="relative group">
-                <button className="flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                  {session.user?.image && (
-                    <Image
-                      src={session.user.image}
-                      alt="Profile"
-                      width={24}
-                      height={24}
-                      className="rounded-full"
-                      unoptimized
-                    />
-                  )}
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300 hidden sm:block max-w-[80px] truncate">
-                    {session.user?.name?.split(" ")[0]}
-                  </span>
-                </button>
-                <div className="absolute right-0 top-full mt-2 w-44 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg z-50 py-1.5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150">
-                  <Link
-                    href="/history"
-                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
-                  >
-                    <History className="h-4 w-4" />
-                    My History
-                  </Link>
-                  <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
-                  <button
-                    onClick={() => signOut({ callbackUrl: "/" })}
-                    className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 text-left"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Sign Out
-                  </button>
-                </div>
-              </div>
             )}
 
+            {/* Mobile Hamburger Toggle Button */}
             <button
-              className="lg:hidden -mr-2 rounded-xl p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              onClick={() => setMenuOpen(!menuOpen)}
-              aria-label="Toggle menu"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-2 rounded-lg lg:hidden text-foreground hover:bg-muted transition-colors"
+              aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-expanded={isMobileMenuOpen}
             >
-              {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Mobile Navigation Drawer with full 31-calculator categorized directory */}
-      {menuOpen && (
+      {/* Dedicated Mobile Navigation Drawer */}
+      {isMobileMenuOpen && (
         <div
-          id="mobile-nav"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Mobile navigation"
-          className="fixed inset-x-0 top-16 bottom-0 z-40 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 overflow-y-auto p-4 lg:hidden"
+          className="fixed inset-0 z-50 lg:hidden bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150"
+          onClick={() => setIsMobileMenuOpen(false)}
         >
-          <div className="space-y-6 pb-20">
-            {CALCULATOR_CATEGORIES.map((category) => (
-              <div key={category.name} className="space-y-2">
-                <div className="flex items-center gap-2 px-2 py-1 bg-slate-50 dark:bg-slate-900 rounded-lg">
-                  <category.icon className={cn("h-4 w-4", category.color)} />
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                    {category.name}
-                  </h4>
+          <div
+            className="fixed inset-y-0 right-0 w-full max-w-sm bg-card border-l border-border shadow-2xl p-5 flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between pb-4 border-b border-border">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-base">
+                    ₹
+                  </div>
+                  <span className="font-bold text-base text-foreground">
+                    FinCalc India
+                  </span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 pl-2">
-                  {category.items.map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setMenuOpen(false)}
-                        className={cn(
-                          "flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                          isActive
-                            ? "bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400"
-                            : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900"
-                        )}
-                      >
-                        <span>{item.label}</span>
-                        <span className="text-[10px] text-slate-600 dark:text-slate-400">{item.desc}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground"
+                  aria-label="Close menu"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-            ))}
 
-            {!session?.user && (
+              {/* Quick Search Action */}
               <button
-                type="button"
                 onClick={() => {
-                  setMenuOpen(false);
-                  signIn("google");
+                  setIsMobileMenuOpen(false);
+                  setIsCommandSearchOpen(true);
                 }}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 px-4 py-3 text-sm font-semibold text-white"
+                className="w-full mt-4 flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-border bg-muted/50 text-muted-foreground text-xs"
               >
-                Sign in with Google
+                <Search className="w-4 h-4" />
+                <span>Search 31 calculators...</span>
               </button>
-            )}
+
+              {/* Flagship Primary Links */}
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <Link
+                  href="/tax"
+                  className="p-3 rounded-lg border border-border/60 hover:border-primary/50 bg-card hover:bg-primary/5 text-xs font-semibold text-foreground flex items-center gap-2"
+                >
+                  <FileText className="w-4 h-4 text-primary" />
+                  <span>Tax (2026–27)</span>
+                </Link>
+                <Link
+                  href="/sip"
+                  className="p-3 rounded-lg border border-border/60 hover:border-primary/50 bg-card hover:bg-primary/5 text-xs font-semibold text-foreground flex items-center gap-2"
+                >
+                  <TrendingUp className="w-4 h-4 text-emerald-600" />
+                  <span>SIP Calculator</span>
+                </Link>
+                <Link
+                  href="/fno-brokerage"
+                  className="p-3 rounded-lg border border-border/60 hover:border-primary/50 bg-card hover:bg-primary/5 text-xs font-semibold text-foreground flex items-center gap-2"
+                >
+                  <LineChart className="w-4 h-4 text-purple-600" />
+                  <span>F&O Brokerage</span>
+                </Link>
+                <Link
+                  href="/emi"
+                  className="p-3 rounded-lg border border-border/60 hover:border-primary/50 bg-card hover:bg-primary/5 text-xs font-semibold text-foreground flex items-center gap-2"
+                >
+                  <Building2 className="w-4 h-4 text-amber-600" />
+                  <span>Loan EMI</span>
+                </Link>
+              </div>
+
+              {/* Category Directory Accordion */}
+              <div className="mt-6 space-y-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Explore by Category
+                </p>
+                {(
+                  Object.keys(CATEGORY_CONFIG) as CalculatorCategory[]
+                ).map((catKey) => {
+                  const conf = CATEGORY_CONFIG[catKey];
+                  const Icon = conf.icon;
+                  const tools = CALCULATOR_REGISTRY.filter((c) => c.category === catKey);
+
+                  return (
+                    <details key={catKey} className="group border-b border-border/60 pb-3">
+                      <summary className="flex items-center justify-between cursor-pointer list-none text-xs font-semibold text-foreground">
+                        <div className="flex items-center gap-2">
+                          <Icon className="w-3.5 h-3.5 text-muted-foreground group-open:text-primary" />
+                          <span>{conf.label}</span>
+                          <span className="text-[10px] text-muted-foreground">
+                            ({tools.length})
+                          </span>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5 text-muted-foreground transition-transform group-open:rotate-180" />
+                      </summary>
+                      <div className="mt-2.5 pl-5 space-y-2">
+                        {tools.map((calc) => (
+                          <Link
+                            key={calc.id}
+                            href={calc.route}
+                            className="block text-xs text-foreground/80 hover:text-primary transition-colors truncate"
+                          >
+                            {calc.name}
+                          </Link>
+                        ))}
+                      </div>
+                    </details>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Mobile Drawer Footer with Auth & Theme */}
+            <div className="pt-6 border-t border-border mt-6 space-y-3">
+              {status === "authenticated" && session ? (
+                <div className="flex items-center justify-between">
+                  <Link
+                    href="/history"
+                    className="flex items-center gap-2 text-xs font-medium text-foreground hover:text-primary"
+                  >
+                    <History className="w-4 h-4" />
+                    <span>Saved Calculations</span>
+                  </Link>
+                  <button
+                    onClick={() => signOut()}
+                    className="text-xs text-destructive hover:underline"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => signIn("google")}
+                  className="w-full py-2 px-3 rounded-lg text-xs font-semibold bg-primary text-primary-foreground text-center"
+                >
+                  Sign In with Google
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
-    </header>
+
+      {/* Global Command Search Modal */}
+      <CommandSearch
+        isOpen={isCommandSearchOpen}
+        onClose={() => setIsCommandSearchOpen(false)}
+      />
+    </>
   );
 }

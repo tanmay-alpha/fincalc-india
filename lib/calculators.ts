@@ -138,7 +138,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     shortName: "Income Tax",
     route: "/tax",
     category: "taxation",
-    description: "Compare New vs Old Regime with Section 156 rebate (₹12L), ₹75k standard deduction & capital gains.",
+    description: "Compare New vs Old Regime with Section 157 rebate (₹12L), ₹75k standard deduction & capital gains.",
     badge: "Finance Act 2026",
     isPopular: true,
   },

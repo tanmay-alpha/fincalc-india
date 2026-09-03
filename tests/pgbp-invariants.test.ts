@@ -63,10 +63,10 @@ describe("Tax Invariant & PGBP Unification Test Suite (AY 2026-27)", () => {
 
     expect(res.standardDeduction).toBe(0);
     expect(res.totalTaxableIncome).toBe(1200000);
-    expect(res.totalTax).toBe(0); // Section 156 full rebate
+    expect(res.totalTax).toBe(0); // Section 157 full rebate
   });
 
-  it("Invariant 4: Section 156(2)(b) marginal rebate tapering holds identically across PGBP and canonical tax", () => {
+  it("Invariant 4: Section 157(2)(b) marginal rebate tapering holds identically across PGBP and canonical tax", () => {
     // At ₹12,00,001: Net tax before cess must equal excess income of ₹1
     const res1200001 = calcTax({
       salaryIncome: 0,
@@ -124,6 +124,6 @@ describe("Tax Invariant & PGBP Unification Test Suite (AY 2026-27)", () => {
     const expectedTax = computePGBPTax(600000, "new").totalTax;
     expect(res44ad.presumptiveIncome).toBe(600000);
     expect(res44ad.presumptiveTaxPayable).toBe(expectedTax);
-    expect(res44ad.presumptiveTaxPayable).toBe(0); // 6L is <= 12L Section 156 rebate threshold
+    expect(res44ad.presumptiveTaxPayable).toBe(0); // 6L is <= 12L Section 157 rebate threshold
   });
 });

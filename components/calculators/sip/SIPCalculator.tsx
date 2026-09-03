@@ -14,7 +14,9 @@ import { calcSIP } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { generateSIPInsights } from "@/lib/insights";
 import { useDebounce } from "@/hooks/useDebounce";
-import { clsx } from "clsx";
+import { SlidersHorizontal } from "lucide-react";
+import { cn } from "@/lib/utils";
+import SIPScenarioMilestones from "@/components/calculators/sip/SIPScenarioMilestones";
 
 const SIPChart = dynamic(
   () => import("@/components/calculators/sip/SIPChart"),
@@ -26,13 +28,13 @@ export default function SIPCalculator() {
   useEffect(() => setMounted(true), []);
 
   const [inputs, setInputs] = useState({
-    monthlyAmount: 5000,
+    monthlyAmount: 25000,
     annualRate: 12,
     years: 10,
   });
   const [shareId, setShareId] = useState<string | null>(null);
 
-  const debouncedInputs = useDebounce(inputs, 250);
+  const debouncedInputs = useDebounce(inputs, 200);
   const results = useMemo(() => calcSIP(debouncedInputs), [debouncedInputs]);
   const insights = useMemo(() => generateSIPInsights(results), [results]);
 
@@ -53,169 +55,235 @@ export default function SIPCalculator() {
 
   if (!mounted) return <CalcPageSkeleton />;
 
+  const wealthRatio = (results.totalCorpus / results.totalInvested || 1).toFixed(2);
+
   return (
     <>
-      <StickyResultBar label="Total Corpus" value={results.totalCorpus} />
+      <StickyResultBar
+        label="Estimated Corpus"
+        value={results.totalCorpus}
+        prefix="₹"
+        color="green"
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6 mt-6">
-          {/* ────── INPUT PANEL ────── */}
-          <div className="h-fit lg:sticky lg:top-6 space-y-4">
-            <div className="surface-card p-6">
-              <div className="flex items-center gap-2 mb-5">
-                <span className="text-lg" aria-hidden="true">💼</span>
-                <h2 className="text-base font-semibold text-card-foreground">
-                  Enter SIP Details
-                </h2>
-              </div>
-              <div className="space-y-4">
-                <HybridInput
-                  label="Monthly Investment"
-                  value={inputs.monthlyAmount}
-                  onChange={setMonthly}
-                  min={500}
-                  max={10000000}
-                  step={500}
-                  prefix="₹"
-                  quickChips={[
-                    { label: "₹1K", value: 1000 },
-                    { label: "₹5K", value: 5000 },
-                    { label: "₹10K", value: 10000 },
-                    { label: "₹50K", value: 50000 },
-                    { label: "₹1L", value: 100000 },
-                  ]}
-                />
-                <HybridInput
-                  label="Expected Return"
-                  value={inputs.annualRate}
-                  onChange={setRate}
-                  min={1}
-                  max={50}
-                  step={0.5}
-                  suffix="%"
-                  quickChips={[
-                    { label: "8%", value: 8 },
-                    { label: "10%", value: 10 },
-                    { label: "12%", value: 12 },
-                    { label: "15%", value: 15 },
-                    { label: "18%", value: 18 },
-                  ]}
-                  hint="Historical equity avg: 12%"
-                />
-                <HybridInput
-                  label="Time Period"
-                  value={inputs.years}
-                  onChange={setYears}
-                  min={1}
-                  max={50}
-                  step={1}
-                  suffix=" Yrs"
-                  quickChips={[
-                    { label: "5Y", value: 5 },
-                    { label: "10Y", value: 10 },
-                    { label: "15Y", value: 15 },
-                    { label: "20Y", value: 20 },
-                    { label: "30Y", value: 30 },
-                  ]}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground text-center mt-5">
-                * Returns are estimated. Actual market returns may vary.
-              </p>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+        {/* ────── INPUT PANEL (~42%) ────── */}
+        <div className="lg:col-span-5 space-y-6">
+          <div className="bg-card rounded-2xl border border-border/80 p-5 sm:p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-5 pb-3 border-b border-border/60">
+              <SlidersHorizontal className="w-4 h-4 text-primary" />
+              <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                Investment Parameters
+              </h2>
+            </div>
+
+            <div className="space-y-5">
+              <HybridInput
+                label="Monthly Investment"
+                value={inputs.monthlyAmount}
+                onChange={setMonthly}
+                min={500}
+                max={10000000}
+                step={500}
+                prefix="₹"
+                quickChips={[
+                  { label: "₹5K", value: 5000 },
+                  { label: "₹10K", value: 10000 },
+                  { label: "₹25K", value: 25000 },
+                  { label: "₹50K", value: 50000 },
+                  { label: "₹1L", value: 100000 },
+                ]}
+              />
+
+              <HybridInput
+                label="Expected Annual Return Rate"
+                value={inputs.annualRate}
+                onChange={setRate}
+                min={1}
+                max={40}
+                step={0.5}
+                suffix="% p.a."
+                hint="Benchmark equity mutual fund historical average: 12% - 15%"
+                quickChips={[
+                  { label: "10%", value: 10 },
+                  { label: "12%", value: 12 },
+                  { label: "14%", value: 14 },
+                  { label: "16%", value: 16 },
+                ]}
+              />
+
+              <HybridInput
+                label="Investment Horizon"
+                value={inputs.years}
+                onChange={setYears}
+                min={1}
+                max={40}
+                step={1}
+                suffix=" Years"
+                quickChips={[
+                  { label: "5Y", value: 5 },
+                  { label: "10Y", value: 10 },
+                  { label: "15Y", value: 15 },
+                  { label: "20Y", value: 20 },
+                  { label: "25Y", value: 25 },
+                ]}
+              />
             </div>
           </div>
 
-          {/* ────── RESULTS PANEL ────── */}
-          <div className="space-y-5 min-w-0">
-            <ResultHero
-              label="Total Corpus"
-              value={results.totalCorpus}
-              breakdown={[
-                { label: "Invested", value: results.totalInvested, color: "blue" },
-                { label: "Returns", value: results.estimatedReturns, color: "green" },
-              ]}
+          {/* Action Buttons */}
+          <div className="flex items-center gap-3 pt-1">
+            <SaveCalculationButton
+              calcType="SIP"
+              data={{
+                inputs: debouncedInputs,
+                results: results as unknown as Record<string, unknown>,
+              }}
+              onSaved={setShareId}
             />
+            <ShareButton shareId={shareId} />
+          </div>
+        </div>
 
-            {/* Insights */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {insights.map((ins, i) => (
-                <InsightCard key={i} {...ins} />
-              ))}
-            </div>
+        {/* ────── RESULTS PANEL (~58%) ────── */}
+        <div className="lg:col-span-7 space-y-6" data-result-hero>
+          <ResultHero
+            label="Estimated Total Corpus"
+            value={results.totalCorpus}
+            tone="positive"
+            prefix="₹"
+            formatValue={(val) => val.toLocaleString("en-IN")}
+            interpretation={`Investing ₹${inputs.monthlyAmount.toLocaleString("en-IN")} monthly over ${inputs.years} years could generate ₹${results.estimatedReturns.toLocaleString("en-IN")} in compounding returns, building a total corpus of ₹${results.totalCorpus.toLocaleString("en-IN")}.`}
+            secondaryMetrics={[
+              {
+                label: "Total Invested",
+                value: formatINR(results.totalInvested),
+              },
+              {
+                label: "Estimated Returns",
+                value: formatINR(results.estimatedReturns),
+              },
+              {
+                label: "Wealth Multiplier",
+                value: `${wealthRatio}x`,
+              },
+            ]}
+            breakdown={[
+              {
+                label: "Invested Amount",
+                value: results.totalInvested,
+                color: "blue",
+                formattedValue: formatINR(results.totalInvested),
+              },
+              {
+                label: "Estimated Returns",
+                value: results.estimatedReturns,
+                color: "green",
+                formattedValue: formatINR(results.estimatedReturns),
+              },
+            ]}
+          />
 
-            {/* Chart */}
-            <div className="surface-card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-card-foreground">Growth Projection</h3>
-                <span className="text-xs text-muted-foreground">Year by year</span>
-              </div>
-              <div className="h-[300px]">
-                <SIPChart data={results.yearlyBreakdown} />
-              </div>
-            </div>
+          {/* Analytical Insights Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {insights.map((ins, i) => (
+              <InsightCard key={i} {...ins} />
+            ))}
+          </div>
 
-            {/* Year-by-Year Table */}
-            <div className="table-surface">
-              <div className="px-6 py-4 border-b border-border">
-                <h3 className="font-semibold text-card-foreground">
-                  Year-by-Year Breakdown
+          {/* Interactive Milestone Roadmap & Scenarios */}
+          <SIPScenarioMilestones
+            monthlyAmount={debouncedInputs.monthlyAmount}
+            annualRate={debouncedInputs.annualRate}
+            years={debouncedInputs.years}
+            totalCorpus={results.totalCorpus}
+            totalInvested={results.totalInvested}
+            estimatedReturns={results.estimatedReturns}
+          />
+
+          {/* Growth Projection Chart */}
+          <div className="bg-card rounded-2xl border border-border/80 p-5 sm:p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-sm font-bold text-foreground">
+                  Corpus Accumulation Timeline
                 </h3>
+                <p className="text-xs text-muted-foreground">
+                  Invested Capital vs Compounded Returns
+                </p>
               </div>
-              <div
-                className="overflow-x-auto"
-                tabIndex={0}
-                role="region"
-                aria-label="Year-by-Year Breakdown Table"
-              >
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="table-head">
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Year</th>
-                      <th className="px-6 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide">Invested</th>
-                      <th className="px-6 py-3 text-right text-xs font-semibold text-primary uppercase tracking-wide">Returns</th>
-                      <th className="px-6 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide">Corpus</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {results.yearlyBreakdown.map((row, i) => (
-                      <tr
-                        key={row.year}
-                        className={clsx(
-                          "table-row",
-                          i === results.yearlyBreakdown.length - 1 &&
-                            "bg-primary/10 font-semibold"
-                        )}
-                      >
-                        <td className="px-6 py-3.5 text-muted-foreground">{row.year}</td>
-                        <td className="px-6 py-3.5 text-right text-foreground/80">
-                          {formatINR(row.invested)}
-                        </td>
-                        <td className="px-6 py-3.5 text-right text-success font-medium">
-                          {formatINR(row.returns)}
-                        </td>
-                        <td className="px-6 py-3.5 text-right text-foreground font-semibold">
-                          {formatINR(row.corpus)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-muted text-muted-foreground">
+                Annual View
+              </span>
             </div>
+            <div className="h-[280px]">
+              <SIPChart data={results.yearlyBreakdown} />
+            </div>
+          </div>
 
-            {/* Actions */}
-            <div className="flex gap-3 mt-2">
-              <SaveCalculationButton
-                calcType="SIP"
-                data={{
-                  inputs: debouncedInputs,
-                  results: results as unknown as Record<string, unknown>,
-                }}
-                onSaved={setShareId}
-              />
-              <ShareButton shareId={shareId} />
+          {/* Year-by-Year Breakdown Table */}
+          <div className="bg-card rounded-2xl border border-border/80 overflow-hidden shadow-sm">
+            <div className="px-5 py-4 border-b border-border/60 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-foreground">
+                Year-by-Year Compounding Schedule
+              </h3>
+              <span className="text-xs text-muted-foreground">
+                {results.yearlyBreakdown.length} Years
+              </span>
+            </div>
+            <div
+              className="overflow-x-auto"
+              tabIndex={0}
+              role="region"
+              aria-label="Year-by-Year Breakdown Table"
+            >
+              <table className="w-full text-xs sm:text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/40 text-muted-foreground">
+                    <th className="px-4 py-3 text-left font-semibold uppercase text-[11px] tracking-wider">
+                      Year
+                    </th>
+                    <th className="px-4 py-3 text-right font-semibold uppercase text-[11px] tracking-wider">
+                      Invested
+                    </th>
+                    <th className="px-4 py-3 text-right font-semibold uppercase text-[11px] tracking-wider text-emerald-600 dark:text-emerald-400">
+                      Returns
+                    </th>
+                    <th className="px-4 py-3 text-right font-semibold uppercase text-[11px] tracking-wider">
+                      Total Corpus
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/40">
+                  {results.yearlyBreakdown.map((row, i) => (
+                    <tr
+                      key={row.year}
+                      className={cn(
+                        "hover:bg-muted/30 transition-colors",
+                        i === results.yearlyBreakdown.length - 1 &&
+                          "bg-primary/5 font-semibold"
+                      )}
+                    >
+                      <td className="px-4 py-3 text-muted-foreground font-mono">
+                        Yr {row.year}
+                      </td>
+                      <td className="px-4 py-3 text-right text-foreground/80 tabular-nums">
+                        {formatINR(row.invested)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-emerald-600 dark:text-emerald-400 tabular-nums font-medium">
+                        {formatINR(row.returns)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-foreground font-bold tabular-nums">
+                        {formatINR(row.corpus)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
+      </div>
     </>
   );
 }

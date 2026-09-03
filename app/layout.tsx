@@ -74,7 +74,7 @@ export default function RootLayout({
         <AuthProvider>
           <ThemeProvider>
             <Navbar />
-            <div id="main-content" className="flex-1">
+            <div className="flex-1">
               {children}
             </div>
             <Footer />

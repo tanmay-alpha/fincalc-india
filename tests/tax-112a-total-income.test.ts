@@ -24,7 +24,7 @@ describe("Section 112A LTCG total-income treatment", () => {
     expect(result.totalTax).toBe(0);
   });
 
-  it("does not grant the full Section 156 rebate when exempt-threshold LTCG pushes total income above ₹12L", () => {
+  it("does not grant the full Section 157 rebate when exempt-threshold LTCG pushes total income above ₹12L", () => {
     const result = calcTax({
       interestAndOtherIncome: 1_100_000,
       equityLtcg: 125_000,
