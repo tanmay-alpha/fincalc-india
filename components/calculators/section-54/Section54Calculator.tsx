@@ -691,7 +691,7 @@ export default function Section54Calculator() {
                     </div>
                   </div>
                 </div>
-                <span className="text-[10px] font-bold text-amber-600 bg-amber-100 dark:bg-amber-900/50 px-2 py-0.5 rounded">
+                <span className="text-[10px] font-bold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/50 px-2 py-0.5 rounded">
                   Max Cap: ₹10 Cr (Proportionate)
                 </span>
               </div>

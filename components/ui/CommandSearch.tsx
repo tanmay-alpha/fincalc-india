@@ -250,7 +250,7 @@ export default function CommandSearch({ isOpen, onClose }: CommandSearchProps) {
                           </span>
                         )}
                         {calc.isPopular && !calc.badge && (
-                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-800 dark:text-amber-300 shrink-0">
                             Popular
                           </span>
                         )}

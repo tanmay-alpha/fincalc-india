@@ -117,7 +117,7 @@ export default function MarginCalculator() {
           <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-muted-foreground leading-relaxed flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
             <span>
-              <strong className="text-amber-500 font-semibold">F&O Margin Estimator:</strong> Illustrative SPAN/exposure assumptions. Actual exchange/broker margin varies with contract, volatility and current risk parameters.
+              <strong className="text-amber-800 dark:text-amber-300 font-semibold">F&O Margin Estimator:</strong> Illustrative SPAN/exposure assumptions. Actual exchange/broker margin varies with contract, volatility and current risk parameters.
             </span>
           </div>
 

@@ -277,7 +277,7 @@ export default function NoCostEMICalculator() {
                     <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Month</th>
                     <th className="px-6 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide">Principal</th>
                     <th className="px-6 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide">Hidden Interest</th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold text-amber-500 uppercase tracking-wide">18% GST</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold text-amber-800 dark:text-amber-300 uppercase tracking-wide">18% GST</th>
                     <th className="px-6 py-3 text-right text-xs font-semibold text-primary uppercase tracking-wide">Total Outflow</th>
                   </tr>
                 </thead>
@@ -287,7 +287,7 @@ export default function NoCostEMICalculator() {
                       <td className="px-6 py-3.5 text-muted-foreground">Month {row.month}</td>
                       <td className="px-6 py-3.5 text-right font-medium text-foreground">{formatINR(row.principal)}</td>
                       <td className="px-6 py-3.5 text-right text-muted-foreground">{formatINR(row.interest)}</td>
-                      <td className="px-6 py-3.5 text-right text-amber-600 dark:text-amber-400 font-semibold">{formatINR(row.gstOnInterest)}</td>
+                      <td className="px-6 py-3.5 text-right text-amber-800 dark:text-amber-300 font-semibold">{formatINR(row.gstOnInterest)}</td>
                       <td className="px-6 py-3.5 text-right text-primary font-bold">{formatINR(row.totalMonthlyOutflow)}</td>
                     </tr>
                   ))}

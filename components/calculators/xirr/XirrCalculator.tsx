@@ -220,7 +220,7 @@ export default function XirrCalculator() {
                 {/* Multi-Root Ambiguity Warning Banner */}
                 {xirrResult.multipleRootsDetected && (
                   <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 space-y-2 text-xs">
-                    <div className="flex items-center gap-2 text-amber-500 font-semibold text-sm">
+                    <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-semibold text-sm">
                       <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                       Multiple mathematically valid IRRs were detected. XIRR is ambiguous.
                     </div>
