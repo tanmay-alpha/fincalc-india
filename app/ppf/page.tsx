@@ -1,8 +1,7 @@
 
 import PPFCalculator from "@/components/calculators/ppf/PPFCalculator";
 import PPFInfo from "@/components/seo/PPFInfo";
-import Breadcrumb from "@/components/ui/Breadcrumb";
-import RelatedCalculators from "@/components/shared/RelatedCalculators";
+import CalculatorPageShell from "@/components/layout/CalculatorPageShell";
 
 export const metadata = {
   title: 'PPF Calculator',
@@ -15,25 +14,23 @@ export const metadata = {
 
 export default function PPFPage() {
   return (
-    <main id="main-content" className="min-h-screen bg-background pb-24 lg:pb-12">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Breadcrumb items={[
-            { label: "Home", href: "/" },
-            { label: "PPF Calculator" }
-          ]} />
-          <div className="flex items-center gap-3 mb-1.5">
-            <span className="text-3xl">🏛️</span>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">PPF Calculator</h1>
-          </div>
-          <p className="text-muted-foreground text-sm mt-1 max-w-2xl">
-            Plan tax-free PPF maturity across the lock-in period and optional extensions. See yearly breakdown of contributions and interest.
-          </p>
-        </div>
-        <PPFCalculator />
-        <PPFInfo />
-        <RelatedCalculators current="ppf" />
-      </div>
-    </main>
+    <CalculatorPageShell
+      id="ppf"
+      badge="EEE Tax-Free"
+      assumptions={[
+        "Interest rate is assumed at the current government notified rate (7.1% p.a., compounded annually).",
+        "Interest is calculated on the minimum balance between the 5th and the end of each month.",
+        "Annual investment limit is minimum ₹500 and maximum ₹1,50,000 per financial year.",
+        "Maturity lock-in period is 15 complete financial years, extendable in blocks of 5 years.",
+        "Complete EEE status: Investments (under Old Regime 80C), interest earned, and maturity proceeds are 100% tax-exempt.",
+      ]}
+      sources={[
+        { label: "National Savings Institute — PPF Scheme Rules", url: "https://www.nsiindia.gov.in/" },
+        { label: "Ministry of Finance — Small Savings Interest Rates", url: "https://dea.gov.in/" },
+      ]}
+      educationalContent={<PPFInfo />}
+    >
+      <PPFCalculator />
+    </CalculatorPageShell>
   );
 }

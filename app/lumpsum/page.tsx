@@ -1,7 +1,6 @@
 import LumpsumCalculator from "@/components/calculators/lumpsum/LumpsumCalculator";
 import LumpsumInfo from "@/components/seo/LumpsumInfo";
-import Breadcrumb from "@/components/ui/Breadcrumb";
-import RelatedCalculators from "@/components/shared/RelatedCalculators";
+import CalculatorPageShell from "@/components/layout/CalculatorPageShell";
 
 export const metadata = {
   title: 'Lumpsum Calculator',
@@ -14,25 +13,22 @@ export const metadata = {
 
 export default function LumpsumPage() {
   return (
-    <main id="main-content" className="min-h-screen bg-background pb-24 lg:pb-12">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Breadcrumb items={[
-            { label: "Home", href: "/" },
-            { label: "Lumpsum Calculator" }
-          ]} />
-          <div className="flex items-center gap-3 mb-1.5">
-            <span className="text-3xl">💰</span>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">Lumpsum Calculator</h1>
-          </div>
-          <p className="text-muted-foreground text-sm mt-1 max-w-2xl">
-            See how a one-time investment grows with CAGR, wealth multiplier, and year-by-year projections.
-          </p>
-        </div>
-        <LumpsumCalculator />
-        <LumpsumInfo />
-        <RelatedCalculators current="lumpsum" />
-      </div>
-    </main>
+    <CalculatorPageShell
+      id="lumpsum"
+      badge="One-Time Wealth"
+      assumptions={[
+        "Compounding is calculated on an annual compounding basis over the entire investment horizon.",
+        "Assumed annual rate of return remains constant; actual mutual fund/equity returns vary year-to-year.",
+        "Inflation adjustment calculates the real purchasing power of the future corpus.",
+        "Capital gains taxes (LTCG / STCG) are not deducted from gross projections.",
+      ]}
+      sources={[
+        { label: "AMFI India — Lump Sum vs SIP", url: "https://www.amfiindia.com/" },
+        { label: "SEBI Investor Education Portal", url: "https://investor.sebi.gov.in/" },
+      ]}
+      educationalContent={<LumpsumInfo />}
+    >
+      <LumpsumCalculator />
+    </CalculatorPageShell>
   );
 }

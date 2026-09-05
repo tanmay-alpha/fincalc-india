@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import PresumptiveTaxCalculator from "@/components/calculators/presumptive-tax/PresumptiveTaxCalculator";
 import PresumptiveTaxInfo from "@/components/seo/PresumptiveTaxInfo";
-import Breadcrumb from "@/components/ui/Breadcrumb";
-import RelatedCalculators from "@/components/shared/RelatedCalculators";
-import CalculatorDisclaimer from "@/components/ui/CalculatorDisclaimer";
+import CalculatorPageShell from "@/components/layout/CalculatorPageShell";
 
 export const metadata: Metadata = {
   title: "Presumptive Tax Calculator (Section 44AD & 44ADA) — Tax Year 2026-27",
@@ -18,31 +16,30 @@ export const metadata: Metadata = {
 
 export default function PresumptiveTaxPage() {
   return (
-    <main id="main-content" className="min-h-screen bg-background pb-24 lg:pb-12">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Breadcrumb
-            items={[
-              { label: "Home", href: "/" },
-              { label: "Presumptive Tax Calculator" },
-            ]}
-          />
-          <div className="flex items-center gap-3 mb-1.5">
-            <span className="text-3xl" aria-hidden="true">💼</span>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
-              Presumptive Taxation Calculator — Tax Year 2026-27
-            </h1>
-          </div>
-          <p className="text-muted-foreground text-sm mt-1 max-w-2xl">
-            Estimate deemed profits and tax for professionals (Section 44ADA) and businesses (Section 44AD) with enhanced digital turnover limits (₹75L / ₹3Cr) under Tax Year 2026-27 slabs.
-          </p>
-        </div>
-
-        <PresumptiveTaxCalculator />
-        <PresumptiveTaxInfo />
-        <CalculatorDisclaimer />
-        <RelatedCalculators current="tax" />
-      </div>
-    </main>
+    <CalculatorPageShell
+      id="presumptive-tax"
+      badge="Section 44AD & 44ADA"
+      regulatoryMetadata={{
+        taxYear: "2026–27",
+        currentAct: "Income-tax Act, 1961 / Income-tax Act, 2025",
+        currentSections: ["Section 44AD", "Section 44ADA", "Section 44AB"],
+        effectiveFrom: "01 April 2024 / 01 April 2025",
+        officialSources: [
+          "Income Tax Department — Presumptive Taxation Scheme",
+        ],
+      }}
+      assumptions={[
+        "Section 44ADA: Specified professionals with gross receipts up to ₹75 Lakh (if cash receipts ≤ 5%) declare deemed profits at minimum 50%.",
+        "Section 44AD: Eligible small businesses with turnover up to ₹3 Crore (if cash receipts ≤ 5%) declare deemed profits at 6% (digital) or 8% (non-digital).",
+        "Taxpayers opting for presumptive schemes are exempt from maintaining formal books under Section 44AA and tax audit under Section 44AB.",
+        "Advance tax liability: 100% of tax is due on or before 15 March of the relevant financial year.",
+      ]}
+      sources={[
+        { label: "Income Tax Department — Presumptive Taxation Guide", url: "https://incometax.gov.in/" },
+      ]}
+      educationalContent={<PresumptiveTaxInfo />}
+    >
+      <PresumptiveTaxCalculator />
+    </CalculatorPageShell>
   );
 }

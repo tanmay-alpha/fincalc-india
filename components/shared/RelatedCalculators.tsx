@@ -1,51 +1,28 @@
 import Link from "next/link";
 import { ChevronRight, ArrowUpRight } from "lucide-react";
-import { CALCULATOR_REGISTRY, type CalculatorCategory } from "@/lib/calculators";
+import { getCalculatorById, getRelatedCalculators, CATEGORY_MAP } from "@/lib/registry";
 import { getCategoryIcon } from "@/components/ui/CategoryIcon";
 
 interface Props {
   current: string;
 }
 
-const CATEGORY_NAMES: Record<CalculatorCategory, string> = {
-  investments: "Investing & Wealth",
-  loans: "Loans & Credit",
-  taxation: "Tax & Compliance",
-  trading: "Trading & Markets",
-  corporate: "Corporate Finance",
-};
-
 export default function RelatedCalculators({ current }: Props) {
-  const currentCalc = CALCULATOR_REGISTRY.find(
-    (c) => c.id === current || c.route === `/${current}`
-  );
-
-  // Pick up to 3 smart related calculators:
-  // 1. Same category first
-  // 2. Or popular calculators
-  const currentCategory = currentCalc?.category || "investments";
-  
-  const sameCategory = CALCULATOR_REGISTRY.filter(
-    (c) => c.category === currentCategory && c.id !== current && c.route !== `/${current}`
-  );
-
-  const fallbackPopular = CALCULATOR_REGISTRY.filter(
-    (c) => c.isPopular && c.id !== current && c.route !== `/${current}` && !sameCategory.includes(c)
-  );
-
-  const related = [...sameCategory, ...fallbackPopular].slice(0, 3);
+  const currentCalc = getCalculatorById(current);
+  const related = getRelatedCalculators(current, 3);
+  const categoryLabel = currentCalc ? CATEGORY_MAP[currentCalc.category].label : "Related Calculators";
 
   if (related.length === 0) return null;
 
   return (
-    <section className="mt-10 border-t border-border/80 pt-8">
+    <section className="mt-10 border-t border-border/80 pt-8" aria-label="Related Calculators">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-sm sm:text-base font-bold text-foreground">
             Related Financial Calculators
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            More tools in {CATEGORY_NAMES[currentCategory] || "FinCalc India"}
+            More tools in {categoryLabel}
           </p>
         </div>
         <Link
@@ -64,7 +41,7 @@ export default function RelatedCalculators({ current }: Props) {
             <Link
               key={calc.id}
               href={calc.route}
-              className="group flex flex-col justify-between p-4 rounded-xl border border-border/70 bg-card hover:border-primary/40 hover:shadow-sm transition-all"
+              className="group flex flex-col justify-between p-4 rounded-xl border border-border/70 bg-card hover:border-primary/40 hover:shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <div>
                 <div className="flex items-center justify-between gap-2 mb-2.5">

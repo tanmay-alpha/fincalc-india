@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import Section54Calculator from "@/components/calculators/section-54/Section54Calculator";
 import Section54Info from "@/components/seo/Section54Info";
-import Breadcrumb from "@/components/ui/Breadcrumb";
-import RelatedCalculators from "@/components/shared/RelatedCalculators";
-import CalculatorDisclaimer from "@/components/ui/CalculatorDisclaimer";
+import CalculatorPageShell from "@/components/layout/CalculatorPageShell";
 
 export const metadata: Metadata = {
   title: "Sections 82, 85 & 86 (formerly Sec 54, 54EC & 54F) Exemption Planner — Tax Year 2026-27",
@@ -18,32 +16,30 @@ export const metadata: Metadata = {
 
 export default function Section54ExemptionPage() {
   return (
-    <main id="main-content" className="min-h-screen bg-background pb-24 lg:pb-12">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Breadcrumb
-            items={[
-              { label: "Home", href: "/" },
-              { label: "Capital Gains Tax", href: "/capital-gains-tax" },
-              { label: "Sections 82, 85 & 86 (Sec 54 / 54EC / 54F)" },
-            ]}
-          />
-          <div className="flex items-center gap-3 mb-1.5">
-            <span className="text-3xl" aria-hidden="true">🏡</span>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
-              Sections 82, 85 & 86 Capital Gains Exemption Planner — Tax Year 2026-27
-            </h1>
-          </div>
-          <p className="text-muted-foreground text-sm mt-1 max-w-3xl leading-relaxed">
-            Statutory exemptions under the <strong>Income-tax Act, 2025 as amended by Finance Act, 2026</strong> (formerly Sections 54, 54EC & 54F of the 1961 Act). Plan reinvestment in a residential house (Section 82, up to ₹10 Cr), specified bonds (Section 85, up to ₹50L aggregate), or non-residential assets into a house (Section 86).
-          </p>
-        </div>
-
-        <Section54Calculator />
-        <Section54Info />
-        <CalculatorDisclaimer />
-        <RelatedCalculators current="tax" />
-      </div>
-    </main>
+    <CalculatorPageShell
+      id="section-54-exemption"
+      badge="Sections 82 / 85 / 86"
+      regulatoryMetadata={{
+        taxYear: "2026–27",
+        currentAct: "Income-tax Act, 2025 as amended by Finance Act, 2026",
+        currentSections: ["Section 82 (formerly 54)", "Section 85 (formerly 54EC)", "Section 86 (formerly 54F)"],
+        effectiveFrom: "01 April 2026",
+        officialSources: [
+          "Income Tax Department — Capital Gains Exemption Provisions",
+        ],
+      }}
+      assumptions={[
+        "Section 82 (formerly Sec 54): Exemption on LTCG from residential house by investing into a residential house within 1 yr before / 2 yrs after sale (3 yrs for construction). Max deduction ₹10 Crore.",
+        "Section 85 (formerly Sec 54EC): Exemption by investing LTCG from land or building into notified bonds (NHAI, REC, PFC, IRFC) within 6 months. Strict statutory ceiling of ₹50 Lakh per financial year.",
+        "Section 86 (formerly Sec 54F): Exemption on LTCG from any asset other than house property by investing net consideration into a residential house. Pro-rata formula: LTCG × (Amount Invested / Net Consideration).",
+        "Capital Gains Account Scheme (CGAS 1988): Funds must be deposited in designated bank account prior to Section 139(1) ITR filing due date.",
+      ]}
+      sources={[
+        { label: "Income Tax Department — Section 54 Series Provisions", url: "https://incometax.gov.in/" },
+      ]}
+      educationalContent={<Section54Info />}
+    >
+      <Section54Calculator />
+    </CalculatorPageShell>
   );
 }

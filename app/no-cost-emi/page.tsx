@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import NoCostEMICalculator from "@/components/calculators/no-cost-emi/NoCostEMICalculator";
 import NoCostEMIInfo from "@/components/seo/NoCostEMIInfo";
-import Breadcrumb from "@/components/ui/Breadcrumb";
-import RelatedCalculators from "@/components/shared/RelatedCalculators";
-import CalculatorDisclaimer from "@/components/ui/CalculatorDisclaimer";
+import CalculatorPageShell from "@/components/layout/CalculatorPageShell";
 
 export const metadata: Metadata = {
   title: "No-Cost EMI Truth & Hidden Cost Calculator",
@@ -18,31 +16,22 @@ export const metadata: Metadata = {
 
 export default function NoCostEMIPage() {
   return (
-    <main id="main-content" className="min-h-screen bg-background pb-24 lg:pb-12">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Breadcrumb
-            items={[
-              { label: "Home", href: "/" },
-              { label: "No-Cost EMI Truth Calculator" },
-            ]}
-          />
-          <div className="flex items-center gap-3 mb-1.5">
-            <span className="text-3xl" aria-hidden="true">📱</span>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
-              No-Cost EMI & BNPL True Cost Revealer
-            </h1>
-          </div>
-          <p className="text-muted-foreground text-sm mt-1 max-w-2xl">
-            Reveal the hidden 18% GST on interest, processing fees, and forfeited upfront card discounts on e-commerce 0% EMI schemes.
-          </p>
-        </div>
-
-        <NoCostEMICalculator />
-        <NoCostEMIInfo />
-        <CalculatorDisclaimer />
-        <RelatedCalculators current="no-cost-emi" />
-      </div>
-    </main>
+    <CalculatorPageShell
+      id="no-cost-emi"
+      badge="APR & GST Revealer"
+      assumptions={[
+        "Retailers provide an upfront merchant discount equivalent to the loan interest charged by the bank.",
+        "18% GST is levied by the bank on every month's interest component, which is not discounted.",
+        "Upfront non-refundable card processing fees (plus 18% GST) significantly increase the effective Annual Percentage Rate (APR).",
+        "Forfeited instant card cashbacks are factored as an opportunity cost against the zero-cost EMI option.",
+      ]}
+      sources={[
+        { label: "Reserve Bank of India — Guidelines on Zero Percent Loan Schemes", url: "https://rbi.org.in/" },
+        { label: "CBIC — GST on Financial & Banking Services", url: "https://cbic.gov.in/" },
+      ]}
+      educationalContent={<NoCostEMIInfo />}
+    >
+      <NoCostEMICalculator />
+    </CalculatorPageShell>
   );
 }

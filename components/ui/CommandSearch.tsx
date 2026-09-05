@@ -13,7 +13,12 @@ import {
   ArrowRight,
   Command,
 } from "lucide-react";
-import { CALCULATOR_REGISTRY, CalculatorCategory } from "@/lib/calculators";
+import {
+  CATEGORIES,
+  CATEGORY_MAP,
+  CalculatorCategory,
+  searchCalculators,
+} from "@/lib/registry";
 import { cn } from "@/lib/utils";
 
 interface CommandSearchProps {
@@ -21,28 +26,35 @@ interface CommandSearchProps {
   onClose: () => void;
 }
 
-const CATEGORY_LABELS: Record<CalculatorCategory, { label: string; icon: typeof TrendingUp }> = {
-  investments: { label: "Invest & Grow", icon: TrendingUp },
-  taxation: { label: "Tax & Compliance", icon: FileText },
-  trading: { label: "Trading & Risk", icon: LineChart },
-  loans: { label: "Loans & Credit", icon: Building2 },
-  corporate: { label: "Corporate & Valuation", icon: Scale },
+const CATEGORY_ICONS: Record<CalculatorCategory, typeof TrendingUp> = {
+  investments: TrendingUp,
+  taxation: FileText,
+  trading: LineChart,
+  loans: Building2,
+  corporate: Scale,
 };
 
 export default function CommandSearch({ isOpen, onClose }: CommandSearchProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedCategory, setSelectedCategory] = useState<CalculatorCategory | "all">("all");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
-  // Focus input when opened
+  // Focus input when opened and lock body scroll
   useEffect(() => {
     if (isOpen) {
       setQuery("");
       setSelectedIndex(0);
+      document.body.style.overflow = "hidden";
       setTimeout(() => inputRef.current?.focus(), 50);
+    } else {
+      document.body.style.overflow = "";
     }
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [isOpen]);
 
   // Global keyboard shortcut: Cmd+K / Ctrl+K & Escape
@@ -63,28 +75,25 @@ export default function CommandSearch({ isOpen, onClose }: CommandSearchProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Filter calculators by query and category
+  // Centralized search with tokenized alias matching
   const filteredCalculators = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return CALCULATOR_REGISTRY.filter((calc) => {
-      const matchesCategory =
-        selectedCategory === "all" || calc.category === selectedCategory;
-      if (!matchesCategory) return false;
-
-      if (!q) return true;
-      return (
-        calc.name.toLowerCase().includes(q) ||
-        calc.shortName.toLowerCase().includes(q) ||
-        calc.description.toLowerCase().includes(q) ||
-        calc.route.toLowerCase().includes(q)
-      );
-    });
+    return searchCalculators(query, selectedCategory);
   }, [query, selectedCategory]);
 
   // Reset selectedIndex if list shrinks
   useEffect(() => {
     setSelectedIndex(0);
   }, [query, selectedCategory]);
+
+  // Auto scroll active element into view
+  useEffect(() => {
+    if (listRef.current) {
+      const activeEl = listRef.current.querySelector<HTMLElement>("[aria-selected='true']");
+      if (activeEl) {
+        activeEl.scrollIntoView({ block: "nearest" });
+      }
+    }
+  }, [selectedIndex]);
 
   // Keyboard navigation within list
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -108,6 +117,10 @@ export default function CommandSearch({ isOpen, onClose }: CommandSearchProps) {
 
   if (!isOpen) return null;
 
+  const activeDescendantId = filteredCalculators[selectedIndex]
+    ? `cmd-option-${filteredCalculators[selectedIndex].id}`
+    : undefined;
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center p-4 sm:p-6 md:p-20 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150"
@@ -127,6 +140,10 @@ export default function CommandSearch({ isOpen, onClose }: CommandSearchProps) {
           <input
             ref={inputRef}
             type="text"
+            role="combobox"
+            aria-expanded="true"
+            aria-controls="command-results"
+            aria-activedescendant={activeDescendantId}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search 31 calculators (SIP, tax, EMI, XIRR, DCF...)"
@@ -136,7 +153,7 @@ export default function CommandSearch({ isOpen, onClose }: CommandSearchProps) {
           {query ? (
             <button
               onClick={() => setQuery("")}
-              className="text-muted-foreground hover:text-foreground p-1 rounded-md"
+              className="text-muted-foreground hover:text-foreground p-1 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label="Clear search"
             >
               <X className="w-4 h-4" />
@@ -154,7 +171,7 @@ export default function CommandSearch({ isOpen, onClose }: CommandSearchProps) {
           <button
             onClick={() => setSelectedCategory("all")}
             className={cn(
-              "text-xs px-2.5 py-1 rounded-md transition-colors shrink-0",
+              "text-xs px-2.5 py-1 rounded-md transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               selectedCategory === "all"
                 ? "bg-primary text-primary-foreground font-medium"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -162,24 +179,29 @@ export default function CommandSearch({ isOpen, onClose }: CommandSearchProps) {
           >
             All (31)
           </button>
-          {Object.entries(CATEGORY_LABELS).map(([catKey, { label }]) => (
+          {CATEGORIES.map((cat) => (
             <button
-              key={catKey}
-              onClick={() => setSelectedCategory(catKey)}
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
               className={cn(
-                "text-xs px-2.5 py-1 rounded-md transition-colors shrink-0",
-                selectedCategory === catKey
+                "text-xs px-2.5 py-1 rounded-md transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                selectedCategory === cat.id
                   ? "bg-primary text-primary-foreground font-medium"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
               )}
             >
-              {label}
+              {cat.label}
             </button>
           ))}
         </div>
 
         {/* Results List */}
-        <div className="overflow-y-auto flex-1 p-2 divide-y divide-border/40">
+        <div
+          ref={listRef}
+          id="command-results"
+          role="listbox"
+          className="overflow-y-auto flex-1 p-2 divide-y divide-border/40"
+        >
           {filteredCalculators.length === 0 ? (
             <div className="py-12 text-center">
               <p className="text-sm font-medium text-foreground">No calculators found</p>
@@ -189,13 +211,13 @@ export default function CommandSearch({ isOpen, onClose }: CommandSearchProps) {
             </div>
           ) : (
             filteredCalculators.map((calc, idx) => {
-              const CategoryIcon =
-                CATEGORY_LABELS[calc.category]?.icon || TrendingUp;
+              const CategoryIcon = CATEGORY_ICONS[calc.category] || TrendingUp;
               const isSelected = idx === selectedIndex;
 
               return (
                 <div
                   key={calc.id}
+                  id={`cmd-option-${calc.id}`}
                   onClick={() => {
                     onClose();
                     router.push(calc.route);
@@ -234,7 +256,7 @@ export default function CommandSearch({ isOpen, onClose }: CommandSearchProps) {
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground truncate mt-0.5">
-                        {calc.description}
+                        {CATEGORY_MAP[calc.category]?.label} &bull; {calc.description}
                       </p>
                     </div>
                   </div>

@@ -18,27 +18,47 @@ import { SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SIPScenarioMilestones from "@/components/calculators/sip/SIPScenarioMilestones";
 
+import { getRestoredInputs, recordRecentCalculation } from "@/lib/storage-workflow";
+
 const SIPChart = dynamic(
   () => import("@/components/calculators/sip/SIPChart"),
   { ssr: false, loading: () => <ChartSkeleton /> }
 );
 
+const DEFAULT_SIP_INPUTS = {
+  monthlyAmount: 25000,
+  annualRate: 12,
+  years: 10,
+};
+
 export default function SIPCalculator() {
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
-  const [inputs, setInputs] = useState({
-    monthlyAmount: 25000,
-    annualRate: 12,
-    years: 10,
-  });
+  const [inputs, setInputs] = useState(DEFAULT_SIP_INPUTS);
   const [shareId, setShareId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+    const restored = getRestoredInputs("sip", DEFAULT_SIP_INPUTS);
+    setInputs(restored);
+  }, []);
 
   const debouncedInputs = useDebounce(inputs, 200);
   const results = useMemo(() => calcSIP(debouncedInputs), [debouncedInputs]);
   const insights = useMemo(() => generateSIPInsights(results), [results]);
 
   useEffect(() => setShareId(null), [debouncedInputs]);
+
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "sip",
+        name: "SIP Calculator",
+        route: "/sip",
+        category: "investments",
+        summary: `₹${formatINR(inputs.monthlyAmount)}/mo · ${inputs.annualRate}% · ${inputs.years}yr`,
+      });
+    }
+  }, [mounted, inputs.monthlyAmount, inputs.annualRate, inputs.years]);
 
   const setMonthly = useCallback(
     (v: number) => setInputs((p) => ({ ...p, monthlyAmount: v })),

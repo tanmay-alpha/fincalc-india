@@ -3,10 +3,11 @@
 import { useState, useMemo } from "react";
 import { formatINR } from "@/lib/format";
 import { calcSIP } from "@/lib/math";
+import { getBaseUrl } from "@/lib/env";
 import {
   Copy,
   Check,
-  Sparkles,
+  Milestone,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -36,8 +37,13 @@ export default function SIPScenarioMilestones({
   totalInvested,
   estimatedReturns,
 }: Props) {
-  const [activeTab, setActiveTab] = useState<"milestones" | "fd_compare" | "inflation">("milestones");
+  const [activeTab, setActiveTab] = useState<"milestones" | "compare" | "fd_compare" | "inflation">("milestones");
   const [copied, setCopied] = useState(false);
+
+  // Scenario B inputs for comparison (defaulting to +₹5k / +2% / +5yr)
+  const [scenarioBMonthly, setScenarioBMonthly] = useState(monthlyAmount + 5000);
+  const [scenarioBRate, setScenarioBRate] = useState(annualRate);
+  const [scenarioBYears, setScenarioBYears] = useState(years);
 
   // 1. Rule of 72 Doubling Time
   const doublingYears = useMemo(() => {
@@ -49,8 +55,6 @@ export default function SIPScenarioMilestones({
   const milestoneProgress = useMemo(() => {
     const monthlyRate = annualRate / 100 / 12;
     return MILESTONE_TARGETS.map(({ label, target }) => {
-      // Find month where FV(monthlyAmount, monthlyRate, m) >= target
-      // FV = P * [ (1+i)^n - 1 ] / i * (1+i)
       let reachedMonth: number | null = null;
       for (let m = 1; m <= 480; m++) {
         const corpus =
@@ -77,7 +81,23 @@ export default function SIPScenarioMilestones({
     });
   }, [monthlyAmount, annualRate, years, totalCorpus]);
 
-  // 3. 7% Bank FD Comparison
+  // 3. Scenario B calculation
+  const scenarioBResult = useMemo(() => {
+    return calcSIP({
+      monthlyAmount: scenarioBMonthly,
+      annualRate: scenarioBRate,
+      years: scenarioBYears,
+    });
+  }, [scenarioBMonthly, scenarioBRate, scenarioBYears]);
+
+  const scenarioDelta = useMemo(() => {
+    const corpusDelta = scenarioBResult.totalCorpus - totalCorpus;
+    const investedDelta = scenarioBResult.totalInvested - totalInvested;
+    const returnsDelta = scenarioBResult.estimatedReturns - estimatedReturns;
+    return { corpusDelta, investedDelta, returnsDelta };
+  }, [scenarioBResult, totalCorpus, totalInvested, estimatedReturns]);
+
+  // 4. 7% Bank FD Comparison
   const fdComparison = useMemo(() => {
     const fdResult = calcSIP({
       monthlyAmount,
@@ -93,7 +113,7 @@ export default function SIPScenarioMilestones({
     };
   }, [monthlyAmount, years, totalCorpus]);
 
-  // 4. Inflation Adjusted (6% CPI)
+  // 5. Inflation Adjusted (6% CPI)
   const inflationAnalysis = useMemo(() => {
     const realCorpus = Math.round(totalCorpus / Math.pow(1.06, years));
     const purchasingPowerPercent = Math.round((realCorpus / totalCorpus) * 100);
@@ -105,8 +125,9 @@ export default function SIPScenarioMilestones({
 
   // Copy Summary Handler
   const handleCopySummary = async () => {
+    const baseUrl = getBaseUrl();
     const text = [
-      `📊 FinCalc India — SIP Wealth Projection`,
+      `FinCalc India — SIP Wealth Projection`,
       `────────────────────────────`,
       `• Monthly Investment: ${formatINR(monthlyAmount)}`,
       `• Expected Return:    ${annualRate}% p.a.`,
@@ -116,9 +137,9 @@ export default function SIPScenarioMilestones({
       `• Estimated Returns:  ${formatINR(estimatedReturns)}`,
       `• Total Corpus:       ${formatINR(totalCorpus)} (${(totalCorpus / (totalInvested || 1)).toFixed(2)}x)`,
       `• Vs 7% Bank FD:      +${formatINR(fdComparison.wealthAdvantage)} Extra Wealth`,
-      `• Real Value (6% inf): ${formatINR(inflationAnalysis.realCorpus)} in today's money`,
+      `• Real Value (6% inf): ${formatINR(inflationAnalysis.realCorpus)} in today's purchasing power`,
       `────────────────────────────`,
-      `Calculated at: https://fincalc-india.vercel.app/sip`,
+      `Calculated at: ${baseUrl}/sip`,
     ].join("\n");
 
     try {
@@ -136,18 +157,18 @@ export default function SIPScenarioMilestones({
       {/* Header & Tabs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-4">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-primary" />
+          <Milestone className="w-4 h-4 text-primary" />
           <h3 className="text-sm font-bold text-foreground">
-            Smart Projections & Scenarios
+            Scenarios & Milestones
           </h3>
         </div>
 
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-muted/60 border border-border/60 text-xs">
+        <div className="flex flex-wrap items-center gap-1 p-1 rounded-xl bg-muted/60 border border-border/60 text-xs">
           <button
             type="button"
             onClick={() => setActiveTab("milestones")}
             className={cn(
-              "px-2.5 py-1 rounded-lg font-medium transition-all",
+              "px-2.5 py-1 rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
               activeTab === "milestones"
                 ? "bg-card text-foreground font-semibold shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
@@ -157,9 +178,21 @@ export default function SIPScenarioMilestones({
           </button>
           <button
             type="button"
+            onClick={() => setActiveTab("compare")}
+            className={cn(
+              "px-2.5 py-1 rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+              activeTab === "compare"
+                ? "bg-card text-foreground font-semibold shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Compare A vs B
+          </button>
+          <button
+            type="button"
             onClick={() => setActiveTab("fd_compare")}
             className={cn(
-              "px-2.5 py-1 rounded-lg font-medium transition-all",
+              "px-2.5 py-1 rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
               activeTab === "fd_compare"
                 ? "bg-card text-foreground font-semibold shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
@@ -171,7 +204,7 @@ export default function SIPScenarioMilestones({
             type="button"
             onClick={() => setActiveTab("inflation")}
             className={cn(
-              "px-2.5 py-1 rounded-lg font-medium transition-all",
+              "px-2.5 py-1 rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
               activeTab === "inflation"
                 ? "bg-card text-foreground font-semibold shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
@@ -187,10 +220,10 @@ export default function SIPScenarioMilestones({
         <div className="space-y-4">
           <div className="flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/15 text-xs sm:text-sm">
             <span className="text-muted-foreground">
-              Rule of 72 Doubling Time:
+              Rule of 72 Doubling Horizon:
             </span>
             <span className="font-bold text-primary">
-              Your invested capital doubles every ~{doublingYears} years at {annualRate}%
+              Your invested capital doubles every ~{doublingYears} years at {annualRate}% p.a.
             </span>
           </div>
 
@@ -244,13 +277,112 @@ export default function SIPScenarioMilestones({
         </div>
       )}
 
-      {/* Tab 2: vs 7% Bank FD */}
+      {/* Tab 2: Compare A vs B Scenario */}
+      {activeTab === "compare" && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Scenario A (Current) */}
+            <div className="p-4 rounded-xl border border-border/80 bg-muted/20 space-y-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Scenario A (Active)
+              </span>
+              <p className="text-xl font-extrabold text-foreground tabular-nums">
+                {formatINR(totalCorpus)}
+              </p>
+              <div className="text-xs text-muted-foreground space-y-0.5">
+                <p>Monthly: {formatINR(monthlyAmount)}</p>
+                <p>Return: {annualRate}% p.a. &bull; Tenure: {years} Yrs</p>
+                <p>Invested: {formatINR(totalInvested)}</p>
+              </div>
+            </div>
+
+            {/* Scenario B (Adjustable) */}
+            <div className="p-4 rounded-xl border border-primary/30 bg-primary/5 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-primary">
+                  Scenario B (Alternative)
+                </span>
+                <span className="text-xs font-semibold text-primary tabular-nums">
+                  {scenarioDelta.corpusDelta >= 0 ? "+" : ""}{formatINR(scenarioDelta.corpusDelta)}
+                </span>
+              </div>
+              <p className="text-xl font-extrabold text-foreground tabular-nums">
+                {formatINR(scenarioBResult.totalCorpus)}
+              </p>
+              <div className="text-xs text-muted-foreground space-y-1.5 pt-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span>Monthly:</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setScenarioBMonthly(Math.max(500, scenarioBMonthly - 2500))}
+                      className="px-1.5 py-0.5 rounded bg-card border border-border text-[11px]"
+                    >
+                      -2.5k
+                    </button>
+                    <span className="font-semibold text-foreground tabular-nums px-1">{formatINR(scenarioBMonthly)}</span>
+                    <button
+                      type="button"
+                      onClick={() => setScenarioBMonthly(scenarioBMonthly + 2500)}
+                      className="px-1.5 py-0.5 rounded bg-card border border-border text-[11px]"
+                    >
+                      +2.5k
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span>Return:</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setScenarioBRate(Math.max(1, scenarioBRate - 1))}
+                      className="px-1.5 py-0.5 rounded bg-card border border-border text-[11px]"
+                    >
+                      -1%
+                    </button>
+                    <span className="font-semibold text-foreground tabular-nums px-1">{scenarioBRate}%</span>
+                    <button
+                      type="button"
+                      onClick={() => setScenarioBRate(scenarioBRate + 1)}
+                      className="px-1.5 py-0.5 rounded bg-card border border-border text-[11px]"
+                    >
+                      +1%
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span>Tenure:</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setScenarioBYears(Math.max(1, scenarioBYears - 1))}
+                      className="px-1.5 py-0.5 rounded bg-card border border-border text-[11px]"
+                    >
+                      -1y
+                    </button>
+                    <span className="font-semibold text-foreground tabular-nums px-1">{scenarioBYears}y</span>
+                    <button
+                      type="button"
+                      onClick={() => setScenarioBYears(scenarioBYears + 1)}
+                      className="px-1.5 py-0.5 rounded bg-card border border-border text-[11px]"
+                    >
+                      +1y
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 3: vs 7% Bank FD */}
       {activeTab === "fd_compare" && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="p-4 rounded-xl border border-border/80 bg-muted/20 space-y-1">
               <span className="text-xs text-muted-foreground">
-                Conservative 7% Bank FD
+                Illustrative 7% Bank FD
               </span>
               <p className="text-xl font-bold text-foreground tabular-nums">
                 {formatINR(fdComparison.fdCorpus)}
@@ -262,29 +394,29 @@ export default function SIPScenarioMilestones({
 
             <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 space-y-1">
               <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-                Your SIP Wealth Advantage
+                Equity SIP Premium
               </span>
               <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
                 +{formatINR(fdComparison.wealthAdvantage)}
               </p>
               <p className="text-[11px] text-muted-foreground">
-                {fdComparison.multiplierVsFD}x more wealth than a fixed deposit
+                {fdComparison.multiplierVsFD}x more corpus than typical fixed deposit compounding
               </p>
             </div>
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Equity compounding absorbs market volatility to deliver a substantial long-term premium over fixed income instruments.
+            Equity mutual funds carry market risk but historically reward long-term horizons by outpacing conventional fixed income yields.
           </p>
         </div>
       )}
 
-      {/* Tab 3: Inflation Adjusted Real Value */}
+      {/* Tab 4: Inflation Adjusted Real Value */}
       {activeTab === "inflation" && (
         <div className="space-y-3">
           <div className="p-4 rounded-xl border border-border/80 bg-muted/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <span className="text-xs text-muted-foreground">
-                Purchasing Power in Today&apos;s Rupees (at 6% CPI)
+                Purchasing Power in Today&apos;s Value (at 6% CPI)
               </span>
               <p className="text-xl font-bold text-primary tabular-nums mt-0.5">
                 {formatINR(inflationAnalysis.realCorpus)}
@@ -295,12 +427,12 @@ export default function SIPScenarioMilestones({
                 Real Purchasing Power
               </span>
               <p className="text-base font-bold text-foreground">
-                {inflationAnalysis.purchasingPowerPercent}% of future corpus
+                {inflationAnalysis.purchasingPowerPercent}% of nominal corpus
               </p>
             </div>
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Due to the compounding erosion of purchasing power (assumed at 6% p.a.), your future ₹{totalCorpus.toLocaleString("en-IN")} corpus will buy what {formatINR(inflationAnalysis.realCorpus)} buys today.
+            Due to the compounding erosion of purchasing power (assumed at 6% p.a. CPI), your future nominal ₹{totalCorpus.toLocaleString("en-IN")} corpus will have approximately {formatINR(inflationAnalysis.realCorpus)} of real purchasing capacity today.
           </p>
         </div>
       )}
@@ -313,7 +445,7 @@ export default function SIPScenarioMilestones({
         <button
           type="button"
           onClick={handleCopySummary}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-muted/70 hover:bg-muted text-foreground transition-all ml-auto"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-muted/70 hover:bg-muted text-foreground transition-all ml-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           {copied ? (
             <>

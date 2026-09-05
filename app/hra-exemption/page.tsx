@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import HRACalculator from "@/components/calculators/hra/HRACalculator";
 import HRAInfo from "@/components/seo/HRAInfo";
-import Breadcrumb from "@/components/ui/Breadcrumb";
-import RelatedCalculators from "@/components/shared/RelatedCalculators";
-import CalculatorDisclaimer from "@/components/ui/CalculatorDisclaimer";
+import CalculatorPageShell from "@/components/layout/CalculatorPageShell";
 
 export const metadata: Metadata = {
   title: "HRA Exemption Calculator & Rent Optimizer — Tax Year 2026-27",
@@ -18,31 +16,30 @@ export const metadata: Metadata = {
 
 export default function HRAExemptionPage() {
   return (
-    <main id="main-content" className="min-h-screen bg-background pb-24 lg:pb-12">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Breadcrumb
-            items={[
-              { label: "Home", href: "/" },
-              { label: "HRA Exemption Calculator" },
-            ]}
-          />
-          <div className="flex items-center gap-3 mb-1.5">
-            <span className="text-3xl" aria-hidden="true">🏠</span>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
-              HRA Exemption Calculator — Tax Year 2026-27
-            </h1>
-          </div>
-          <p className="text-muted-foreground text-sm mt-1 max-w-2xl">
-            Compute your tax-exempt House Rent Allowance under Section 10(13A), compare 50%/40% city limits, and calculate household tax savings when paying rent to parents under Tax Year 2026-27.
-          </p>
-        </div>
-
-        <HRACalculator />
-        <HRAInfo />
-        <CalculatorDisclaimer />
-        <RelatedCalculators current="tax" />
-      </div>
-    </main>
+    <CalculatorPageShell
+      id="hra-exemption"
+      badge="Section 10(13A)"
+      regulatoryMetadata={{
+        taxYear: "2026–27",
+        currentAct: "Income-tax Act, 1961 / Income-tax Act, 2025",
+        currentSections: ["Section 10(13A)", "Rule 2A"],
+        effectiveFrom: "01 April 2025",
+        officialSources: [
+          "Income Tax Department — House Rent Allowance Exemption",
+        ],
+      }}
+      assumptions={[
+        "Exemption is determined under Rule 2A as the lowest of: (1) Actual HRA received, (2) Rent paid minus 10% of Basic Salary + DA, (3) 50% (metros: Mumbai, Delhi, Kolkata, Chennai) or 40% (non-metros) of Basic Salary.",
+        "HRA exemption applies strictly under the Old Tax Regime; it is not eligible under the New Tax Regime (Section 115BAC).",
+        "Annual rent payments exceeding ₹1,00,000 mandate declaration of the landlord's Permanent Account Number (PAN).",
+        "Rent paid to parents requires commercial tenancy documentation and declared rental income in the parents' tax return.",
+      ]}
+      sources={[
+        { label: "Income Tax Department — HRA Exemption Rules", url: "https://incometax.gov.in/" },
+      ]}
+      educationalContent={<HRAInfo />}
+    >
+      <HRACalculator />
+    </CalculatorPageShell>
   );
 }

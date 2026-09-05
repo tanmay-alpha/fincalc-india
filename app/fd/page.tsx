@@ -1,8 +1,7 @@
 
 import FDCalculator from "@/components/calculators/fd/FDCalculator";
 import FDInfo from "@/components/seo/FDInfo";
-import Breadcrumb from "@/components/ui/Breadcrumb";
-import RelatedCalculators from "@/components/shared/RelatedCalculators";
+import CalculatorPageShell from "@/components/layout/CalculatorPageShell";
 
 export const metadata = {
   title: 'FD Calculator',
@@ -15,25 +14,22 @@ export const metadata = {
 
 export default function FDPage() {
   return (
-    <main id="main-content" className="min-h-screen bg-background pb-24 lg:pb-12">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Breadcrumb items={[
-            { label: "Home", href: "/" },
-            { label: "FD Calculator" }
-          ]} />
-          <div className="flex items-center gap-3 mb-1.5">
-            <span className="text-3xl">🔒</span>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">FD Calculator</h1>
-          </div>
-          <p className="text-muted-foreground text-sm mt-1 max-w-2xl">
-            Project fixed deposit maturity with different compounding frequencies. See effective yield and interest breakdown.
-          </p>
-        </div>
-        <FDCalculator />
-        <FDInfo />
-        <RelatedCalculators current="fd" />
-      </div>
-    </main>
+    <CalculatorPageShell
+      id="fd"
+      badge="Fixed Returns"
+      assumptions={[
+        "Compounding interest is calculated based on chosen frequency (monthly, quarterly, half-yearly, annually).",
+        "Quarterly compounding is the standard convention used by most Indian scheduled commercial banks.",
+        "TDS (Tax Deducted at Source) under Section 194A is not automatically subtracted from the projected maturity.",
+        "Senior citizen preferential rate increments (typically +0.50%) can be entered directly into the interest rate field.",
+      ]}
+      sources={[
+        { label: "Reserve Bank of India — Deposit Rules", url: "https://rbi.org.in/" },
+        { label: "Income Tax Department — Section 194A TDS on Interest", url: "https://incometax.gov.in/" },
+      ]}
+      educationalContent={<FDInfo />}
+    >
+      <FDCalculator />
+    </CalculatorPageShell>
   );
 }

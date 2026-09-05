@@ -4,7 +4,7 @@ import { useCountUp } from "@/hooks/useCountUp";
 import { formatCompact } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-export type ResultSemanticTone = "positive" | "negative" | "neutral" | "warning";
+export type ResultSemanticTone = "positive" | "negative" | "neutral" | "warning" | "informational";
 
 export interface BreakdownItem {
   label: string;
@@ -17,6 +17,7 @@ export interface ResultHeroProps {
   label: string;
   value: number;
   tone?: ResultSemanticTone;
+  statusBadge?: string;
   prefix?: string;
   formatValue?: (val: number) => string;
   interpretation?: string;
@@ -36,7 +37,8 @@ const COLOR_MAP: Record<string, string> = {
 export default function ResultHero({
   label,
   value,
-  tone,
+  tone = "neutral",
+  statusBadge,
   prefix,
   formatValue,
   interpretation,
@@ -45,10 +47,6 @@ export default function ResultHero({
   className,
 }: ResultHeroProps) {
   const animatedValue = useCountUp(value);
-
-  // Auto-detect tone if not explicitly passed
-  const resolvedTone: ResultSemanticTone =
-    tone || (value > 0 ? "neutral" : value < 0 ? "negative" : "neutral");
 
   const rawDisplayValue = formatValue
     ? formatValue(animatedValue)
@@ -70,25 +68,29 @@ export default function ResultHero({
     <div
       className={cn(
         "rounded-2xl border border-border/80 bg-card p-6 sm:p-7 shadow-sm transition-all relative overflow-hidden",
-        resolvedTone === "negative" && "border-rose-300/50 dark:border-rose-900/40",
-        resolvedTone === "positive" && "border-emerald-300/50 dark:border-emerald-900/40",
-        resolvedTone === "warning" && "border-amber-300/50 dark:border-amber-900/40",
+        tone === "negative" && "border-rose-300/50 dark:border-rose-900/40",
+        tone === "positive" && "border-emerald-300/50 dark:border-emerald-900/40",
+        tone === "warning" && "border-amber-300/50 dark:border-amber-900/40",
+        tone === "informational" && "border-blue-300/50 dark:border-blue-900/40",
         className
       )}
     >
-      {/* Eyebrow Label */}
+      {/* Eyebrow Label & Optional Explicit Status Badge */}
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           {label}
         </p>
-        {resolvedTone === "negative" && (
-          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-            Net Loss / Expense
-          </span>
-        )}
-        {resolvedTone === "positive" && (
-          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-            Positive Gain
+        {statusBadge && (
+          <span
+            className={cn(
+              "text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border",
+              tone === "negative" && "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800",
+              tone === "positive" && "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
+              tone === "warning" && "bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800",
+              (tone === "neutral" || tone === "informational") && "bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
+            )}
+          >
+            {statusBadge}
           </span>
         )}
       </div>
@@ -103,9 +105,9 @@ export default function ResultHero({
         <span
           className={cn(
             "text-4xl sm:text-5xl font-extrabold tracking-tight tabular-nums",
-            resolvedTone === "negative"
+            tone === "negative"
               ? "text-rose-700 dark:text-rose-300"
-              : resolvedTone === "positive"
+              : tone === "positive"
               ? "text-emerald-700 dark:text-emerald-300"
               : "text-foreground"
           )}

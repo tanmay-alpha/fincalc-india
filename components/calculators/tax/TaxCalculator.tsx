@@ -28,6 +28,7 @@ import {
   HelpCircle,
   ArrowRight,
 } from "lucide-react";
+import { getRestoredInputs, recordRecentCalculation } from "@/lib/storage-workflow";
 import { cn } from "@/lib/utils";
 
 const TaxChart = dynamic(
@@ -37,39 +38,57 @@ const TaxChart = dynamic(
 
 type TaxFlowTab = "income" | "profile" | "deductions";
 
+const DEFAULT_TAX_INPUTS: TaxInput = {
+  grossIncome: 1500000,
+  salaryIncome: 1500000,
+  interestAndOtherIncome: 0,
+  businessIncome: 0,
+  dividendIncome: 0,
+  equityLtcg: 0,
+  equityStcg: 0,
+  otherLtcg: 0,
+  residency: "resident_individual" as TaxpayerResidency,
+  ageCategory: "below_60" as TaxpayerAgeCategory,
+  regime: "new" as TaxRegime,
+  deduction80C: 0,
+  deduction80D: 25000,
+  deduction80CCD1B: 0,
+  hraExemption: 0,
+  otherDeductions: 0,
+};
+
 export default function TaxCalculator() {
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
   const [activeTab, setActiveTab] = useState<TaxFlowTab>("income");
   const [showAdvancedIncome, setShowAdvancedIncome] = useState(false);
   const [showWhyComparison, setShowWhyComparison] = useState(false);
 
-  const [inputs, setInputs] = useState<TaxInput>({
-    grossIncome: 1500000,
-    salaryIncome: 1500000,
-    interestAndOtherIncome: 0,
-    businessIncome: 0,
-    dividendIncome: 0,
-    equityLtcg: 0,
-    equityStcg: 0,
-    otherLtcg: 0,
-    residency: "resident_individual" as TaxpayerResidency,
-    ageCategory: "below_60" as TaxpayerAgeCategory,
-    regime: "new" as TaxRegime,
-    deduction80C: 0,
-    deduction80D: 25000,
-    deduction80CCD1B: 0,
-    hraExemption: 0,
-    otherDeductions: 0,
-  });
+  const [inputs, setInputs] = useState<TaxInput>(DEFAULT_TAX_INPUTS);
   const [shareId, setShareId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+    const restored = getRestoredInputs("tax", DEFAULT_TAX_INPUTS);
+    setInputs(restored);
+  }, []);
 
   const debouncedInputs = useDebounce(inputs, 200);
   const results = useMemo(() => calcTax(debouncedInputs), [debouncedInputs]);
   const insights = useMemo(() => generateTaxInsights(results), [results]);
 
   useEffect(() => setShareId(null), [debouncedInputs]);
+
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "tax",
+        name: "Income Tax Calculator",
+        route: "/tax",
+        category: "taxation",
+        summary: `₹${formatINR(inputs.grossIncome || inputs.salaryIncome || 0)} · ${String(inputs.regime).toUpperCase()}`,
+      });
+    }
+  }, [mounted, inputs.grossIncome, inputs.salaryIncome, inputs.regime]);
 
   // Synchronize simple salary vs total gross
   const onSimpleSalary = useCallback((v: number) => {
@@ -137,25 +156,25 @@ export default function TaxCalculator() {
                 type="button"
                 onClick={() => onRegime("new")}
                 className={cn(
-                  "py-2 px-3 rounded-xl border text-xs font-bold transition-all",
+                  "py-2 px-3 rounded-xl border text-xs font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                   inputs.regime === "new"
                     ? "border-primary bg-primary text-primary-foreground shadow-sm"
                     : "border-border bg-card text-muted-foreground hover:text-foreground"
                 )}
               >
-                ⚡ New Regime
+                New Regime (Default)
               </button>
               <button
                 type="button"
                 onClick={() => onRegime("old")}
                 className={cn(
-                  "py-2 px-3 rounded-xl border text-xs font-bold transition-all",
+                  "py-2 px-3 rounded-xl border text-xs font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                   inputs.regime === "old"
                     ? "border-primary bg-primary text-primary-foreground shadow-sm"
                     : "border-border bg-card text-muted-foreground hover:text-foreground"
                 )}
               >
-                📋 Old Regime
+                Old Regime
               </button>
             </div>
 
@@ -165,7 +184,7 @@ export default function TaxCalculator() {
                 type="button"
                 onClick={() => setActiveTab("income")}
                 className={cn(
-                  "flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-semibold transition-all",
+                  "flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                   activeTab === "income"
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
@@ -179,7 +198,7 @@ export default function TaxCalculator() {
                 type="button"
                 onClick={() => setActiveTab("deductions")}
                 className={cn(
-                  "flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-semibold transition-all",
+                  "flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                   activeTab === "deductions"
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
@@ -193,7 +212,7 @@ export default function TaxCalculator() {
                 type="button"
                 onClick={() => setActiveTab("profile")}
                 className={cn(
-                  "flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-semibold transition-all",
+                  "flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                   activeTab === "profile"
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
@@ -203,16 +222,6 @@ export default function TaxCalculator() {
                 <span>3. Profile</span>
               </button>
             </div>
-
-            {/* Advanced Streams Toggle Button */}
-            <button
-              type="button"
-              onClick={() => setShowAdvancedIncome(!showAdvancedIncome)}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-card border border-border/60 text-xs font-medium text-foreground hover:bg-muted/50 transition mb-4"
-            >
-              <span>{showAdvancedIncome ? "Hide Advanced Income Streams" : "Configure Multiple Income Streams"}</span>
-              <ChevronDown className={cn("w-4 h-4 text-primary transition-transform", showAdvancedIncome && "rotate-180")} />
-            </button>
 
             {/* STAGE 1: INCOME DETAILS */}
             {activeTab === "income" && (
@@ -224,9 +233,10 @@ export default function TaxCalculator() {
                   <button
                     type="button"
                     onClick={() => setShowAdvancedIncome(!showAdvancedIncome)}
-                    className="text-xs text-primary hover:underline font-medium"
+                    className="text-xs text-primary hover:underline font-medium inline-flex items-center gap-1"
                   >
-                    {showAdvancedIncome ? "Simple Mode" : "Multiple Incomes +"}
+                    <span>{showAdvancedIncome ? "Hide Advanced Streams" : "Configure Multiple Income Streams"}</span>
+                    <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", showAdvancedIncome && "rotate-180")} />
                   </button>
                 </div>
 

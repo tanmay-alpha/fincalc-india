@@ -14,6 +14,8 @@ import { calcEMI } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { generateEMIInsights } from "@/lib/insights";
 import { useDebounce } from "@/hooks/useDebounce";
+import EMIScenarioCompare from "@/components/calculators/emi/EMIScenarioCompare";
+import { getRestoredInputs, recordRecentCalculation } from "@/lib/storage-workflow";
 import { clsx } from "clsx";
 
 const EMIPieChart = dynamic(
@@ -30,18 +32,38 @@ const ROWS_PER_PAGE = 12;
 
 export default function EMICalculator() {
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
   const [inputs, setInputs] = useState({ principal: 3000000, annualRate: 8.5, tenureMonths: 240 });
   const [tenureUnit, setTenureUnit] = useState<"months" | "years">("years");
   const [page, setPage] = useState(1);
   const [shareId, setShareId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+    const restored = getRestoredInputs("emi", {
+      principal: 3000000,
+      annualRate: 8.5,
+      tenureMonths: 240,
+    });
+    setInputs(restored);
+  }, []);
 
   const debouncedInputs = useDebounce(inputs, 250);
   const results = useMemo(() => calcEMI(debouncedInputs), [debouncedInputs]);
   const insights = useMemo(() => generateEMIInsights(results), [results]);
 
   useEffect(() => setShareId(null), [debouncedInputs]);
+
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "emi",
+        name: "Loan EMI Calculator",
+        route: "/emi",
+        category: "loans",
+        summary: `₹${formatINR(inputs.principal)} · ${inputs.annualRate}% · ${Math.round(inputs.tenureMonths / 12)}yr`,
+      });
+    }
+  }, [mounted, inputs.principal, inputs.annualRate, inputs.tenureMonths]);
 
   const onPrincipal = useCallback((v: number) => setInputs((p) => ({ ...p, principal: v })), []);
   const onRate = useCallback((v: number) => setInputs((p) => ({ ...p, annualRate: v })), []);
@@ -138,6 +160,15 @@ export default function EMICalculator() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {insights.map((ins, i) => <InsightCard key={i} {...ins} />)}
             </div>
+
+            {/* Scenario Comparison & Refinancing Insights */}
+            <EMIScenarioCompare
+              principal={inputs.principal}
+              annualRate={inputs.annualRate}
+              tenureMonths={inputs.tenureMonths}
+              emi={results.emi}
+              totalInterest={results.totalInterest}
+            />
 
             {/* Charts */}
             <div className="surface-card p-6">
