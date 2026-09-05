@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Info, X, ExternalLink, ShieldCheck } from "lucide-react";
 import { RegulatoryMetadata } from "@/lib/calculator-contracts";
 
@@ -19,6 +19,25 @@ export default function AssumptionsDrawer({
 }: AssumptionsDrawerProps) {
   const [isOpen, setIsOpen] = useState(false);
 
+  // Keyboard Escape listener & body scroll lock
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
+
   // If no metadata or assumptions, don't show the trigger
   if (!metadata && (!assumptions || assumptions.length === 0) && (!sources || sources.length === 0)) {
     return null;
@@ -29,8 +48,9 @@ export default function AssumptionsDrawer({
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
         aria-haspopup="dialog"
+        aria-expanded={isOpen}
       >
         <Info className="w-3.5 h-3.5" />
         <span className="underline underline-offset-2">View assumptions & statutory sources</span>
@@ -58,7 +78,7 @@ export default function AssumptionsDrawer({
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1 rounded-md text-muted-foreground hover:text-foreground"
+                className="p-1 rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="Close dialog"
               >
                 <X className="w-4 h-4" />
@@ -71,7 +91,7 @@ export default function AssumptionsDrawer({
                 <div className="bg-muted/40 p-3.5 rounded-lg border border-border/60 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-foreground">Tax / Assessment Year:</span>
-                    <span className="font-bold text-primary">{metadata.taxYear || "2026–27"}</span>
+                    <span className="font-bold text-primary tabular-nums">{metadata.taxYear || "2026–27"}</span>
                   </div>
                   {metadata.currentAct && (
                     <div className="flex items-center justify-between">
@@ -130,7 +150,7 @@ export default function AssumptionsDrawer({
                         href={s.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 text-primary hover:underline text-xs"
+                        className="flex items-center gap-1.5 text-primary hover:underline text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
                         <span>{s.label}</span>
@@ -158,7 +178,7 @@ export default function AssumptionsDrawer({
             <div className="pt-3 border-t border-border flex justify-end">
               <button
                 onClick={() => setIsOpen(false)}
-                className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 text-xs font-semibold"
+                className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 Close
               </button>

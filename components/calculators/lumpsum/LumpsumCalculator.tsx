@@ -96,8 +96,13 @@ export default function LumpsumCalculator() {
 
             {/* Inflation toggle */}
             <div className="flex items-center justify-between pt-2">
-              <span className="text-sm text-muted-foreground">Show inflation-adjusted</span>
+              <span id="lumpsum-inflation-adjusted-label" className="text-sm text-muted-foreground">Show inflation-adjusted</span>
               <button
+                type="button"
+                role="switch"
+                aria-checked={showAdjusted}
+                aria-labelledby="lumpsum-inflation-adjusted-label"
+                aria-label="Show inflation-adjusted"
                 onClick={() => setShowAdjusted(!showAdjusted)}
                 className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${showAdjusted ? "bg-primary" : "bg-muted"}`}
               >

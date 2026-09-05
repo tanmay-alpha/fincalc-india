@@ -117,7 +117,7 @@ export default function MarginCalculator() {
           <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-muted-foreground leading-relaxed flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
             <span>
-              <strong className="text-amber-500 font-semibold">F&O Margin Estimator:</strong> Illustrative SPAN/exposure assumptions. Actual exchange/broker margin varies with contract, volatility and current risk parameters.
+              <strong className="text-amber-800 dark:text-amber-300 font-semibold">F&O Margin Estimator:</strong> Illustrative SPAN/exposure assumptions. Actual exchange/broker margin varies with contract, volatility and current risk parameters.
             </span>
           </div>
 
@@ -130,10 +130,12 @@ export default function MarginCalculator() {
 
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-foreground">
+              <label htmlFor="margin-instrument-category" className="text-xs font-semibold text-foreground">
                 Select Instrument / Segment
               </label>
               <select
+                id="margin-instrument-category"
+                aria-label="Select Instrument / Segment"
                 value={instrumentCategory}
                 onChange={(e) => handleCategoryChange(e.target.value as MarginInstrumentCategory)}
                 className="w-full bg-card border border-border/60 rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"

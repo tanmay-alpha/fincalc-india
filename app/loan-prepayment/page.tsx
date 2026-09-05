@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import LoanPrepaymentCalculator from "@/components/calculators/loan-prepayment/LoanPrepaymentCalculator";
 import LoanPrepaymentInfo from "@/components/seo/LoanPrepaymentInfo";
-import Breadcrumb from "@/components/ui/Breadcrumb";
-import RelatedCalculators from "@/components/shared/RelatedCalculators";
-import CalculatorDisclaimer from "@/components/ui/CalculatorDisclaimer";
+import CalculatorPageShell from "@/components/layout/CalculatorPageShell";
 
 export const metadata: Metadata = {
   title: "Loan Pre-Payment & Prepay vs Invest Calculator",
@@ -18,31 +16,22 @@ export const metadata: Metadata = {
 
 export default function LoanPrepaymentPage() {
   return (
-    <main id="main-content" className="min-h-screen bg-background pb-24 lg:pb-12">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Breadcrumb
-            items={[
-              { label: "Home", href: "/" },
-              { label: "Loan Pre-Payment Calculator" },
-            ]}
-          />
-          <div className="flex items-center gap-3 mb-1.5">
-            <span className="text-3xl" aria-hidden="true">🏦</span>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
-              Loan Pre-Payment vs Invest Calculator
-            </h1>
-          </div>
-          <p className="text-muted-foreground text-sm mt-1 max-w-2xl">
-            Simulate how making extra loan payments slashes your debt tenure and saves lakhs in interest vs investing the difference in mutual funds.
-          </p>
-        </div>
-
-        <LoanPrepaymentCalculator />
-        <LoanPrepaymentInfo />
-        <CalculatorDisclaimer />
-        <RelatedCalculators current="loan-prepayment" />
-      </div>
-    </main>
+    <CalculatorPageShell
+      id="loan-prepayment"
+      badge="Prepay vs Invest"
+      assumptions={[
+        "Prepayments directly reduce the outstanding principal balance on the reducing balance schedule.",
+        "Zero foreclosure or part-prepayment penalties apply for individual borrowers on floating-rate home loans per RBI mandate.",
+        "Alternative investment comparison models an equity mutual fund SIP compounding monthly at the specified rate.",
+        "Tax benefits under Section 24(b) (₹2 Lakh interest cap under Old Regime) are not deducted from net interest savings.",
+      ]}
+      sources={[
+        { label: "Reserve Bank of India — Foreclosure Charges Guidelines", url: "https://rbi.org.in/" },
+        { label: "Income Tax Department — Section 24(b) Deductions", url: "https://incometax.gov.in/" },
+      ]}
+      educationalContent={<LoanPrepaymentInfo />}
+    >
+      <LoanPrepaymentCalculator />
+    </CalculatorPageShell>
   );
 }

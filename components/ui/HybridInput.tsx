@@ -1,15 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { clsx } from "clsx";
 import { clampSafe, formatINR } from "@/lib/format";
 
 export interface HybridInputProps {
+  id?: string;
   label: string;
   value: number;
-  // eslint-disable-next-line no-unused-vars
-  onChange: (...args: [number]) => void;
+  onChange: (value: number) => void;
   min: number;
   max: number;
   step?: number;
@@ -63,6 +63,7 @@ function formatDisplayValue(value: number, prefix?: string): string {
 }
 
 export default function HybridInput({
+  id: customId,
   label,
   value,
   onChange,
@@ -78,12 +79,18 @@ export default function HybridInput({
   hideSlider = false,
   ariaLabel,
 }: HybridInputProps) {
+  const generatedId = useId();
+  const inputId = customId || `input-${generatedId}`;
+  const descId = `desc-${generatedId}`;
+  const sliderId = `slider-${generatedId}`;
+
   const [rawText, setRawText] = useState(value.toString());
   const [isFocused, setIsFocused] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const latestValidRef = useRef(value);
 
+  // Sync state with parent value when not interacting
   useEffect(() => {
     latestValidRef.current = value;
     if (!isFocused && !isDragging) {
@@ -137,7 +144,10 @@ export default function HybridInput({
       {/* Label and Formatted Output Header */}
       {label && (
         <div className="flex items-center justify-between gap-2">
-          <label className="text-xs sm:text-sm font-medium text-foreground">
+          <label
+            htmlFor={inputId}
+            className="text-xs sm:text-sm font-medium text-foreground cursor-pointer"
+          >
             {label}
           </label>
           <span
@@ -145,6 +155,7 @@ export default function HybridInput({
               "text-xs sm:text-sm font-semibold tabular-nums truncate transition-colors",
               isFocused ? "text-primary" : "text-foreground"
             )}
+            aria-live="polite"
           >
             {prefix}
             {isFocused ? rawText : formatDisplayValue(value, prefix)}
@@ -157,13 +168,14 @@ export default function HybridInput({
       {!hideSlider && (
         <div className="relative h-5 flex items-center">
           <input
+            id={sliderId}
             type="range"
             min={min}
             max={max}
             step={step || 1}
             value={value}
             disabled={disabled}
-            aria-label={effectiveAriaLabel}
+            aria-label={`${effectiveAriaLabel} slider`}
             onPointerDown={() => setIsDragging(true)}
             onPointerUp={() => setIsDragging(false)}
             onPointerCancel={() => setIsDragging(false)}
@@ -183,6 +195,7 @@ export default function HybridInput({
             className={clsx(
               "w-full h-1.5 rounded-full appearance-none cursor-pointer",
               "disabled:opacity-50 disabled:cursor-not-allowed",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
               "[&::-webkit-slider-thumb]:appearance-none",
               "[&::-webkit-slider-thumb]:w-4.5",
               "[&::-webkit-slider-thumb]:h-4.5",
@@ -227,11 +240,14 @@ export default function HybridInput({
           </span>
         )}
         <input
+          id={inputId}
           type="text"
           inputMode="decimal"
           autoComplete="off"
           spellCheck={false}
           aria-label={effectiveAriaLabel}
+          aria-invalid={displayError ? true : undefined}
+          aria-describedby={(hint || displayError) ? descId : undefined}
           value={isFocused ? rawText : formatDisplayValue(value, prefix)}
           disabled={disabled}
           onFocus={() => {
@@ -243,8 +259,13 @@ export default function HybridInput({
             const nextText = e.target.value;
             setRawText(nextText);
             const parsed = parseInput(nextText);
+            // Only update parent live if valid and within bounds; do not prematurely clamp partial typing
             if (!Number.isNaN(parsed) && Number.isFinite(parsed)) {
-              commitValue(parsed);
+              if (parsed >= min && parsed <= max) {
+                latestValidRef.current = parsed;
+                onChange(parsed);
+                setLocalError(null);
+              }
             }
           }}
           onBlur={handleBlur}
@@ -270,7 +291,7 @@ export default function HybridInput({
 
       {/* Optional Quick Choice Chips */}
       {chips.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 pt-0.5">
+        <div className="flex flex-wrap gap-1.5 pt-0.5" role="group" aria-label={`${label || "Value"} presets`}>
           {chips.map((chip) => (
             <button
               key={chip.value}
@@ -283,7 +304,7 @@ export default function HybridInput({
               className={clsx(
                 "text-[11px] rounded-md px-2.5 py-0.5",
                 "border transition-all duration-150",
-                "font-medium disabled:opacity-50 disabled:cursor-not-allowed",
+                "font-medium disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                 value === chip.value
                   ? "border-primary bg-primary text-primary-foreground font-semibold"
                   : "border-border text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -298,6 +319,7 @@ export default function HybridInput({
       {/* Field Hint or Error */}
       {(hint || displayError) && (
         <p
+          id={descId}
           className={clsx(
             "text-[11px]",
             displayError ? "text-destructive font-medium" : "text-muted-foreground"

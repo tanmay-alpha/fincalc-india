@@ -1,17 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ExternalLink,
   Share2,
   Trash2,
   RotateCcw,
   ShieldAlert,
+  Play,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { CALCULATOR_REGISTRY } from "@/lib/calculators";
+import { CALCULATOR_REGISTRY, getCalculatorById } from "@/lib/registry";
 import { getCategoryIcon } from "@/components/ui/CategoryIcon";
+import { prepareOpenAgain } from "@/lib/storage-workflow";
 import { cn } from "@/lib/utils";
 
 interface Calculation {
@@ -69,12 +73,24 @@ function generateLabel(type: string, inputs: Record<string, unknown>): string {
 }
 
 export default function HistoryClient({ calculations }: { calculations: Calculation[] }) {
+  const router = useRouter();
   const [filter, setFilter] = useState<string>("all");
   const [deleted, setDeleted] = useState<Set<string>>(new Set());
   const [sharedState, setSharedState] = useState<Record<string, boolean>>({});
   const [shareIds, setShareIds] = useState<Record<string, string | null>>({});
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [calculationToDelete, setCalculationToDelete] = useState<string | null>(null);
+
+  // Close modal on Escape
+  useEffect(() => {
+    if (!calculationToDelete) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setCalculationToDelete(null);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [calculationToDelete]);
 
   // Available unique types in user's history
   const availableTypes = Array.from(
@@ -91,8 +107,17 @@ export default function HistoryClient({ calculations }: { calculations: Calculat
     toast.success("Share link copied to clipboard!", { description: url });
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this saved calculation?")) return;
+  const handleOpenAgain = (calc: Calculation) => {
+    const typeKey = calc.type.toLowerCase();
+    const meta = getCalculatorById(typeKey);
+    const queryString = prepareOpenAgain(typeKey, calc.inputs);
+    const targetRoute = meta?.route || `/${typeKey}`;
+    router.push(queryString ? `${targetRoute}?${queryString}` : targetRoute);
+  };
+
+  const confirmDelete = async () => {
+    if (!calculationToDelete) return;
+    const id = calculationToDelete;
     try {
       const res = await fetch(`/api/history/${id}`, { method: "DELETE" });
       if (res.ok) {
@@ -103,6 +128,8 @@ export default function HistoryClient({ calculations }: { calculations: Calculat
       }
     } catch {
       toast.error("Failed to delete calculation");
+    } finally {
+      setCalculationToDelete(null);
     }
   };
 
@@ -168,7 +195,7 @@ export default function HistoryClient({ calculations }: { calculations: Calculat
               type="button"
               onClick={() => setFilter("all")}
               className={cn(
-                "text-xs px-3 py-1 rounded-lg font-semibold transition-all",
+                "text-xs px-3 py-1 rounded-lg font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                 filter === "all"
                   ? "bg-card text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
@@ -184,7 +211,7 @@ export default function HistoryClient({ calculations }: { calculations: Calculat
                   type="button"
                   onClick={() => setFilter(t)}
                   className={cn(
-                    "text-xs px-2.5 py-1 rounded-lg font-medium transition-all uppercase",
+                    "text-xs px-2.5 py-1 rounded-lg font-medium transition-all uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                     filter === t
                       ? "bg-card text-foreground shadow-sm font-semibold"
                       : "text-muted-foreground hover:text-foreground"
@@ -204,7 +231,7 @@ export default function HistoryClient({ calculations }: { calculations: Calculat
           const isShared = sharedState[calc.id] ?? calc.isShared;
           const shareId = shareIds[calc.id] ?? calc.shareId;
           const typeKey = calc.type.toLowerCase();
-          const meta = CALCULATOR_REGISTRY.find((c) => c.id === typeKey);
+          const meta = getCalculatorById(typeKey);
           const Icon = getCategoryIcon(typeKey);
 
           return (
@@ -241,12 +268,23 @@ export default function HistoryClient({ calculations }: { calculations: Calculat
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/50 w-full sm:w-auto justify-end">
+              <div className="flex items-center gap-2 self-end sm:self-center shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/50 w-full sm:w-auto justify-end">
+                {/* Open Again button */}
+                <button
+                  type="button"
+                  onClick={() => handleOpenAgain(calc)}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 transition flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  title="Load inputs into calculator"
+                >
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <span>Open Again</span>
+                </button>
+
                 {isShared && shareId ? (
                   <>
                     <Link
                       href={`/result/${shareId}`}
-                      className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted transition"
+                      className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                       title="View public result"
                       aria-label="View public result"
                     >
@@ -255,7 +293,7 @@ export default function HistoryClient({ calculations }: { calculations: Calculat
                     <button
                       type="button"
                       onClick={() => copyLink(shareId)}
-                      className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted transition"
+                      className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                       title="Copy public link"
                       aria-label="Copy public link"
                     >
@@ -264,7 +302,7 @@ export default function HistoryClient({ calculations }: { calculations: Calculat
                     <button
                       type="button"
                       onClick={() => handleUnshare(calc.id)}
-                      className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 transition flex items-center gap-1"
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 transition flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                       title="Make private"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
@@ -275,7 +313,7 @@ export default function HistoryClient({ calculations }: { calculations: Calculat
                   <button
                     type="button"
                     onClick={() => handlePublish(calc.id)}
-                    className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-muted-foreground hover:text-primary hover:bg-muted transition flex items-center gap-1"
+                    className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-muted-foreground hover:text-primary hover:bg-muted transition flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     title="Generate private share link"
                   >
                     <Share2 className="w-3.5 h-3.5" />
@@ -285,8 +323,8 @@ export default function HistoryClient({ calculations }: { calculations: Calculat
 
                 <button
                   type="button"
-                  onClick={() => handleDelete(calc.id)}
-                  className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition ml-1"
+                  onClick={() => setCalculationToDelete(calc.id)}
+                  className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition ml-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive"
                   title="Delete calculation"
                   aria-label="Delete calculation"
                 >
@@ -298,6 +336,54 @@ export default function HistoryClient({ calculations }: { calculations: Calculat
         })}
       </div>
 
+      {/* Accessible Confirmation Modal for Item Deletion */}
+      {calculationToDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150"
+          onClick={() => setCalculationToDelete(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Confirm Calculation Deletion"
+        >
+          <div
+            className="w-full max-w-md bg-card border border-border rounded-xl shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-foreground">
+                Delete Saved Calculation?
+              </h3>
+              <button
+                onClick={() => setCalculationToDelete(null)}
+                className="p-1 rounded text-muted-foreground hover:text-foreground"
+                aria-label="Close dialog"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Are you sure you want to delete this saved calculation? This will remove the record and any active shared links.
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setCalculationToDelete(null)}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-muted-foreground hover:bg-muted transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-destructive text-destructive-foreground hover:bg-destructive/90 transition shadow-sm"
+              >
+                Delete Calculation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Account Settings & Data Privacy Section */}
       <div className="mt-12 pt-8 border-t border-border/80">
         <div className="bg-card rounded-2xl border border-border/80 p-5 sm:p-6 shadow-sm space-y-4">
@@ -308,7 +394,7 @@ export default function HistoryClient({ calculations }: { calculations: Calculat
             </h3>
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            FinCalc India complies with Indian DPDP and global privacy principles. Your financial calculations are strictly private and isolated to your account. You can permanently delete your account and all associated saved history at any time.
+            FinCalc India stores saved calculations privately in your dedicated account space. Your financial inputs are never sold, rented, or analyzed for advertising. You can permanently delete your account and all associated saved calculations at any time.
           </p>
 
           {!showDeleteConfirm ? (

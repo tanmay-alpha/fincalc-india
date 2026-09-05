@@ -240,7 +240,7 @@ export default function FIRECalculator() {
           {/* FIRE Tiers Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="surface-card p-4 border border-border">
-              <div className="flex items-center gap-1.5 text-amber-500 font-semibold text-xs uppercase tracking-wider mb-1">
+              <div className="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-semibold text-xs uppercase tracking-wider mb-1">
                 <span>🌱</span> Lean FIRE (0.75x)
               </div>
               <p className="text-xl font-bold text-foreground">{formatCompact(result.leanFireCorpus)}</p>
@@ -256,7 +256,7 @@ export default function FIRECalculator() {
             </div>
 
             <div className="surface-card p-4 border border-border">
-              <div className="flex items-center gap-1.5 text-emerald-500 font-semibold text-xs uppercase tracking-wider mb-1">
+              <div className="flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300 font-semibold text-xs uppercase tracking-wider mb-1">
                 <span>👑</span> Fat FIRE (1.5x)
               </div>
               <p className="text-xl font-bold text-foreground">{formatCompact(result.fatFireCorpus)}</p>

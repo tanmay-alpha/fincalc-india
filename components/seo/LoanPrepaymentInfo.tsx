@@ -17,18 +17,18 @@ export default function LoanPrepaymentInfo() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 text-sm">
             <p className="font-semibold text-slate-900 dark:text-white mb-1">1. The &ldquo;1 Extra EMI / Year&rdquo; Rule</p>
-            <p className="text-xs text-slate-500">Pay 13 EMIs instead of 12 every year using your annual performance bonus.</p>
-            <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mt-2">Cuts a 20-year loan by ~3.5 to 4 years.</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">Pay 13 EMIs instead of 12 every year using your annual performance bonus.</p>
+            <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 mt-2">Cuts a 20-year loan by ~3.5 to 4 years.</p>
           </div>
           <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 text-sm">
             <p className="font-semibold text-slate-900 dark:text-white mb-1">2. Monthly Top-Up (+5% to +10%)</p>
-            <p className="text-xs text-slate-500">Increase your monthly EMI payment by ₹2,000 to ₹5,000 every month.</p>
-            <p className="text-xs font-semibold text-green-600 dark:text-green-400 mt-2">Smooth, disciplined interest reduction.</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">Increase your monthly EMI payment by ₹2,000 to ₹5,000 every month.</p>
+            <p className="text-xs font-semibold text-emerald-800 dark:text-emerald-300 mt-2">Smooth, disciplined interest reduction.</p>
           </div>
           <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 text-sm">
             <p className="font-semibold text-slate-900 dark:text-white mb-1">3. Early Lump Sum Prepayment</p>
-            <p className="text-xs text-slate-500">Prepay ₹2–5 Lakhs within the first 3–5 years of taking the loan.</p>
-            <p className="text-xs font-semibold text-purple-600 dark:text-purple-400 mt-2">Maximum mathematical interest savings.</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">Prepay ₹2–5 Lakhs within the first 3–5 years of taking the loan.</p>
+            <p className="text-xs font-semibold text-purple-700 dark:text-purple-300 mt-2">Maximum mathematical interest savings.</p>
           </div>
         </div>
       </section>

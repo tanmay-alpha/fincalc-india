@@ -51,9 +51,9 @@ export default function PPFCalculator() {
           <div className="surface-card h-fit space-y-4 p-6 lg:sticky lg:top-6">
 
             {/* PPF Rules Banner */}
-            <div className="mb-1 rounded-xl border border-warning/25 bg-warning/10 p-4">
-              <p className="mb-2 text-xs font-semibold text-warning">PPF Rules</p>
-              <div className="space-y-1 text-xs text-warning/85">
+            <div className="mb-1 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 p-4">
+              <p className="mb-2 text-xs font-semibold text-amber-900 dark:text-amber-200">PPF Rules</p>
+              <div className="space-y-1 text-xs text-amber-800 dark:text-amber-300">
                 <p>• Lock-in period: 15 years minimum</p>
                 <p>• Maximum yearly investment: ₹1,50,000</p>
                 <p>• Partial withdrawal: allowed after Year 7</p>

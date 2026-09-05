@@ -240,10 +240,12 @@ export default function CapitalGainsCalculator() {
                 </div>
 
                 <div>
-                  <label className="block text-muted-foreground font-medium mb-1">
+                  <label htmlFor="sgb-acquisition-method" className="block text-muted-foreground font-medium mb-1">
                     Acquisition Method
                   </label>
                   <select
+                    id="sgb-acquisition-method"
+                    aria-label="Acquisition Method"
                     value={inputs.sgbSubscriptionType || "original_issue"}
                     onChange={(e) =>
                       setInputs((prev) => ({
@@ -259,10 +261,12 @@ export default function CapitalGainsCalculator() {
                 </div>
 
                 <div>
-                  <label className="block text-muted-foreground font-medium mb-1">
+                  <label htmlFor="sgb-redemption-route" className="block text-muted-foreground font-medium mb-1">
                     Redemption / Transfer Route
                   </label>
                   <select
+                    id="sgb-redemption-route"
+                    aria-label="Redemption / Transfer Route"
                     value={inputs.sgbRedemptionType || "maturity_redemption"}
                     onChange={(e) =>
                       setInputs((prev) => ({
@@ -400,7 +404,7 @@ export default function CapitalGainsCalculator() {
                       ? "20% with CII Indexation"
                       : "12.5% without Indexation"}
                   </strong>
-                  , you save <strong className="text-green-600 dark:text-green-400">{formatINR(result.realEstateComparison.taxSavedByBestOption)}</strong> in capital gains tax.
+                  , you save <strong className="text-emerald-800 dark:text-emerald-300">{formatINR(result.realEstateComparison.taxSavedByBestOption)}</strong> in capital gains tax.
                 </p>
               </div>
             </div>

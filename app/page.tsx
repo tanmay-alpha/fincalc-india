@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import HeroSearch from "@/components/home/HeroSearch";
 import CategoryDirectory from "@/components/home/CategoryDirectory";
+import RecentCalculationsCard from "@/components/home/RecentCalculationsCard";
 
 export default function HomePage() {
   return (
@@ -52,6 +53,7 @@ export default function HomePage() {
 
       {/* ── CALCULATOR DIRECTORY ─────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+        <RecentCalculationsCard />
         <CategoryDirectory />
       </div>
 

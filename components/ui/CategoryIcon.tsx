@@ -10,7 +10,7 @@ import {
   PiggyBank,
   Percent,
 } from "lucide-react";
-import { CALCULATOR_REGISTRY, type CalculatorCategory } from "@/lib/calculators";
+import { type CalculatorCategory, getCalculatorById } from "@/lib/registry";
 
 const CATEGORY_ICON_MAP: Record<CalculatorCategory, LucideIcon> = {
   investments: TrendingUp,
@@ -45,9 +45,7 @@ export function getCategoryIcon(idOrCategory: string): LucideIcon {
   }
 
   // 2. Calculator category lookup
-  const calc = CALCULATOR_REGISTRY.find(
-    (c) => c.id.toLowerCase() === normalized || c.route === `/${normalized}`
-  );
+  const calc = getCalculatorById(normalized);
   if (calc && CATEGORY_ICON_MAP[calc.category]) {
     return CATEGORY_ICON_MAP[calc.category];
   }

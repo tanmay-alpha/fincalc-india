@@ -22,8 +22,8 @@ interface Props {
  * - Leaves room for action buttons when user reaches page end.
  */
 const COLOR_TEXT: Record<string, string> = {
-  green: "text-emerald-600 dark:text-emerald-400",
-  red: "text-rose-600 dark:text-rose-400",
+  green: "text-emerald-800 dark:text-emerald-300",
+  red: "text-rose-700 dark:text-rose-300",
   blue: "text-primary",
 };
 

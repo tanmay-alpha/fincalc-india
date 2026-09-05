@@ -399,10 +399,10 @@ export default function NpsCalculator() {
                     </div>
                     <div className="flex justify-between">
                       <span>Eligible 80CCD(2) Deduction:</span>
-                      <span className="font-semibold text-emerald-500">{formatINR(result.eligibleDeduction80CCD2)}/yr</span>
+                      <span className="font-semibold text-emerald-800 dark:text-emerald-300">{formatINR(result.eligibleDeduction80CCD2)}/yr</span>
                     </div>
                     {result.excessEmployerContributionNotDeductible > 0 && (
-                      <div className="flex justify-between text-amber-500">
+                      <div className="flex justify-between text-amber-800 dark:text-amber-300">
                         <span>Excess Employer Contribution (Non-Deductible):</span>
                         <span className="font-semibold">{formatINR(result.excessEmployerContributionNotDeductible)}/yr</span>
                       </div>
@@ -459,7 +459,7 @@ export default function NpsCalculator() {
 
                 <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
                   <p className="text-[11px] text-muted-foreground">Tax-Exempt Lump Sum</p>
-                  <p className="text-base font-bold text-emerald-500 mt-0.5">
+                  <p className="text-base font-bold text-emerald-800 dark:text-emerald-300 mt-0.5">
                     {formatINR(result.lumpSumTaxFreeAmount)}
                   </p>
                   <span className="text-[10px] text-muted-foreground block mt-0.5">
@@ -469,7 +469,7 @@ export default function NpsCalculator() {
 
                 <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
                   <p className="text-[11px] text-muted-foreground">Potentially Taxable Lump Sum</p>
-                  <p className={`text-base font-bold mt-0.5 ${result.taxableLumpSumAmount > 0 ? "text-amber-500" : "text-foreground"}`}>
+                  <p className={`text-base font-bold mt-0.5 ${result.taxableLumpSumAmount > 0 ? "text-amber-800 dark:text-amber-300" : "text-foreground"}`}>
                     {formatINR(result.taxableLumpSumAmount)}
                   </p>
                   <span className="text-[10px] text-muted-foreground block mt-0.5">
@@ -491,7 +491,7 @@ export default function NpsCalculator() {
 
                 <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
                   <p className="text-[11px] text-muted-foreground">Monthly Pension</p>
-                  <p className="text-base font-bold text-emerald-500 mt-0.5">
+                  <p className="text-base font-bold text-emerald-800 dark:text-emerald-300 mt-0.5">
                     {formatINR(result.estimatedMonthlyPension)}/mo
                   </p>
                   <span className="text-[10px] text-muted-foreground block mt-0.5">
@@ -501,7 +501,7 @@ export default function NpsCalculator() {
 
                 <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
                   <p className="text-[11px] text-muted-foreground">Annual Tax Saved</p>
-                  <p className="text-base font-bold text-emerald-500 mt-0.5">
+                  <p className="text-base font-bold text-emerald-800 dark:text-emerald-300 mt-0.5">
                     {formatINR(result.annualTaxSavedUnder80CCD)}/yr
                   </p>
                   <span className="text-[10px] text-muted-foreground block mt-0.5">

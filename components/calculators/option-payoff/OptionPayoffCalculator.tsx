@@ -322,13 +322,13 @@ export default function OptionPayoffCalculator() {
           <div className="grid grid-cols-3 gap-3">
             <div className="surface-card p-3 text-center">
               <span className="text-[11px] text-muted-foreground block">Max Profit</span>
-              <span className="text-sm font-bold text-green-600 dark:text-green-400">
+              <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
                 {displayMaxProfit}
               </span>
             </div>
             <div className="surface-card p-3 text-center">
               <span className="text-[11px] text-muted-foreground block">Max Loss</span>
-              <span className="text-sm font-bold text-red-600 dark:text-red-400">
+              <span className="text-sm font-bold text-red-700 dark:text-red-400">
                 {displayMaxLoss}
               </span>
             </div>

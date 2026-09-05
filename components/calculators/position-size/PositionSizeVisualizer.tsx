@@ -42,7 +42,7 @@ export default function PositionSizeVisualizer({
               </div>
             </div>
           </div>
-          <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400">
+          <span className="text-base font-extrabold text-emerald-800 dark:text-emerald-300">
             ₹{targetPrice.toLocaleString("en-IN")}
           </span>
         </div>

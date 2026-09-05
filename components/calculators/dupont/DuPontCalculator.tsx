@@ -184,7 +184,7 @@ export default function DuPontCalculator() {
           <div className="grid grid-cols-3 gap-3 text-center">
             <div className="p-3 bg-card/60 border border-border/60 rounded-xl">
               <span className="text-[11px] text-muted-foreground block">Profit Margin</span>
-              <span className="text-base font-bold text-emerald-500 mt-0.5 block">{result.threeStep.netProfitMargin}%</span>
+              <span className="text-base font-bold text-emerald-800 dark:text-emerald-300 mt-0.5 block">{result.threeStep.netProfitMargin}%</span>
             </div>
             <div className="p-3 bg-card/60 border border-border/60 rounded-xl">
               <span className="text-[11px] text-muted-foreground block">Asset Turnover</span>

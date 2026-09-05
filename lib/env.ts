@@ -52,3 +52,13 @@ export function validateEnv() {
   cachedEnv = parsed.data;
   return cachedEnv;
 }
+
+export function getBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  }
+  if (process.env.NEXTAUTH_URL) {
+    return process.env.NEXTAUTH_URL.replace(/\/$/, "");
+  }
+  return "https://fincalc-india.vercel.app";
+}

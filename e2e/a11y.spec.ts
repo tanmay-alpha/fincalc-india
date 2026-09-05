@@ -1,24 +1,18 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { CALCULATOR_REGISTRY } from "../lib/registry";
 
-// Representative core routes across financial categories
-const PRIMARY_SAMPLE_ROUTES = [
+// Audit all 31 registered calculator routes dynamically plus root & workspace pages
+const ALL_AUDIT_ROUTES = [
   "/",
-  "/tax",
-  "/sip",
-  "/emi",
-  "/nps",
-  "/lrs-tcs",
-  "/section-54-exemption",
-  "/xirr-cagr-twrr",
-  "/balance-transfer",
-  "/capital-gains-tax",
+  "/history",
+  ...CALCULATOR_REGISTRY.map((c) => c.route),
 ];
 
 test.describe("Accessibility Audits (Axe Core WCAG 2A / 2AA)", () => {
   test.describe.configure({ retries: 0 });
 
-  for (const route of PRIMARY_SAMPLE_ROUTES) {
+  for (const route of ALL_AUDIT_ROUTES) {
     test(`Accessibility compliance for ${route}`, async ({ page }) => {
       await page.goto(route, { waitUntil: "domcontentloaded" });
 
@@ -30,4 +24,5 @@ test.describe("Accessibility Audits (Axe Core WCAG 2A / 2AA)", () => {
     });
   }
 });
+
 

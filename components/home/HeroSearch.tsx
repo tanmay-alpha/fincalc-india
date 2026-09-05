@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, ArrowRight, X, TrendingUp, FileText, LineChart, Building2, Scale } from "lucide-react";
-import { CALCULATOR_REGISTRY, CalculatorCategory } from "@/lib/calculators";
+import { searchCalculators, CalculatorCategory, CATEGORY_MAP } from "@/lib/registry";
 
 const CATEGORY_ICONS: Record<CalculatorCategory, typeof TrendingUp> = {
   investments: TrendingUp,
@@ -20,17 +20,10 @@ export default function HeroSearch() {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Filter matching calculators
+  // Filter matching calculators using centralized alias & keyword matching
   const matches = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return [];
-    return CALCULATOR_REGISTRY.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.shortName.toLowerCase().includes(q) ||
-        c.description.toLowerCase().includes(q) ||
-        c.route.toLowerCase().includes(q)
-    ).slice(0, 6);
+    if (!query.trim()) return [];
+    return searchCalculators(query).slice(0, 6);
   }, [query]);
 
   // Click outside to close
@@ -91,9 +84,12 @@ export default function HeroSearch() {
       {/* Autocomplete Dropdown */}
       {isOpen && matches.length > 0 && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-card rounded-xl border border-border shadow-xl p-2 z-30 animate-in fade-in zoom-in-95 duration-100">
-          <p className="text-[11px] font-semibold text-muted-foreground uppercase px-3 py-1">
-            Matching Calculators
-          </p>
+          <div className="flex items-center justify-between px-3 py-1 mb-1">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              Matching Calculators
+            </p>
+            <span className="text-[10px] text-muted-foreground">Press Enter to open first</span>
+          </div>
           <div className="divide-y divide-border/40">
             {matches.map((calc) => {
               const Icon = CATEGORY_ICONS[calc.category] || TrendingUp;
@@ -102,7 +98,7 @@ export default function HeroSearch() {
                   key={calc.id}
                   href={calc.route}
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center justify-between p-2.5 rounded-lg hover:bg-muted/60 transition-colors group"
+                  className="flex items-center justify-between p-2.5 rounded-lg hover:bg-muted/60 transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center text-muted-foreground group-hover:text-primary group-hover:bg-primary/10 transition-colors shrink-0">
@@ -114,13 +110,13 @@ export default function HeroSearch() {
                           {calc.name}
                         </span>
                         {calc.badge && (
-                          <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.2 bg-primary/10 text-primary rounded">
+                          <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 bg-primary/10 text-primary rounded">
                             {calc.badge}
                           </span>
                         )}
                       </div>
                       <p className="text-[11px] text-muted-foreground truncate">
-                        {calc.description}
+                        {CATEGORY_MAP[calc.category]?.label} &bull; {calc.description}
                       </p>
                     </div>
                   </div>

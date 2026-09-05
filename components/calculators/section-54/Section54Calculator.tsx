@@ -691,7 +691,7 @@ export default function Section54Calculator() {
                     </div>
                   </div>
                 </div>
-                <span className="text-[10px] font-bold text-amber-600 bg-amber-100 dark:bg-amber-900/50 px-2 py-0.5 rounded">
+                <span className="text-[10px] font-bold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/50 px-2 py-0.5 rounded">
                   Max Cap: ₹10 Cr (Proportionate)
                 </span>
               </div>
@@ -707,10 +707,12 @@ export default function Section54Calculator() {
               />
 
               <div className="space-y-1.5 pt-2 border-t border-border/40">
-                <label className="text-xs font-medium text-foreground block">
+                <label htmlFor="section54-existing-houses" className="text-xs font-medium text-foreground block">
                   Existing Residential Houses Owned on Sale Date
                 </label>
                 <select
+                  id="section54-existing-houses"
+                  aria-label="Existing Residential Houses Owned on Sale Date"
                   value={existingHousesCount}
                   onChange={(e) => setExistingHousesCount(parseInt(e.target.value, 10) || 0)}
                   className="w-full bg-card border border-border/60 rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"

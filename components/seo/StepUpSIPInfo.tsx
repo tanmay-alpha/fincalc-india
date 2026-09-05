@@ -23,9 +23,9 @@ export default function StepUpSIPInfo() {
           </div>
           <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl p-4 border border-blue-200 dark:border-blue-900 text-sm">
             <p className="font-semibold text-blue-900 dark:text-blue-300 mb-2">Step-Up SIP (+10%/year)</p>
-            <p className="text-xs text-blue-600 dark:text-blue-400">₹10,000/month with 10% annual top-up @ 12%</p>
+            <p className="text-xs text-blue-800 dark:text-blue-300">₹10,000/month with 10% annual top-up @ 12%</p>
             <p className="text-lg font-bold text-blue-950 dark:text-blue-200 mt-2">Corpus: ≈ ₹92.05 Lakhs</p>
-            <p className="text-xs text-blue-700 dark:text-blue-400 mt-1 font-medium">Extra Wealth Gained: +₹41.60 Lakhs (82% more!)</p>
+            <p className="text-xs text-blue-800 dark:text-blue-300 mt-1 font-semibold">Extra Wealth Gained: +₹41.60 Lakhs (82% more!)</p>
           </div>
         </div>
       </section>

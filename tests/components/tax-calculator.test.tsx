@@ -24,8 +24,8 @@ describe("TaxCalculator Component UI", () => {
     expect(screen.getByText(/Finance Act, 2026/i)).toBeDefined();
 
     // Check regime toggle buttons
-    expect(screen.getByText(/⚡ New Regime/i)).toBeDefined();
-    expect(screen.getByText(/📋 Old Regime/i)).toBeDefined();
+    expect(screen.getByRole("button", { name: /New Regime/i })).toBeDefined();
+    expect(screen.getByRole("button", { name: /Old Regime/i })).toBeDefined();
 
     // Check advanced options toggle
     expect(screen.getByText(/Configure Multiple Income Streams/i)).toBeDefined();

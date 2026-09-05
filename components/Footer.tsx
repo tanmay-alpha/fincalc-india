@@ -15,20 +15,28 @@ export default function Footer() {
             </span>
           </div>
 
-          {/* Links */}
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <Link
-              href="https://github.com/tanmay-alpha/fincalc-india"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-foreground transition-colors"
-            >
-              GitHub
-            </Link>
-            <span aria-hidden>·</span>
-            <span>Not financial advice</span>
-            <span aria-hidden>·</span>
-            <span>Free · No ads · No tracking</span>
+          {/* Links & Trust Notes */}
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-xs text-muted-foreground text-center sm:text-right">
+            <div className="flex items-center gap-3">
+              <Link
+                href="https://github.com/tanmay-alpha/fincalc-india"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-foreground transition-colors"
+              >
+                GitHub
+              </Link>
+              <span aria-hidden>·</span>
+              <Link href="/history" className="hover:text-foreground transition-colors">
+                Calculation History
+              </Link>
+              <span aria-hidden>·</span>
+              <span>Free · Privacy-first · No tracking</span>
+            </div>
+            <span className="hidden sm:inline" aria-hidden>·</span>
+            <span className="text-xs text-foreground/80 font-medium">
+              Tax Year 2026–27 · For educational & estimation purposes only
+            </span>
           </div>
         </div>
       </div>

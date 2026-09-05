@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import OptionPayoffCalculator from "@/components/calculators/option-payoff/OptionPayoffCalculator";
 import OptionPayoffInfo from "@/components/seo/OptionPayoffInfo";
-import Breadcrumb from "@/components/ui/Breadcrumb";
-import RelatedCalculators from "@/components/shared/RelatedCalculators";
-import CalculatorDisclaimer from "@/components/ui/CalculatorDisclaimer";
+import CalculatorPageShell from "@/components/layout/CalculatorPageShell";
 
 export const metadata: Metadata = {
   title: "Option Strategy Payoff Visualizer & Breakeven Calculator",
@@ -18,31 +16,22 @@ export const metadata: Metadata = {
 
 export default function OptionPayoffPage() {
   return (
-    <main id="main-content" className="min-h-screen bg-background pb-24 lg:pb-12">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Breadcrumb
-            items={[
-              { label: "Home", href: "/" },
-              { label: "Option Strategy Payoff Visualizer" },
-            ]}
-          />
-          <div className="flex items-center gap-3 mb-1.5">
-            <span className="text-3xl" aria-hidden="true">📈</span>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
-              Option Strategy Payoff Visualizer
-            </h1>
-          </div>
-          <p className="text-muted-foreground text-sm mt-1 max-w-2xl">
-            Build and visualize multi-leg option strategies (Bull Call, Bear Put, Straddle, Iron Condor) with interactive expiry payoff curves and exact breakeven levels.
-          </p>
-        </div>
-
-        <OptionPayoffCalculator />
-        <OptionPayoffInfo />
-        <CalculatorDisclaimer />
-        <RelatedCalculators current="tax" />
-      </div>
-    </main>
+    <CalculatorPageShell
+      id="option-payoff"
+      badge="Expiry Payoffs"
+      assumptions={[
+        "Payoff profile models intrinsic option value at final contract expiry, assuming zero residual time value.",
+        "European-style settlement convention is assumed, aligned with NSE index and stock option cash-settlement mechanics.",
+        "Model reflects gross strategy payoffs; for statutory STT, GST, and exchange fees, combine with the F&O Brokerage Calculator.",
+        "Market prices and premium quotes assume standard contract lot sizes (e.g. NIFTY 25, BANKNIFTY 15).",
+      ]}
+      sources={[
+        { label: "NSE India — Derivatives Specifications & Rules", url: "https://www.nseindia.com/" },
+        { label: "Options Clearing Corporation — Strategy Guide", url: "https://www.theocc.com/" },
+      ]}
+      educationalContent={<OptionPayoffInfo />}
+    >
+      <OptionPayoffCalculator />
+    </CalculatorPageShell>
   );
 }
