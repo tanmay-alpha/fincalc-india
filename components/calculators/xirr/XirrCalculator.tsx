@@ -266,9 +266,9 @@ export default function XirrCalculator() {
                     <p
                       className={`text-base font-bold mt-0.5 ${
                         xirrResult.absoluteGainPercent > 0
-                          ? "text-emerald-500"
+                          ? "text-emerald-800 dark:text-emerald-300"
                           : xirrResult.absoluteGainPercent < 0
-                          ? "text-rose-500"
+                          ? "text-rose-700 dark:text-rose-300"
                           : "text-foreground"
                       }`}
                     >
@@ -378,9 +378,9 @@ export default function XirrCalculator() {
                 <p
                   className={`text-xl font-bold mt-1 ${
                     cagrResult.absoluteReturnPercent > 0
-                      ? "text-emerald-500"
+                      ? "text-emerald-800 dark:text-emerald-300"
                       : cagrResult.absoluteReturnPercent < 0
-                      ? "text-rose-500"
+                      ? "text-rose-700 dark:text-rose-300"
                       : "text-foreground"
                   }`}
                 >
@@ -516,7 +516,7 @@ export default function XirrCalculator() {
                       <td className="px-4 py-2 text-right">{formatINR(p.startValue)}</td>
                       <td className="px-4 py-2 text-right">{p.netCashflow >= 0 ? `+${formatINR(p.netCashflow)}` : formatINR(p.netCashflow)}</td>
                       <td className="px-4 py-2 text-right">{formatINR(p.endValue)}</td>
-                      <td className={clsx("px-4 py-2 text-right font-bold", p.holdingPeriodReturn >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                      <td className={clsx("px-4 py-2 text-right font-bold", p.holdingPeriodReturn >= 0 ? "text-emerald-800 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300")}>
                         {p.holdingPeriodReturn >= 0 ? "+" : ""}{p.holdingPeriodReturn}%
                       </td>
                     </tr>

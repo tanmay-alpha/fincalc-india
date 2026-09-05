@@ -73,7 +73,7 @@ export default function EMIScenarioCompare({
             <span
               className={cn(
                 "text-xs font-semibold tabular-nums",
-                interestSaved >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"
+                interestSaved >= 0 ? "text-emerald-800 dark:text-emerald-300" : "text-destructive"
               )}
             >
               {interestSaved >= 0 ? `Save ₹${formatINR(interestSaved)} Interest` : `+₹${formatINR(Math.abs(interestSaved))} Interest`}
@@ -86,7 +86,7 @@ export default function EMIScenarioCompare({
             {emiDelta !== 0 && (
               <span className={cn(
                 "text-[10px] font-semibold px-1.5 py-0.5 rounded",
-                emiDelta < 0 ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-600"
+                emiDelta < 0 ? "bg-emerald-500/10 text-emerald-800 dark:text-emerald-300" : "bg-amber-500/10 text-amber-800 dark:text-amber-300"
               )}>
                 {emiDelta < 0 ? `-${formatINR(Math.abs(emiDelta))}` : `+${formatINR(emiDelta)}`}
               </span>

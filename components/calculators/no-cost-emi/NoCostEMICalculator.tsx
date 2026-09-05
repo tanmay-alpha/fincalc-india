@@ -196,8 +196,8 @@ export default function NoCostEMICalculator() {
               className={clsx(
                 "p-2.5 rounded-xl",
                 result.cheaperOption === "upfront"
-                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                  : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                  ? "bg-amber-500/10 text-amber-800 dark:text-amber-300"
+                  : "bg-emerald-500/10 text-emerald-800 dark:text-emerald-300"
               )}
             >
               {result.cheaperOption === "upfront" ? (

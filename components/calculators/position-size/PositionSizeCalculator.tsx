@@ -283,10 +283,10 @@ export default function PositionSizeCalculator() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="surface-card p-3 text-center">
                 <div className="text-[11px] text-muted-foreground">Target Price</div>
-                <div className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                <div className="text-sm font-extrabold text-emerald-800 dark:text-emerald-300 mt-0.5">
                   ₹{result.targetPrice.toLocaleString("en-IN")}
                 </div>
-                <div className="text-[10px] text-emerald-600 font-medium">
+                <div className="text-[10px] text-emerald-800 dark:text-emerald-300 font-medium">
                   +{formatINR(result.potentialProfit)}
                 </div>
               </div>

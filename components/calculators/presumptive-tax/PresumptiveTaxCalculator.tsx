@@ -112,7 +112,7 @@ export default function PresumptiveTaxCalculator() {
                 <p className="text-[11px] text-muted-foreground mt-1">
                   Doctors, Tech Freelancers, CAs, Consultants. <strong>50%</strong> presumptive profit.
                 </p>
-                <div className="mt-2 text-[10px] text-primary/80 font-medium">
+                <div className="mt-2 text-[10px] text-blue-800 dark:text-blue-300 font-semibold">
                   Max Limit: ₹75 Lakh (if ≥95% digital)
                 </div>
               </button>
@@ -137,7 +137,7 @@ export default function PresumptiveTaxCalculator() {
                 <p className="text-[11px] text-muted-foreground mt-1">
                   Traders, Retailers, Wholesalers. <strong>6% digital / 8% cash</strong> profit.
                 </p>
-                <div className="mt-2 text-[10px] text-primary/80 font-medium">
+                <div className="mt-2 text-[10px] text-blue-800 dark:text-blue-300 font-semibold">
                   Max Limit: ₹3 Crore (if ≥95% digital)
                 </div>
               </button>
@@ -382,7 +382,7 @@ export default function PresumptiveTaxCalculator() {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="surface-card p-3.5 text-center">
                 <div className="text-xs text-muted-foreground">Deemed Profit</div>
-                <div className="text-base font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+                <div className="text-base font-bold text-emerald-800 dark:text-emerald-300 mt-1">
                   {formatINR(result.presumptiveIncome)}
                 </div>
                 <div className="text-[10px] text-muted-foreground">
@@ -403,7 +403,7 @@ export default function PresumptiveTaxCalculator() {
                 <div className="text-sm font-bold text-foreground mt-1">
                   {formatINR(result.maxTurnoverLimit)}
                 </div>
-                <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                <div className="text-[10px] text-emerald-800 dark:text-emerald-300 font-medium">
                   {result.isEnhancedLimitApplicable ? "Enhanced limit" : "Base limit"}
                 </div>
               </div>
@@ -437,7 +437,7 @@ export default function PresumptiveTaxCalculator() {
                   <tbody className="divide-y divide-border/50">
                     <tr>
                       <td className="py-2 pr-3 text-muted-foreground">Declared Profit</td>
-                      <td className="py-2 px-3 font-semibold text-emerald-600 dark:text-emerald-400">
+                      <td className="py-2 px-3 font-semibold text-emerald-800 dark:text-emerald-300">
                         {formatINR(result.presumptiveIncome)} ({result.presumptiveRateEffective}%)
                       </td>
                       <td className="py-2 pl-3 font-semibold">
@@ -455,19 +455,19 @@ export default function PresumptiveTaxCalculator() {
                     </tr>
                     <tr>
                       <td className="py-2 pr-3 text-muted-foreground">Books of Accounts</td>
-                      <td className="py-2 px-3 text-emerald-600 dark:text-emerald-400 font-medium">
+                      <td className="py-2 px-3 text-emerald-800 dark:text-emerald-300 font-medium">
                         Exempt (No Books)
                       </td>
-                      <td className="py-2 pl-3 text-amber-600 dark:text-amber-400 font-medium">
+                      <td className="py-2 pl-3 text-amber-800 dark:text-amber-300 font-medium">
                         Mandatory u/s 44AA
                       </td>
                     </tr>
                     <tr>
                       <td className="py-2 pr-3 text-muted-foreground">Tax Audit</td>
-                      <td className="py-2 px-3 text-emerald-600 dark:text-emerald-400 font-medium">
+                      <td className="py-2 px-3 text-emerald-800 dark:text-emerald-300 font-medium">
                         Not Required
                       </td>
-                      <td className="py-2 pl-3 text-red-600 dark:text-red-400 font-medium">
+                      <td className="py-2 pl-3 text-rose-700 dark:text-rose-300 font-medium">
                         {result.isAuditTriggeredByOptOut ? "Mandatory u/s 44AB" : "Not Triggered"}
                       </td>
                     </tr>

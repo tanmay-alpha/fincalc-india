@@ -404,7 +404,7 @@ export default function CapitalGainsCalculator() {
                       ? "20% with CII Indexation"
                       : "12.5% without Indexation"}
                   </strong>
-                  , you save <strong className="text-green-600 dark:text-green-400">{formatINR(result.realEstateComparison.taxSavedByBestOption)}</strong> in capital gains tax.
+                  , you save <strong className="text-emerald-800 dark:text-emerald-300">{formatINR(result.realEstateComparison.taxSavedByBestOption)}</strong> in capital gains tax.
                 </p>
               </div>
             </div>

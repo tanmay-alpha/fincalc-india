@@ -266,7 +266,7 @@ export default function SIPCalculator() {
                     <th className="px-4 py-3 text-right font-semibold uppercase text-[11px] tracking-wider">
                       Invested
                     </th>
-                    <th className="px-4 py-3 text-right font-semibold uppercase text-[11px] tracking-wider text-emerald-600 dark:text-emerald-400">
+                    <th className="px-4 py-3 text-right font-semibold uppercase text-[11px] tracking-wider text-emerald-800 dark:text-emerald-300">
                       Returns
                     </th>
                     <th className="px-4 py-3 text-right font-semibold uppercase text-[11px] tracking-wider">
@@ -290,7 +290,7 @@ export default function SIPCalculator() {
                       <td className="px-4 py-3 text-right text-foreground/80 tabular-nums">
                         {formatINR(row.invested)}
                       </td>
-                      <td className="px-4 py-3 text-right text-emerald-600 dark:text-emerald-400 tabular-nums font-medium">
+                      <td className="px-4 py-3 text-right text-emerald-800 dark:text-emerald-300 tabular-nums font-medium">
                         {formatINR(row.returns)}
                       </td>
                       <td className="px-4 py-3 text-right text-foreground font-bold tabular-nums">

@@ -252,10 +252,10 @@ export default function BalanceTransferCalculator() {
             <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 flex items-start gap-2.5">
               <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
                   Refinancing is Financially Beneficial
                 </p>
-                <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5">
+                <p className="text-xs text-emerald-800 dark:text-emerald-300 mt-0.5">
                   Break-even is reached in <span className="font-bold">Month {result.breakevenMonths}</span>. Total lifetime net savings will be{" "}
                   <span className="font-bold">{formatINR(result.netBenefit)}</span>.
                 </p>
@@ -266,7 +266,7 @@ export default function BalanceTransferCalculator() {
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
               <p className="text-[11px] text-muted-foreground">Monthly EMI Savings</p>
-              <p className={clsx("text-base font-bold mt-0.5", result.monthlyEmiSavings >= 0 ? "text-emerald-500" : "text-rose-500")}>
+              <p className={clsx("text-base font-bold mt-0.5", result.monthlyEmiSavings >= 0 ? "text-emerald-800 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300")}>
                 {result.monthlyEmiSavings < 0 ? "-" : ""}{formatINR(Math.abs(result.monthlyEmiSavings))}/mo
               </p>
             </div>

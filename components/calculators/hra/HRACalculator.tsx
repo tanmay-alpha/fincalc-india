@@ -343,13 +343,13 @@ export default function HRACalculator() {
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div className="surface-card p-3.5 text-center">
               <div className="text-xs text-muted-foreground">Monthly Exemption</div>
-              <div className="text-base font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+              <div className="text-base font-bold text-emerald-800 dark:text-emerald-300 mt-1">
                 {formatINR(result.monthlyExemptHra)}
               </div>
             </div>
             <div className="surface-card p-3.5 text-center">
               <div className="text-xs text-muted-foreground">Monthly Taxable</div>
-              <div className="text-base font-bold text-amber-600 dark:text-amber-400 mt-1">
+              <div className="text-base font-bold text-amber-800 dark:text-amber-300 mt-1">
                 {formatINR(result.monthlyTaxableHra)}
               </div>
             </div>
@@ -479,14 +479,14 @@ export default function HRACalculator() {
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div className="p-3 rounded-lg bg-muted/50">
                   <div className="text-muted-foreground">Your Tax Saved</div>
-                  <div className="text-base font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                  <div className="text-base font-bold text-emerald-800 dark:text-emerald-300 mt-0.5">
                     {formatINR(result.payingToParentsDetails.employeeTaxSaved)}
                   </div>
                 </div>
 
                 <div className="p-3 rounded-lg bg-muted/50">
                   <div className="text-muted-foreground">Parent Tax Payable</div>
-                  <div className="text-base font-bold text-amber-600 dark:text-amber-400 mt-0.5">
+                  <div className="text-base font-bold text-amber-800 dark:text-amber-300 mt-0.5">
                     {formatINR(result.payingToParentsDetails.parentTaxPayable)}
                   </div>
                   <div className="text-[10px] text-muted-foreground">After 30% std deduction</div>
