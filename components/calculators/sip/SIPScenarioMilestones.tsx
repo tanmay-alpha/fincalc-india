@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { formatINR } from "@/lib/format";
 import { calcSIP } from "@/lib/math";
-import { getBaseUrl } from "@/lib/env";
 import {
   Copy,
   Check,
   Milestone,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -40,10 +40,21 @@ export default function SIPScenarioMilestones({
   const [activeTab, setActiveTab] = useState<"milestones" | "compare" | "fd_compare" | "inflation">("milestones");
   const [copied, setCopied] = useState(false);
 
-  // Scenario B inputs for comparison (defaulting to +₹5k / +2% / +5yr)
-  const [scenarioBMonthly, setScenarioBMonthly] = useState(monthlyAmount + 5000);
-  const [scenarioBRate, setScenarioBRate] = useState(annualRate);
-  const [scenarioBYears, setScenarioBYears] = useState(years);
+  // Scenario B default delta: +₹5,000/mo, +2% return, +5 years tenure
+  const getInitialBMonthly = useCallback((amt: number) => amt + 5000, []);
+  const getInitialBRate = useCallback((rate: number) => +(rate + 2).toFixed(1), []);
+  const getInitialBYears = useCallback((yrs: number) => yrs + 5, []);
+
+  // Scenario B inputs for comparison: independent state initialized once
+  const [scenarioBMonthly, setScenarioBMonthly] = useState(() => getInitialBMonthly(monthlyAmount));
+  const [scenarioBRate, setScenarioBRate] = useState(() => getInitialBRate(annualRate));
+  const [scenarioBYears, setScenarioBYears] = useState(() => getInitialBYears(years));
+
+  const handleResetBFromA = () => {
+    setScenarioBMonthly(getInitialBMonthly(monthlyAmount));
+    setScenarioBRate(getInitialBRate(annualRate));
+    setScenarioBYears(getInitialBYears(years));
+  };
 
   // 1. Rule of 72 Doubling Time
   const doublingYears = useMemo(() => {
@@ -125,7 +136,7 @@ export default function SIPScenarioMilestones({
 
   // Copy Summary Handler
   const handleCopySummary = async () => {
-    const baseUrl = getBaseUrl();
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://fincalc-india.com";
     const text = [
       `FinCalc India — SIP Wealth Projection`,
       `────────────────────────────`,
@@ -302,9 +313,20 @@ export default function SIPScenarioMilestones({
                 <span className="text-xs font-bold uppercase tracking-wider text-primary">
                   Scenario B (Alternative)
                 </span>
-                <span className="text-xs font-semibold text-primary tabular-nums">
-                  {scenarioDelta.corpusDelta >= 0 ? "+" : ""}{formatINR(scenarioDelta.corpusDelta)}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-primary tabular-nums">
+                    {scenarioDelta.corpusDelta >= 0 ? "+" : ""}{formatINR(scenarioDelta.corpusDelta)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleResetBFromA}
+                    className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground bg-card/70 hover:bg-card px-2 py-0.5 rounded-md transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary border border-border/60"
+                    title="Reset Scenario B using current Scenario A with default +₹5k/mo, +2%, +5yr delta"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset B from A</span>
+                  </button>
+                </div>
               </div>
               <p className="text-xl font-extrabold text-foreground tabular-nums">
                 {formatINR(scenarioBResult.totalCorpus)}

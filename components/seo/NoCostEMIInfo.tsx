@@ -12,20 +12,20 @@ export default function NoCostEMIInfo() {
 
       <section>
         <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-3">
-          The 3 Hidden Traps of &ldquo;No-Cost EMI&rdquo;
+          Key Cost Factors in Merchant No-Cost EMI
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 text-sm">
             <p className="font-semibold text-slate-900 dark:text-white mb-1">1. 18% GST on Interest</p>
-            <p className="text-xs text-slate-500">Government levies 18% GST on all loan interest charged by the bank each month. This GST is NOT discounted by the merchant and comes out of your pocket.</p>
+            <p className="text-xs text-slate-500">Government levies 18% GST on the interest component billed by the card issuer. This GST amount is paid by the consumer and is not offset by the merchant discount.</p>
           </div>
           <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 text-sm">
             <p className="font-semibold text-slate-900 dark:text-white mb-1">2. Upfront Processing Fees</p>
-            <p className="text-xs text-slate-500">Banks charge a non-refundable loan processing fee (typically ₹99 to ₹299 + 18% GST) on credit/debit card EMI conversions.</p>
+            <p className="text-xs text-slate-500">Many card issuers charge a non-refundable one-time loan processing fee (often ₹99 to ₹299 + 18% GST) upon conversion.</p>
           </div>
           <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 text-sm">
-            <p className="font-semibold text-slate-900 dark:text-white mb-1">3. Lost Upfront Discounts</p>
-            <p className="text-xs text-slate-500">You forfeit instant full-payment bank card discounts (e.g. ₹3,000–₹5,000 instant discount on full swipe), making the EMI option far more expensive in reality.</p>
+            <p className="font-semibold text-slate-900 dark:text-white mb-1">3. Opportunity Cost of Instant Discounts</p>
+            <p className="text-xs text-slate-500">Opting for merchant subvention frequently disqualifies you from alternative instant bank discounts on full upfront payment.</p>
           </div>
         </div>
       </section>
@@ -36,15 +36,15 @@ export default function NoCostEMIInfo() {
           {[
             {
               q: "Does No-Cost EMI affect my CIBIL / Credit score?",
-              a: "Yes. Every No-Cost EMI is reported to CIBIL, Experian, and CRIF as a consumer durable loan. Missing a monthly payment will damage your credit score."
+              a: "Yes. Every No-Cost EMI is reported to credit bureaus as a consumer durable loan. Missing scheduled repayments will negatively impact your credit profile."
             },
             {
               q: "Can I pre-close a No-Cost EMI loan?",
-              a: "Yes, but banks charge a foreclosure fee (typically 3% + 18% GST) and you do NOT get back the initial merchant discount."
+              a: "Yes, but issuers typically levy a foreclosure fee (often 2%–3% + GST), and already-credited merchant discounts are non-refundable."
             },
             {
               q: "When is No-Cost EMI genuinely beneficial?",
-              a: "Only when there is ZERO upfront cash/card discount offered, and your money can earn higher returns in an arbitrage or liquid fund during the tenure."
+              a: "It can be advantageous when no separate instant upfront cash discount is available, allowing you to preserve working capital while accounting for processing fees and GST charges."
             },
           ].map((faq, i) => (
             <div key={i} className="border-b border-slate-100 dark:border-slate-800 pb-4 last:border-0">

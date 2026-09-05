@@ -99,7 +99,7 @@ export default function WaccCalculator() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <HybridInput
-                label="Cost of Equity (Ke %)"
+                label="Cost of Equity (Ke)"
                 hint="Required return on equity (CAPM: Rf + Beta * ERP)"
                 value={costOfEquity}
                 onChange={setCostOfEquity}
@@ -110,7 +110,7 @@ export default function WaccCalculator() {
               />
 
               <HybridInput
-                label="Pre-Tax Cost of Debt (Kd %)"
+                label="Pre-Tax Cost of Debt (Kd)"
                 hint="Weighted borrowing rate before tax shield"
                 value={preTaxCostOfDebt}
                 onChange={setPreTaxCostOfDebt}
@@ -122,7 +122,7 @@ export default function WaccCalculator() {
             </div>
 
             <HybridInput
-              label="Corporate Tax Rate (% p.a.)"
+              label="Corporate Tax Rate"
               hint="Effective corporate tax rate (standard Indian corporate rate: 25.17%)"
               value={taxRate}
               onChange={setTaxRate}

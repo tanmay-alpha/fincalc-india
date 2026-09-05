@@ -63,8 +63,8 @@ export const CATEGORIES: CategoryInfo[] = [
   },
   {
     id: "corporate",
-    label: "Corporate & NRI",
-    description: "DCF valuation models, WACC hurdle rates, and cross-border deposits",
+    label: "Corporate & Valuation",
+    description: "Startup & corporate valuation, DCF models, WACC, deferred tax, and ESOP planning",
     iconName: "Scale",
   },
 ];

@@ -5,6 +5,7 @@ import { formatCompact } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export type ResultSemanticTone = "positive" | "negative" | "neutral" | "warning" | "informational";
+export type BreakdownMode = "composition" | "metrics";
 
 export interface BreakdownItem {
   label: string;
@@ -23,6 +24,7 @@ export interface ResultHeroProps {
   interpretation?: string;
   secondaryMetrics?: Array<{ label: string; value: string | number }>;
   breakdown?: BreakdownItem[];
+  breakdownMode?: BreakdownMode;
   className?: string;
 }
 
@@ -44,6 +46,7 @@ export default function ResultHero({
   interpretation,
   secondaryMetrics,
   breakdown = [],
+  breakdownMode,
   className,
 }: ResultHeroProps) {
   const animatedValue = useCountUp(value);
@@ -58,11 +61,20 @@ export default function ResultHero({
     ? rawDisplayValue.slice(cleanPrefix.length).trim()
     : rawDisplayValue;
 
-  // Calculate breakdown total for proportional bar
+  // Breakdown analysis:
+  // For breakdownMode="composition", all items must be non-negative (>= 0) and represent parts of a whole.
+  // Mixed-sign, all-negative, or independent metrics do not render proportional stacked bars.
+  const hasNegative = breakdown.some((item) => item.value < 0);
   const totalBreakdown = breakdown.reduce(
-    (sum, item) => sum + Math.abs(item.value),
+    (sum, item) => sum + (item.value >= 0 ? item.value : 0),
     0
   );
+
+  const isComposition =
+    breakdownMode !== "metrics" &&
+    !hasNegative &&
+    totalBreakdown > 0 &&
+    (breakdownMode === "composition" || breakdown.length > 0);
 
   return (
     <div
@@ -126,51 +138,52 @@ export default function ResultHero({
       {/* Optional Secondary Metrics Grid */}
       {secondaryMetrics && secondaryMetrics.length > 0 && (
         <div className="mt-4 pt-4 border-t border-border/60 grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {secondaryMetrics.map((metric, idx) => {
-            const normalizedValue = typeof metric.value === "string"
-              ? metric.value.replace(/^₹\s*₹/, "₹")
-              : metric.value;
-            return (
-              <div key={idx} className="min-w-0">
-                <span className="block text-[11px] text-muted-foreground font-medium truncate">
-                  {metric.label}
-                </span>
-                <span className="block text-sm font-bold text-foreground tabular-nums truncate">
-                  {normalizedValue}
-                </span>
-              </div>
-            );
-          })}
+          {secondaryMetrics.map((metric, idx) => (
+            <div key={idx} className="min-w-0">
+              <span className="block text-[11px] text-muted-foreground font-medium truncate">
+                {metric.label}
+              </span>
+              <span className="block text-sm font-bold text-foreground tabular-nums truncate">
+                {metric.value}
+              </span>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* Breakdown Progress Segment Bar */}
-      {breakdown.length > 0 && totalBreakdown > 0 && (
+      {/* Breakdown Section */}
+      {breakdown.length > 0 && (
         <div className="mt-5 space-y-3">
-          <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-muted/60 p-0.5">
-            {breakdown.map((item, i) => {
-              const pct = (Math.abs(item.value) / totalBreakdown) * 100;
-              const colorClass = item.color
-                ? COLOR_MAP[item.color] || "bg-primary"
-                : "bg-primary";
-              return (
-                <div
-                  key={i}
-                  style={{ width: `${Math.max(pct, 1)}%` }}
-                  className={cn("h-full transition-all rounded-sm", colorClass)}
-                  title={`${item.label}: ${item.formattedValue || formatCompact(item.value)}`}
-                />
-              );
-            })}
-          </div>
+          {/* Proportional bar is strictly rendered ONLY for genuine non-negative compositions */}
+          {isComposition && (
+            <div
+              data-testid="breakdown-bar"
+              className="flex h-2.5 w-full overflow-hidden rounded-full bg-muted/60 p-0.5"
+            >
+              {breakdown.map((item, i) => {
+                const pct = (item.value / totalBreakdown) * 100;
+                const colorClass = item.color
+                  ? COLOR_MAP[item.color] || "bg-primary"
+                  : "bg-primary";
+                return (
+                  <div
+                    key={i}
+                    style={{ width: `${Math.max(pct, 0.5)}%` }}
+                    className={cn("h-full transition-all rounded-sm", colorClass)}
+                    title={`${item.label}: ${item.formattedValue || formatCompact(item.value)}`}
+                  />
+                );
+              })}
+            </div>
+          )}
 
-          {/* Breakdown Legend */}
+          {/* Breakdown Legend / Metric rows */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs">
             {breakdown.map((item, i) => {
               const colorClass = item.color
                 ? COLOR_MAP[item.color] || "bg-primary"
                 : "bg-primary";
-              const legendValue = (item.formattedValue || formatCompact(item.value)).replace(/^₹\s*₹/, "₹");
+              const legendValue = item.formattedValue || formatCompact(item.value);
               return (
                 <div key={i} className="flex items-center gap-1.5">
                   <span className={cn("w-2 h-2 rounded-full", colorClass)} />

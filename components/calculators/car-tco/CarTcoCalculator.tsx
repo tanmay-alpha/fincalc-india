@@ -117,7 +117,7 @@ export default function CarTcoCalculator() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <HybridInput
-                label="Loan Rate (%)"
+                label="Loan Interest Rate"
                 hint="Car loan interest rate"
                 value={loanInterestRate}
                 onChange={setLoanInterestRate}
@@ -157,7 +157,7 @@ export default function CarTcoCalculator() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <HybridInput
-                  label="Annual Driving (Km)"
+                  label="Annual Distance"
                   hint="Estimated distance driven per year"
                   value={annualKmDriven}
                   onChange={setAnnualKmDriven}
@@ -168,7 +168,7 @@ export default function CarTcoCalculator() {
                 />
 
                 <HybridInput
-                  label="Fuel Mileage (km/L)"
+                  label="Fuel Mileage"
                   hint="Real-world fuel efficiency"
                   value={fuelMileageKmpl}
                   onChange={setFuelMileageKmpl}
@@ -179,7 +179,7 @@ export default function CarTcoCalculator() {
                 />
 
                 <HybridInput
-                  label="Fuel Price (₹/L)"
+                  label="Fuel Price"
                   hint="Petrol/diesel or unit EV rate"
                   value={fuelPricePerLitre}
                   onChange={setFuelPricePerLitre}
@@ -192,7 +192,7 @@ export default function CarTcoCalculator() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <HybridInput
-                  label="Yearly Insurance (₹)"
+                  label="Yearly Insurance"
                   hint="Annual motor insurance premium"
                   value={annualInsuranceCost}
                   onChange={setAnnualInsuranceCost}
@@ -203,7 +203,7 @@ export default function CarTcoCalculator() {
                 />
 
                 <HybridInput
-                  label="Yearly Service & Maint (₹)"
+                  label="Yearly Maintenance"
                   hint="Servicing, tyres, wear & tear"
                   value={annualMaintenanceCost}
                   onChange={setAnnualMaintenanceCost}
@@ -214,7 +214,7 @@ export default function CarTcoCalculator() {
                 />
 
                 <HybridInput
-                  label="Annual Depreciation (%)"
+                  label="Annual Depreciation"
                   hint="Expected depreciation rate (12% - 18% p.a.)"
                   value={annualDepreciationPercent}
                   onChange={setAnnualDepreciationPercent}

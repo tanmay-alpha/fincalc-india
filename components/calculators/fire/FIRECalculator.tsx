@@ -275,7 +275,7 @@ export default function FIRECalculator() {
             <InsightCard
               icon="📈"
               title={`Retirement Spend: ${formatINR(result.monthlyExpenseAtRetirement)}/mo`}
-              subtitle={`Inflated from ₹${formatCompact(inputs.currentMonthlyExpenses)}/mo today`}
+              subtitle={`Inflated from ${formatCompact(inputs.currentMonthlyExpenses)}/mo today`}
               type="info"
             />
             <InsightCard

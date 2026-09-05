@@ -20,6 +20,7 @@ import {
   searchCalculators,
 } from "@/lib/registry";
 import { cn } from "@/lib/utils";
+import DialogPrimitive from "@/components/ui/DialogPrimitive";
 
 interface CommandSearchProps {
   isOpen: boolean;
@@ -42,22 +43,15 @@ export default function CommandSearch({ isOpen, onClose }: CommandSearchProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  // Focus input when opened and lock body scroll
+  // Reset state when opened
   useEffect(() => {
     if (isOpen) {
       setQuery("");
       setSelectedIndex(0);
-      document.body.style.overflow = "hidden";
-      setTimeout(() => inputRef.current?.focus(), 50);
-    } else {
-      document.body.style.overflow = "";
     }
-    return () => {
-      document.body.style.overflow = "";
-    };
   }, [isOpen]);
 
-  // Global keyboard shortcut: Cmd+K / Ctrl+K & Escape
+  // Global keyboard shortcut: Cmd+K / Ctrl+K
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -65,9 +59,6 @@ export default function CommandSearch({ isOpen, onClose }: CommandSearchProps) {
         if (isOpen) {
           onClose();
         }
-      } else if (e.key === "Escape" && isOpen) {
-        e.preventDefault();
-        onClose();
       }
     };
 
@@ -115,25 +106,20 @@ export default function CommandSearch({ isOpen, onClose }: CommandSearchProps) {
     }
   };
 
-  if (!isOpen) return null;
-
   const activeDescendantId = filteredCalculators[selectedIndex]
     ? `cmd-option-${filteredCalculators[selectedIndex].id}`
     : undefined;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center p-4 sm:p-6 md:p-20 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Calculator Search"
+    <DialogPrimitive
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Calculator Search"
+      initialFocusRef={inputRef}
+      overlayClassName="items-start p-4 sm:p-6 md:p-20"
+      className="max-w-2xl flex flex-col max-h-[85vh]"
     >
-      <div
-        className="w-full max-w-2xl bg-card rounded-xl border border-border shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-150"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={handleKeyDown}
-      >
+      <div onKeyDown={handleKeyDown} className="flex flex-col h-full overflow-hidden">
         {/* Search Input Bar */}
         <div className="flex items-center px-4 py-3.5 border-b border-border gap-3">
           <Search className="w-5 h-5 text-muted-foreground shrink-0" />
@@ -287,6 +273,6 @@ export default function CommandSearch({ isOpen, onClose }: CommandSearchProps) {
           </span>
         </div>
       </div>
-    </div>
+    </DialogPrimitive>
   );
 }

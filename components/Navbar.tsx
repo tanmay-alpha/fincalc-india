@@ -29,6 +29,7 @@ import {
 } from "@/lib/registry";
 import CommandSearch from "@/components/ui/CommandSearch";
 import { cn } from "@/lib/utils";
+import DialogPrimitive from "@/components/ui/DialogPrimitive";
 
 const CATEGORY_ICON_MAP: Record<CalculatorCategory, typeof TrendingUp> = {
   investments: TrendingUp,
@@ -171,7 +172,7 @@ export default function Navbar() {
 
                 {/* Calculators Mega Menu Popover */}
                 {isCalculatorsOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-[720px] bg-card rounded-xl border border-border shadow-xl p-4 animate-in fade-in zoom-in-95 duration-150 z-50">
+                  <div className="absolute top-full left-0 mt-2 w-[720px] bg-card rounded-xl border border-border shadow-xl p-4 animate-zoom-in-95 z-50">
                     <div className="flex items-center justify-between pb-3 mb-3 border-b border-border">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -359,8 +360,9 @@ export default function Navbar() {
                   </div>
                 </button>
 
+                {/* User Profile Popover */}
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-52 bg-card rounded-xl border border-border shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="absolute right-0 mt-2 w-52 bg-card rounded-xl border border-border shadow-xl p-2 z-50 animate-zoom-in-95">
                     <div className="px-3 py-2 border-b border-border/80">
                       <p className="text-xs font-semibold text-foreground truncate">
                         {session.user?.name || "Investor"}
@@ -409,152 +411,127 @@ export default function Navbar() {
           </div>
         </div>
       </header>
-
+      
       {/* Dedicated Mobile Navigation Drawer */}
-      {isMobileMenuOpen && (
-        <div
-          className="fixed inset-0 z-50 lg:hidden bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150"
-          onClick={() => setIsMobileMenuOpen(false)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Mobile Navigation Menu"
-        >
-          <div
-            className="fixed inset-y-0 right-0 w-full max-w-sm bg-card border-l border-border shadow-2xl p-5 flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-200"
-            onClick={(e) => e.stopPropagation()}
+      <DialogPrimitive
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        title="Mobile Navigation Menu"
+        overlayClassName="lg:hidden justify-end p-0"
+        className="w-full max-w-sm h-full max-h-screen rounded-none border-l border-r-0 border-y-0 p-5 flex flex-col justify-between overflow-y-auto animate-slide-down"
+      >
+        <div>
+          {/* Drawer Header */}
+          <div className="flex items-center justify-between pb-4 border-b border-border">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-base">
+                ₹
+              </div>
+              <span className="font-bold text-base text-foreground">
+                FinCalc India
+              </span>
+            </div>
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Close menu"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Quick Search Action */}
+          <button
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              setIsCommandSearchOpen(true);
+            }}
+            className="w-full mt-4 flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-border bg-muted/50 text-muted-foreground text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <div>
-              {/* Drawer Header */}
-              <div className="flex items-center justify-between pb-4 border-b border-border">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-base">
-                    ₹
-                  </div>
-                  <span className="font-bold text-base text-foreground">
-                    FinCalc India
-                  </span>
-                </div>
-                <button
+            <Search className="w-4 h-4" />
+            <span>Search 31 calculators...</span>
+          </button>
+
+          {/* Flagship Primary Links */}
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <Link
+              href="/tax"
+              className="p-3 rounded-lg border border-border/60 hover:border-primary/50 bg-card hover:bg-primary/5 text-xs font-semibold text-foreground flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <FileText className="w-4 h-4 text-primary" />
+              <span>Tax (2026–27)</span>
+            </Link>
+            <Link
+              href="/sip"
+              className="p-3 rounded-lg border border-border/60 hover:border-primary/50 bg-card hover:bg-primary/5 text-xs font-semibold text-foreground flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <TrendingUp className="w-4 h-4 text-primary" />
+              <span>SIP Growth</span>
+            </Link>
+            <Link
+              href="/emi"
+              className="p-3 rounded-lg border border-border/60 hover:border-primary/50 bg-card hover:bg-primary/5 text-xs font-semibold text-foreground flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Building2 className="w-4 h-4 text-primary" />
+              <span>Loan EMI</span>
+            </Link>
+            <Link
+              href="/fno-brokerage"
+              className="p-3 rounded-lg border border-border/60 hover:border-primary/50 bg-card hover:bg-primary/5 text-xs font-semibold text-foreground flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <LineChart className="w-4 h-4 text-primary" />
+              <span>F&O STT</span>
+            </Link>
+          </div>
+
+          {/* All 5 Categories Navigation */}
+          <div className="mt-6 space-y-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground px-1">
+              Browse by Domain
+            </p>
+            {CATEGORIES.map((cat) => (
+              <div key={cat.id} className="space-y-1">
+                <Link
+                  href={`/#${cat.id}`}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  aria-label="Close menu"
+                  className="flex items-center justify-between p-2 rounded-lg hover:bg-muted font-semibold text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Quick Search Action */}
-              <button
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  setIsCommandSearchOpen(true);
-                }}
-                className="w-full mt-4 flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-border bg-muted/50 text-muted-foreground text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <Search className="w-4 h-4" />
-                <span>Search 31 calculators...</span>
-              </button>
-
-              {/* Flagship Primary Links */}
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <Link
-                  href="/tax"
-                  className="p-3 rounded-lg border border-border/60 hover:border-primary/50 bg-card hover:bg-primary/5 text-xs font-semibold text-foreground flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <FileText className="w-4 h-4 text-primary" />
-                  <span>Tax (2026–27)</span>
-                </Link>
-                <Link
-                  href="/sip"
-                  className="p-3 rounded-lg border border-border/60 hover:border-primary/50 bg-card hover:bg-primary/5 text-xs font-semibold text-foreground flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span>SIP Calculator</span>
-                </Link>
-                <Link
-                  href="/fno-brokerage"
-                  className="p-3 rounded-lg border border-border/60 hover:border-primary/50 bg-card hover:bg-primary/5 text-xs font-semibold text-foreground flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <LineChart className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                  <span>F&O Brokerage</span>
-                </Link>
-                <Link
-                  href="/emi"
-                  className="p-3 rounded-lg border border-border/60 hover:border-primary/50 bg-card hover:bg-primary/5 text-xs font-semibold text-foreground flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <Building2 className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                  <span>Loan EMI</span>
+                  <span>{cat.label}</span>
+                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground -rotate-90" />
                 </Link>
               </div>
-
-              {/* Category Directory Accordion */}
-              <div className="mt-6 space-y-4">
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Explore by Category
-                </p>
-                {CATEGORIES.map((cat) => {
-                  const Icon = CATEGORY_ICON_MAP[cat.id] || TrendingUp;
-                  const tools = CALCULATOR_REGISTRY.filter((c) => c.category === cat.id);
-
-                  return (
-                    <details key={cat.id} className="group border-b border-border/60 pb-3">
-                      <summary className="flex items-center justify-between cursor-pointer list-none text-xs font-semibold text-foreground">
-                        <div className="flex items-center gap-2">
-                          <Icon className="w-3.5 h-3.5 text-muted-foreground group-open:text-primary" />
-                          <span>{cat.label}</span>
-                          <span className="text-[10px] text-muted-foreground tabular-nums">
-                            ({tools.length})
-                          </span>
-                        </div>
-                        <ChevronDown className="w-3.5 h-3.5 text-muted-foreground transition-transform group-open:rotate-180" />
-                      </summary>
-                      <div className="mt-2.5 pl-5 space-y-2">
-                        {tools.map((calc) => (
-                          <Link
-                            key={calc.id}
-                            href={calc.route}
-                            className="block text-xs text-foreground/80 hover:text-primary transition-colors truncate focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
-                          >
-                            {calc.name}
-                          </Link>
-                        ))}
-                      </div>
-                    </details>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Mobile Drawer Footer with Auth & Theme */}
-            <div className="pt-6 border-t border-border mt-6 space-y-3">
-              {status === "authenticated" && session ? (
-                <div className="flex items-center justify-between">
-                  <Link
-                    href="/history"
-                    className="flex items-center gap-2 text-xs font-medium text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
-                  >
-                    <History className="w-4 h-4" />
-                    <span>Saved Calculations</span>
-                  </Link>
-                  <button
-                    onClick={() => signOut()}
-                    className="text-xs text-destructive hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => signIn("google")}
-                  className="w-full py-2 px-3 rounded-lg text-xs font-semibold bg-primary text-primary-foreground text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  Sign In with Google
-                </button>
-              )}
-            </div>
+            ))}
           </div>
         </div>
-      )}
+
+        {/* Mobile Drawer Footer with Auth & Theme */}
+        <div className="pt-6 border-t border-border mt-6 space-y-3">
+          {status === "authenticated" && session ? (
+            <div className="flex items-center justify-between">
+              <Link
+                href="/history"
+                className="flex items-center gap-2 text-xs font-medium text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+              >
+                <History className="w-4 h-4" />
+                <span>Saved Calculations</span>
+              </Link>
+              <button
+                onClick={() => signOut()}
+                className="text-xs text-destructive hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+              >
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => signIn("google")}
+              className="w-full py-2 px-3 rounded-lg text-xs font-semibold bg-primary text-primary-foreground text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              Sign In with Google
+            </button>
+          )}
+        </div>
+      </DialogPrimitive>
 
       {/* Global Command Search Modal */}
       <CommandSearch
