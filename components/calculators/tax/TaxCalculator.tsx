@@ -85,7 +85,7 @@ export default function TaxCalculator() {
         name: "Income Tax Calculator",
         route: "/tax",
         category: "taxation",
-        summary: `₹${formatINR(inputs.grossIncome || inputs.salaryIncome || 0)} · ${String(inputs.regime).toUpperCase()}`,
+        summary: `${formatINR(inputs.grossIncome || inputs.salaryIncome || 0)} · ${String(inputs.regime).toUpperCase()}`,
       });
     }
   }, [mounted, inputs.grossIncome, inputs.salaryIncome, inputs.regime]);
@@ -576,7 +576,7 @@ export default function TaxCalculator() {
               },
               {
                 label: "Monthly Take-Home",
-                value: `₹${formatINR(monthlyTakeHome)}`,
+                value: formatINR(monthlyTakeHome),
               },
               {
                 label: "Taxable Income",
@@ -690,7 +690,7 @@ export default function TaxCalculator() {
 
             {/* Expandable "Why?" Detail */}
             {showWhyComparison && (
-              <div className="mt-4 p-4 rounded-xl bg-muted/40 border border-border/60 text-xs space-y-2 animate-in fade-in duration-150">
+              <div className="mt-4 p-4 rounded-xl bg-muted/40 border border-border/60 text-xs space-y-2 animate-fade-in">
                 <p className="font-semibold text-foreground">
                   How this comparison was calculated:
                 </p>
@@ -718,7 +718,7 @@ export default function TaxCalculator() {
                   Tax Optimization Opportunity
                 </p>
                 <p className="mt-1 text-xs text-amber-800 dark:text-amber-200">
-                  Investing ₹{formatINR(150000 - (inputs.deduction80C ?? 0))} more in Section 80C (ELSS, PPF, EPF) will reduce your tax by ₹{formatINR(potential80CSavings)}.
+                  Investing {formatINR(150000 - (inputs.deduction80C ?? 0))} more in Section 80C (ELSS, PPF, EPF) will reduce your tax by {formatINR(potential80CSavings)}.
                 </p>
                 <button
                   type="button"

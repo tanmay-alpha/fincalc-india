@@ -6,7 +6,7 @@ export default function StepUpSIPInfo() {
           What is a Step-Up SIP (Top-Up SIP)?
         </h2>
         <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
-          A <strong>Step-Up SIP</strong> (also known as a Top-Up SIP) allows you to automatically increase your monthly SIP contribution by a fixed percentage (e.g., 10% each year) or a fixed rupee amount (e.g., +₹1,000 every year) in line with your annual salary increments. This dramatically accelerates wealth creation by compounding larger sums over time.
+          A <strong>Step-Up SIP</strong> (also known as a Top-Up SIP) allows you to periodically increase your monthly SIP contribution by a fixed percentage (e.g., 10% each year) or a fixed rupee amount (e.g., +₹1,000 every year) in line with annual salary increments. This enhances portfolio accumulation over time as savings capacity expands.
         </p>
       </section>
 
@@ -25,7 +25,7 @@ export default function StepUpSIPInfo() {
             <p className="font-semibold text-blue-900 dark:text-blue-300 mb-2">Step-Up SIP (+10%/year)</p>
             <p className="text-xs text-blue-800 dark:text-blue-300">₹10,000/month with 10% annual top-up @ 12%</p>
             <p className="text-lg font-bold text-blue-950 dark:text-blue-200 mt-2">Corpus: ≈ ₹92.05 Lakhs</p>
-            <p className="text-xs text-blue-800 dark:text-blue-300 mt-1 font-semibold">Extra Wealth Gained: +₹41.60 Lakhs (82% more!)</p>
+            <p className="text-xs text-blue-800 dark:text-blue-300 mt-1 font-medium">Incremental Corpus: +₹41.60 Lakhs (from ₹19.98L additional investment). Assumes an illustrative constant return; market returns vary year-to-year.</p>
           </div>
         </div>
       </section>

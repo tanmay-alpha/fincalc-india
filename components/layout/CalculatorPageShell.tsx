@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import AssumptionsDrawer from "@/components/ui/AssumptionsDrawer";

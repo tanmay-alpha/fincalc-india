@@ -60,7 +60,7 @@ export default function EMICalculator() {
         name: "Loan EMI Calculator",
         route: "/emi",
         category: "loans",
-        summary: `₹${formatINR(inputs.principal)} · ${inputs.annualRate}% · ${Math.round(inputs.tenureMonths / 12)}yr`,
+        summary: `${formatINR(inputs.principal)} · ${inputs.annualRate}% · ${Math.round(inputs.tenureMonths / 12)}yr`,
       });
     }
   }, [mounted, inputs.principal, inputs.annualRate, inputs.tenureMonths]);

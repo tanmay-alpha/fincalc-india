@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { CALCULATOR_REGISTRY, getCalculatorById } from "@/lib/registry";
 import { getCategoryIcon } from "@/components/ui/CategoryIcon";
 import { prepareOpenAgain } from "@/lib/storage-workflow";
+import DialogPrimitive from "@/components/ui/DialogPrimitive";
 import { cn } from "@/lib/utils";
 
 interface Calculation {
@@ -52,27 +53,45 @@ function formatNum(v: unknown): string {
 function generateLabel(type: string, inputs: Record<string, unknown>): string {
   const t = type.toLowerCase();
   if (t === "sip") {
-    return `₹${formatNum(inputs.monthlyAmount)}/mo · ${inputs.annualRate || 12}% · ${inputs.years || 10}yr`;
+    const amt = inputs.monthlyInvestment ?? inputs.monthlyAmount ?? 0;
+    const rate = inputs.expectedReturn ?? inputs.annualRate ?? 12;
+    const yrs = inputs.timePeriod ?? inputs.years ?? 10;
+    return `₹${formatNum(amt)}/mo · ${rate}% · ${yrs}yr`;
   }
   if (t === "emi") {
-    return `₹${formatNum(inputs.principal)} · ${inputs.annualRate || 8.5}% · ${Math.round(Number(inputs.tenureMonths || 240) / 12)}yr`;
+    const principal = inputs.loanAmount ?? inputs.principal ?? 0;
+    const rate = inputs.interestRate ?? inputs.annualRate ?? 8.5;
+    const tenure = inputs.loanTenure ?? (inputs.tenureMonths ? Math.round(Number(inputs.tenureMonths) / 12) : 20);
+    return `₹${formatNum(principal)} · ${rate}% · ${tenure}yr`;
   }
   if (t === "fd") {
-    return `₹${formatNum(inputs.principal)} · ${inputs.annualRate}% · ${inputs.tenureYears || 5}yr`;
+    const principal = inputs.principal ?? inputs.investmentAmount ?? 0;
+    const rate = inputs.interestRate ?? inputs.annualRate ?? 7;
+    const yrs = inputs.tenureYears ?? inputs.years ?? 5;
+    return `₹${formatNum(principal)} · ${rate}% · ${yrs}yr`;
   }
   if (t === "ppf") {
-    return `₹${formatNum(inputs.yearlyInvestment || 150000)}/yr · 15yr`;
+    const yearly = inputs.yearlyInvestment ?? inputs.annualInvestment ?? 150000;
+    return `₹${formatNum(yearly)}/yr · 15yr`;
   }
   if (t === "lumpsum") {
-    return `₹${formatNum(inputs.principal)} · ${inputs.annualRate}% · ${inputs.years}yr`;
+    const principal = inputs.totalInvestment ?? inputs.principal ?? 0;
+    const rate = inputs.expectedReturn ?? inputs.annualRate ?? 12;
+    const yrs = inputs.timePeriod ?? inputs.years ?? 10;
+    return `₹${formatNum(principal)} · ${rate}% · ${yrs}yr`;
   }
   if (t === "tax") {
-    return `₹${formatNum(inputs.grossIncome || inputs.salaryIncome)} · ${String(inputs.regime || "new").toUpperCase()} Regime`;
+    const income = inputs.annualSalary ?? inputs.grossIncome ?? inputs.salaryIncome ?? 0;
+    return `₹${formatNum(income)} · ${String(inputs.regime || "new").toUpperCase()} Regime`;
   }
   return `Saved calculation (${type})`;
 }
 
-export default function HistoryClient({ calculations }: { calculations: Calculation[] }) {
+export default function HistoryClient({
+  calculations = [],
+}: {
+  calculations?: Calculation[];
+}) {
   const router = useRouter();
   const [filter, setFilter] = useState<string>("all");
   const [deleted, setDeleted] = useState<Set<string>>(new Set());
@@ -259,7 +278,7 @@ export default function HistoryClient({ calculations }: { calculations: Calculat
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1 truncate">
-                    {generateLabel(typeKey, calc.inputs)}
+                    {calc.label || generateLabel(typeKey, calc.inputs)}
                   </p>
                   <p className="text-[11px] text-muted-foreground/70 mt-1 font-mono">
                     {formatIST(calc.createdAt)}
@@ -337,52 +356,45 @@ export default function HistoryClient({ calculations }: { calculations: Calculat
       </div>
 
       {/* Accessible Confirmation Modal for Item Deletion */}
-      {calculationToDelete && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150"
-          onClick={() => setCalculationToDelete(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Confirm Calculation Deletion"
-        >
-          <div
-            className="w-full max-w-md bg-card border border-border rounded-xl shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-150"
-            onClick={(e) => e.stopPropagation()}
+      <DialogPrimitive
+        isOpen={Boolean(calculationToDelete)}
+        onClose={() => setCalculationToDelete(null)}
+        title="Delete Saved Calculation?"
+        role="alertdialog"
+        className="max-w-md p-5 space-y-4"
+      >
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-foreground">
+            Delete Saved Calculation?
+          </h3>
+          <button
+            onClick={() => setCalculationToDelete(null)}
+            className="p-1 rounded text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="Close dialog"
           >
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-foreground">
-                Delete Saved Calculation?
-              </h3>
-              <button
-                onClick={() => setCalculationToDelete(null)}
-                className="p-1 rounded text-muted-foreground hover:text-foreground"
-                aria-label="Close dialog"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Are you sure you want to delete this saved calculation? This will remove the record and any active shared links.
-            </p>
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setCalculationToDelete(null)}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-muted-foreground hover:bg-muted transition"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={confirmDelete}
-                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-destructive text-destructive-foreground hover:bg-destructive/90 transition shadow-sm"
-              >
-                Delete Calculation
-              </button>
-            </div>
-          </div>
+            <X className="w-4 h-4" />
+          </button>
         </div>
-      )}
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Are you sure you want to delete this saved calculation? This will remove the record and any active shared links.
+        </p>
+        <div className="flex items-center justify-end gap-2 pt-2">
+          <button
+            type="button"
+            onClick={() => setCalculationToDelete(null)}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-muted-foreground hover:bg-muted transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={confirmDelete}
+            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-destructive text-destructive-foreground hover:bg-destructive/90 transition shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Delete Calculation
+          </button>
+        </div>
+      </DialogPrimitive>
 
       {/* Account Settings & Data Privacy Section */}
       <div className="mt-12 pt-8 border-t border-border/80">
@@ -397,39 +409,56 @@ export default function HistoryClient({ calculations }: { calculations: Calculat
             FinCalc India stores saved calculations privately in your dedicated account space. Your financial inputs are never sold, rented, or analyzed for advertising. You can permanently delete your account and all associated saved calculations at any time.
           </p>
 
-          {!showDeleteConfirm ? (
-            <button
-              type="button"
-              onClick={() => setShowDeleteConfirm(true)}
-              className="text-xs font-semibold text-destructive hover:underline pt-1"
-            >
-              Delete my account and erase all calculation history →
-            </button>
-          ) : (
-            <div className="p-4 rounded-xl bg-destructive/5 border border-destructive/20 space-y-3">
-              <p className="text-xs font-semibold text-destructive">
-                Are you sure? This action will permanently erase your user account, OAuth links, and all saved calculations from the database. This cannot be undone.
-              </p>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  disabled={isDeletingAccount}
-                  onClick={handleAccountDeletion}
-                  className="px-3 py-1.5 rounded-lg bg-destructive text-destructive-foreground text-xs font-bold hover:bg-destructive/90 transition disabled:opacity-50"
-                >
-                  {isDeletingAccount ? "Erasing Data..." : "Yes, Permanently Delete My Account"}
-                </button>
-                <button
-                  type="button"
-                  disabled={isDeletingAccount}
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="px-3 py-1.5 rounded-lg bg-muted text-foreground text-xs font-semibold hover:bg-muted/80 transition"
-                >
-                  Cancel
-                </button>
-              </div>
+          <button
+            type="button"
+            onClick={() => setShowDeleteConfirm(true)}
+            className="text-xs font-semibold text-destructive hover:underline pt-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+          >
+            Delete my account and erase all calculation history →
+          </button>
+
+          {/* Accessible Account Deletion Confirmation Modal */}
+          <DialogPrimitive
+            isOpen={showDeleteConfirm}
+            onClose={() => setShowDeleteConfirm(false)}
+            title="Permanently Delete Account?"
+            role="alertdialog"
+            className="max-w-md p-5 space-y-4"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-destructive">
+                Permanently Delete Account?
+              </h3>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="p-1 rounded text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label="Close dialog"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
-          )}
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Are you sure? This action will permanently erase your user account, OAuth links, and all saved calculations from the database. This cannot be undone.
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                disabled={isDeletingAccount}
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-muted-foreground hover:bg-muted transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingAccount}
+                onClick={handleAccountDeletion}
+                className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90 transition shadow-sm disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {isDeletingAccount ? "Erasing Data..." : "Yes, Permanently Delete My Account"}
+              </button>
+            </div>
+          </DialogPrimitive>
         </div>
       </div>
     </div>

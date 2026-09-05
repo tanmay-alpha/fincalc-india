@@ -83,7 +83,7 @@ export default function HeroSearch() {
 
       {/* Autocomplete Dropdown */}
       {isOpen && matches.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-card rounded-xl border border-border shadow-xl p-2 z-30 animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-card rounded-xl border border-border shadow-xl p-2 z-30 animate-zoom-in-95">
           <div className="flex items-center justify-between px-3 py-1 mb-1">
             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
               Matching Calculators

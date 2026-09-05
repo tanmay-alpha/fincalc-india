@@ -55,7 +55,7 @@ export default function SIPCalculator() {
         name: "SIP Calculator",
         route: "/sip",
         category: "investments",
-        summary: `₹${formatINR(inputs.monthlyAmount)}/mo · ${inputs.annualRate}% · ${inputs.years}yr`,
+        summary: `${formatINR(inputs.monthlyAmount)}/mo · ${inputs.annualRate}% · ${inputs.years}yr`,
       });
     }
   }, [mounted, inputs.monthlyAmount, inputs.annualRate, inputs.years]);

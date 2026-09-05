@@ -231,7 +231,7 @@ export default function NoCostEMICalculator() {
             <InsightCard
               icon="💳"
               title={`Monthly Outflow: ${formatINR(result.monthlyBreakdown[0]?.totalMonthlyOutflow || result.monthlyEmi)}`}
-              subtitle={`Base EMI ₹${formatCompact(result.monthlyEmi)} + monthly GST`}
+              subtitle={`Base EMI ${formatCompact(result.monthlyEmi)} + monthly GST`}
               type="info"
             />
             <InsightCard
