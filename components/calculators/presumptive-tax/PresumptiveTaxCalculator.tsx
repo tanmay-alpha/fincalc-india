@@ -225,10 +225,12 @@ export default function PresumptiveTaxCalculator() {
           {/* 44AD 5-Year Filing History Audit Selector */}
           {professionType === "44AD_business" && (
             <div className="surface-card p-4 space-y-2 border border-border/80 bg-muted/20 rounded-xl text-xs">
-              <label className="font-semibold text-foreground block">
+              <label htmlFor="presumptive-filing-history" className="font-semibold text-foreground block">
                 Past 5-Year Section 44AD Filing History [Section 44AD(4)]
               </label>
               <select
+                id="presumptive-filing-history"
+                aria-label="Past 5-Year Section 44AD Filing History [Section 44AD(4)]"
                 value={pastPresumptiveHistory}
                 onChange={(e) => setPastPresumptiveHistory(e.target.value as PresumptiveHistoryStatus)}
                 className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-xs"

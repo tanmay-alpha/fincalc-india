@@ -130,10 +130,12 @@ export default function MarginCalculator() {
 
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-foreground">
+              <label htmlFor="margin-instrument-category" className="text-xs font-semibold text-foreground">
                 Select Instrument / Segment
               </label>
               <select
+                id="margin-instrument-category"
+                aria-label="Select Instrument / Segment"
                 value={instrumentCategory}
                 onChange={(e) => handleCategoryChange(e.target.value as MarginInstrumentCategory)}
                 className="w-full bg-card border border-border/60 rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"

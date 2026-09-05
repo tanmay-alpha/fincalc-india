@@ -240,10 +240,12 @@ export default function CapitalGainsCalculator() {
                 </div>
 
                 <div>
-                  <label className="block text-muted-foreground font-medium mb-1">
+                  <label htmlFor="sgb-acquisition-method" className="block text-muted-foreground font-medium mb-1">
                     Acquisition Method
                   </label>
                   <select
+                    id="sgb-acquisition-method"
+                    aria-label="Acquisition Method"
                     value={inputs.sgbSubscriptionType || "original_issue"}
                     onChange={(e) =>
                       setInputs((prev) => ({
@@ -259,10 +261,12 @@ export default function CapitalGainsCalculator() {
                 </div>
 
                 <div>
-                  <label className="block text-muted-foreground font-medium mb-1">
+                  <label htmlFor="sgb-redemption-route" className="block text-muted-foreground font-medium mb-1">
                     Redemption / Transfer Route
                   </label>
                   <select
+                    id="sgb-redemption-route"
+                    aria-label="Redemption / Transfer Route"
                     value={inputs.sgbRedemptionType || "maturity_redemption"}
                     onChange={(e) =>
                       setInputs((prev) => ({

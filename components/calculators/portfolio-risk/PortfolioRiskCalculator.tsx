@@ -129,10 +129,12 @@ export default function PortfolioRiskCalculator() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground">
+                <label htmlFor="portfolio-observation-frequency" className="text-xs font-semibold text-foreground">
                   Observation Frequency
                 </label>
                 <select
+                  id="portfolio-observation-frequency"
+                  aria-label="Observation Frequency"
                   value={periodFrequency}
                   onChange={(e) => setPeriodFrequency(e.target.value as "monthly" | "annual")}
                   className="w-full bg-card border border-border/60 rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"

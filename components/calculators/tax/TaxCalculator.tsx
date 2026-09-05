@@ -301,10 +301,12 @@ export default function TaxCalculator() {
                     />
 
                     <div>
-                      <label className="text-xs font-semibold text-foreground block mb-1">
+                      <label htmlFor="tax-residency-status" className="text-xs font-semibold text-foreground block mb-1">
                         Taxpayer Residential Status
                       </label>
                       <select
+                        id="tax-residency-status"
+                        aria-label="Taxpayer Residential Status"
                         value={inputs.residency ?? "resident_individual"}
                         onChange={(e) =>
                           setInputs((p) => ({
@@ -490,10 +492,12 @@ export default function TaxCalculator() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-foreground block mb-1">
+                  <label htmlFor="tax-residency-status-modal" className="text-xs font-semibold text-foreground block mb-1">
                     Residential Status
                   </label>
                   <select
+                    id="tax-residency-status-modal"
+                    aria-label="Residential Status"
                     value={inputs.residency ?? "resident_individual"}
                     onChange={(e) =>
                       setInputs((p) => ({
@@ -513,10 +517,12 @@ export default function TaxCalculator() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-foreground block mb-1">
+                  <label htmlFor="tax-age-group-modal" className="text-xs font-semibold text-foreground block mb-1">
                     Age Group
                   </label>
                   <select
+                    id="tax-age-group-modal"
+                    aria-label="Age Group"
                     value={inputs.ageCategory ?? "below_60"}
                     onChange={(e) =>
                       setInputs((p) => ({

@@ -151,10 +151,12 @@ export default function NRIDepositCalculator() {
               />
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground">
+                <label htmlFor="nri-compounding-frequency" className="text-xs font-semibold text-foreground">
                   Compounding Frequency
                 </label>
                 <select
+                  id="nri-compounding-frequency"
+                  aria-label="Compounding Frequency"
                   value={compoundingFrequency}
                   onChange={(e) => setCompoundingFrequency(e.target.value as "quarterly" | "annual")}
                   className="w-full bg-card border border-border/60 rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
