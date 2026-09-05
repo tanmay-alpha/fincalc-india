@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";import { useState, useMemo, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
@@ -11,7 +13,7 @@ import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcNoCostEMITruth } from "@/lib/math";
 import { formatINR, formatCompact } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
-import { clsx } from "clsx";
+import { cn } from "@/lib/utils";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 
 const NoCostEMIChart = dynamic(
@@ -20,8 +22,7 @@ const NoCostEMIChart = dynamic(
 );
 
 export default function NoCostEMICalculator() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useIsMounted();
 
   const [inputs, setInputs] = useState({
     productPrice: 79999, // e.g. iPhone 15 / Galaxy S24
@@ -66,6 +67,17 @@ export default function NoCostEMICalculator() {
     []
   );
 
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "no-cost-emi",
+        name: "No-Cost EMI Reality Checker",
+        route: "/no-cost-emi",
+        category: "loans",
+      });
+    }
+  }, [mounted]);
+
   if (!mounted) return <CalcPageSkeleton />;
 
   return (
@@ -107,7 +119,7 @@ export default function NoCostEMICalculator() {
                     key={m}
                     type="button"
                     onClick={() => setTenure(m)}
-                    className={clsx(
+                    className={cn(
                       "py-2 text-xs font-semibold rounded-lg transition-all text-center",
                       inputs.tenureMonths === m
                         ? "bg-primary text-primary-foreground shadow-sm"
@@ -185,7 +197,7 @@ export default function NoCostEMICalculator() {
 
           {/* Verdict Banner */}
           <div
-            className={clsx(
+            className={cn(
               "surface-card p-5 border-l-4 flex items-start gap-4",
               result.cheaperOption === "upfront"
                 ? "border-l-amber-500 bg-amber-500/5"
@@ -193,7 +205,7 @@ export default function NoCostEMICalculator() {
             )}
           >
             <div
-              className={clsx(
+              className={cn(
                 "p-2.5 rounded-xl",
                 result.cheaperOption === "upfront"
                   ? "bg-amber-500/10 text-amber-800 dark:text-amber-300"

@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+
+import { useState, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
@@ -14,8 +15,10 @@ import { calcXIRR, calcCAGR, calcTWRR } from "@/lib/math";
 import type { XirrCashflow, TwrrPeriod } from "@/lib/math";
 import { getXIRRInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";
 import { Plus, Trash2, Calendar, TrendingUp, AlertTriangle, Layers, Percent } from "lucide-react";
-import { clsx } from "clsx";
+import { cn } from "@/lib/utils";
 
 const XirrChart = dynamic(
   () => import("@/components/calculators/xirr/XirrChart"),
@@ -23,7 +26,7 @@ const XirrChart = dynamic(
 );
 
 export default function XirrCalculator() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [activeTab, setActiveTab] = useState<"xirr" | "cagr" | "twrr">("xirr");
 
   // XIRR State
@@ -48,10 +51,6 @@ export default function XirrCalculator() {
   ]);
 
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handleAddRow = () => {
     const lastDate = cashflows[cashflows.length - 1]?.date || "2025-01-01";
@@ -96,6 +95,22 @@ export default function XirrCalculator() {
 
   const insights = useMemo(() => getXIRRInsights(xirrResult), [xirrResult]);
 
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "xirr-cagr-twrr",
+        name: "Returns Suite (XIRR / CAGR / TWRR)",
+        route: "/xirr-cagr-twrr",
+        category: "investments",
+        summary: activeTab === "xirr"
+          ? `XIRR: ${cashflows.length} cashflows`
+          : activeTab === "cagr"
+          ? `CAGR: ₹${cagrInitial.toLocaleString("en-IN")} → ₹${cagrFinal.toLocaleString("en-IN")} (${cagrYears}yr)`
+          : `TWRR: ${twrrPeriods.length} periods`,
+      });
+    }
+  }, [mounted, activeTab, cashflows.length, cagrInitial, cagrFinal, cagrYears, twrrPeriods.length]);
+
   if (!mounted) {
     return <CalcPageSkeleton />;
   }
@@ -107,7 +122,7 @@ export default function XirrCalculator() {
         <button
           type="button"
           onClick={() => setActiveTab("xirr")}
-          className={clsx(
+          className={cn(
             "px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2",
             activeTab === "xirr"
               ? "bg-primary text-primary-foreground shadow-sm"
@@ -120,7 +135,7 @@ export default function XirrCalculator() {
         <button
           type="button"
           onClick={() => setActiveTab("cagr")}
-          className={clsx(
+          className={cn(
             "px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2",
             activeTab === "cagr"
               ? "bg-primary text-primary-foreground shadow-sm"
@@ -133,7 +148,7 @@ export default function XirrCalculator() {
         <button
           type="button"
           onClick={() => setActiveTab("twrr")}
-          className={clsx(
+          className={cn(
             "px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2",
             activeTab === "twrr"
               ? "bg-primary text-primary-foreground shadow-sm"
@@ -516,7 +531,7 @@ export default function XirrCalculator() {
                       <td className="px-4 py-2 text-right">{formatINR(p.startValue)}</td>
                       <td className="px-4 py-2 text-right">{p.netCashflow >= 0 ? `+${formatINR(p.netCashflow)}` : formatINR(p.netCashflow)}</td>
                       <td className="px-4 py-2 text-right">{formatINR(p.endValue)}</td>
-                      <td className={clsx("px-4 py-2 text-right font-bold", p.holdingPeriodReturn >= 0 ? "text-emerald-800 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300")}>
+                      <td className={cn("px-4 py-2 text-right font-bold", p.holdingPeriodReturn >= 0 ? "text-emerald-800 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300")}>
                         {p.holdingPeriodReturn >= 0 ? "+" : ""}{p.holdingPeriodReturn}%
                       </td>
                     </tr>

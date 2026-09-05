@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+
+import { useState, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
@@ -15,8 +16,10 @@ import type { BalanceTransferInput } from "@/lib/math";
 import { getBalanceTransferInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";
 import { ArrowRightLeft, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { clsx } from "clsx";
+import { cn } from "@/lib/utils";
 
 const BalanceTransferChart = dynamic(
   () => import("@/components/calculators/balance-transfer/BalanceTransferChart"),
@@ -24,7 +27,7 @@ const BalanceTransferChart = dynamic(
 );
 
 export default function BalanceTransferCalculator() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [currentOutstandingPrincipal, setCurrentOutstandingPrincipal] = useState(5000000); // 50L
   const [currentInterestRate, setCurrentInterestRate] = useState(9.5);
   const [currentRemainingTenureMonths, setCurrentRemainingTenureMonths] = useState(180); // 15 years
@@ -34,10 +37,6 @@ export default function BalanceTransferCalculator() {
   const [processingFeeValue, setProcessingFeeValue] = useState(0.5); // 0.5%
   const [otherSwitchingCharges, setOtherSwitchingCharges] = useState(15000);
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const inputs: BalanceTransferInput = useMemo(
     () => ({
@@ -65,6 +64,18 @@ export default function BalanceTransferCalculator() {
   const debouncedInputs = useDebounce(inputs, 150);
   const result = useMemo(() => calcBalanceTransfer(debouncedInputs), [debouncedInputs]);
   const insights = useMemo(() => getBalanceTransferInsights(result), [result]);
+
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "balance-transfer",
+        name: "Home Loan Balance Transfer & Refinance",
+        route: "/balance-transfer",
+        category: "loans",
+        summary: `₹${currentOutstandingPrincipal.toLocaleString("en-IN")} · ${currentInterestRate}% → ${newInterestRate}%`,
+      });
+    }
+  }, [mounted, currentOutstandingPrincipal, currentInterestRate, newInterestRate]);
 
   if (!mounted) {
     return <CalcPageSkeleton />;
@@ -266,7 +277,7 @@ export default function BalanceTransferCalculator() {
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
               <p className="text-[11px] text-muted-foreground">Monthly EMI Savings</p>
-              <p className={clsx("text-base font-bold mt-0.5", result.monthlyEmiSavings >= 0 ? "text-emerald-800 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300")}>
+              <p className={cn("text-base font-bold mt-0.5", result.monthlyEmiSavings >= 0 ? "text-emerald-800 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300")}>
                 {result.monthlyEmiSavings < 0 ? "-" : ""}{formatINR(Math.abs(result.monthlyEmiSavings))}/mo
               </p>
             </div>

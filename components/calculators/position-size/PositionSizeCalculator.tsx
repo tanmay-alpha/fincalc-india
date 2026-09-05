@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";import { useMemo, useState, useEffect } from "react";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import StickyResultBar from "@/components/ui/StickyResultBar";
@@ -12,13 +14,13 @@ import { calcPositionSize } from "@/lib/math";
 import type { PositionSizeInput } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
-import { clsx } from "clsx";
+import { cn } from "@/lib/utils";
 import {
   AlertTriangle,
 } from "lucide-react";
 
 export default function PositionSizeCalculator() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [capital, setCapital] = useState(100000);
   const [riskPercent, setRiskPercent] = useState(1);
   const [entryPrice, setEntryPrice] = useState(500);
@@ -27,10 +29,6 @@ export default function PositionSizeCalculator() {
   const [tradeDirection, setTradeDirection] = useState<"auto" | "long" | "short">("auto");
   const [leverageMultiplier, setLeverageMultiplier] = useState(1);
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const inputs: PositionSizeInput = useMemo(
     () => ({
@@ -58,6 +56,17 @@ export default function PositionSizeCalculator() {
   const result = useMemo(() => {
     return calcPositionSize(debouncedInputs);
   }, [debouncedInputs]);
+
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "position-size",
+        name: "Position Size & Risk Calculator",
+        route: "/position-size",
+        category: "trading",
+      });
+    }
+  }, [mounted]);
 
   if (!mounted) return <CalcPageSkeleton />;
 
@@ -119,7 +128,7 @@ export default function PositionSizeCalculator() {
                     key={r}
                     type="button"
                     onClick={() => setRiskPercent(r)}
-                    className={clsx(
+                    className={cn(
                       "px-2.5 py-1 text-xs rounded-md border transition-colors font-medium",
                       riskPercent === r
                         ? "border-primary bg-primary/10 text-primary font-bold"
@@ -141,7 +150,7 @@ export default function PositionSizeCalculator() {
                 <button
                   type="button"
                   onClick={() => setTradeDirection("auto")}
-                  className={clsx(
+                  className={cn(
                     "px-2 py-0.5 rounded",
                     tradeDirection === "auto" ? "bg-background text-foreground shadow-sm font-bold" : "text-muted-foreground"
                   )}
@@ -151,7 +160,7 @@ export default function PositionSizeCalculator() {
                 <button
                   type="button"
                   onClick={() => setTradeDirection("long")}
-                  className={clsx(
+                  className={cn(
                     "px-2 py-0.5 rounded",
                     tradeDirection === "long" ? "bg-emerald-600 text-white font-bold" : "text-muted-foreground"
                   )}
@@ -161,7 +170,7 @@ export default function PositionSizeCalculator() {
                 <button
                   type="button"
                   onClick={() => setTradeDirection("short")}
-                  className={clsx(
+                  className={cn(
                     "px-2 py-0.5 rounded",
                     tradeDirection === "short" ? "bg-rose-600 text-white font-bold" : "text-muted-foreground"
                   )}
@@ -208,7 +217,7 @@ export default function PositionSizeCalculator() {
                     key={rr}
                     type="button"
                     onClick={() => setRiskRewardRatio(rr)}
-                    className={clsx(
+                    className={cn(
                       "px-2.5 py-1 text-xs rounded-md border transition-colors font-medium",
                       riskRewardRatio === rr
                         ? "border-primary bg-primary/10 text-primary font-bold"
@@ -237,7 +246,7 @@ export default function PositionSizeCalculator() {
                     key={lev.value}
                     type="button"
                     onClick={() => setLeverageMultiplier(lev.value)}
-                    className={clsx(
+                    className={cn(
                       "py-2 px-1 text-center text-xs rounded-lg border transition-all",
                       leverageMultiplier === lev.value
                         ? "border-primary bg-primary/10 text-primary font-bold shadow-sm"

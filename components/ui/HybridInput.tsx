@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import { clsx } from "clsx";
+import { cn } from "@/lib/utils";
 import { clampSafe, formatINR } from "@/lib/format";
 
 export interface HybridInputProps {
@@ -151,7 +151,7 @@ export default function HybridInput({
             {label}
           </label>
           <span
-            className={clsx(
+            className={cn(
               "text-xs sm:text-sm font-semibold tabular-nums truncate transition-colors",
               isFocused ? "text-primary" : "text-foreground"
             )}
@@ -192,7 +192,7 @@ export default function HybridInput({
                   "linear-gradient(to right, rgb(var(--primary)) 0%, rgb(var(--primary)) var(--slider-value), rgb(var(--input)) var(--slider-value), rgb(var(--input)) 100%)",
               } as SliderStyle
             }
-            className={clsx(
+            className={cn(
               "w-full h-1.5 rounded-full appearance-none cursor-pointer",
               "disabled:opacity-50 disabled:cursor-not-allowed",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
@@ -222,7 +222,7 @@ export default function HybridInput({
 
       {/* Numeric Direct Input Field */}
       <div
-        className={clsx(
+        className={cn(
           "flex items-center rounded-lg border",
           "bg-card text-foreground transition-all duration-150",
           "h-10 px-3 gap-2",
@@ -301,7 +301,7 @@ export default function HybridInput({
                 const clamped = commitValue(chip.value);
                 setRawText(clamped.toString());
               }}
-              className={clsx(
+              className={cn(
                 "text-[11px] rounded-md px-2.5 py-0.5",
                 "border transition-all duration-150",
                 "font-medium disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
@@ -320,7 +320,7 @@ export default function HybridInput({
       {(hint || displayError) && (
         <p
           id={descId}
-          className={clsx(
+          className={cn(
             "text-[11px]",
             displayError ? "text-destructive font-medium" : "text-muted-foreground"
           )}

@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+
+import { useState, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
@@ -14,6 +15,8 @@ import { calcRiskRatios } from "@/lib/math";
 import type { RiskRatiosInput } from "@/lib/math";
 import { getRiskRatiosInsights } from "@/lib/insights";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";
 import { ShieldCheck, BarChart2 } from "lucide-react";
 
 const RiskChart = dynamic(
@@ -22,16 +25,12 @@ const RiskChart = dynamic(
 );
 
 export default function PortfolioRiskCalculator() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [returnsInput, setReturnsInput] = useState("12, -4, 18, 8, -2, 22, 14, -6, 16, 10, 5, -1");
   const [benchmarkReturnsInput, setBenchmarkReturnsInput] = useState("10, -2, 14, 6, -1, 18, 11, -4, 13, 8, 4, 0");
   const [periodFrequency, setPeriodFrequency] = useState<"monthly" | "annual">("monthly");
   const [riskFreeRate, setRiskFreeRate] = useState(6.5);
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const parsedReturns = useMemo(() => {
     return returnsInput
@@ -65,6 +64,18 @@ export default function PortfolioRiskCalculator() {
   const debouncedInputs = useDebounce(inputs, 150);
   const result = useMemo(() => calcRiskRatios(debouncedInputs), [debouncedInputs]);
   const insights = useMemo(() => getRiskRatiosInsights(result), [result]);
+
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "portfolio-risk",
+        name: "Portfolio Risk & Performance Ratios",
+        route: "/portfolio-risk",
+        category: "trading",
+        summary: `${parsedReturns.length} periods · Rf ${riskFreeRate}%`,
+      });
+    }
+  }, [mounted, parsedReturns.length, riskFreeRate]);
 
   if (!mounted) {
     return <CalcPageSkeleton />;

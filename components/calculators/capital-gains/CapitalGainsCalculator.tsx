@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";import { useMemo, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
@@ -17,7 +19,7 @@ import type {
 } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
-import { clsx } from "clsx";
+import { cn } from "@/lib/utils";
 import { ShieldCheck, Scale, CheckCircle2, AlertCircle } from "lucide-react";
 
 const CapitalGainsChart = dynamic(
@@ -70,18 +72,25 @@ const ASSET_CLASSES: Array<{ id: AssetClass; label: string; icon: string }> = [
 ];
 
 export default function CapitalGainsCalculator() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [inputs, setInputs] = useState<CapitalGainsInputsState>(DEFAULT_INPUTS);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const debouncedInputs = useDebounce(inputs, 150);
 
   const result = useMemo(() => {
     return calcCapitalGains(debouncedInputs);
   }, [debouncedInputs]);
+
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "capital-gains-tax",
+        name: "Capital Gains Tax Calculator",
+        route: "/capital-gains-tax",
+        category: "taxation",
+      });
+    }
+  }, [mounted]);
 
   if (!mounted) return <CalcPageSkeleton />;
 
@@ -105,7 +114,7 @@ export default function CapitalGainsCalculator() {
                   key={ac.id}
                   type="button"
                   onClick={() => setInputs((prev) => ({ ...prev, assetClass: ac.id }))}
-                  className={clsx(
+                  className={cn(
                     "flex items-center gap-2 px-3 py-2.5 rounded-xl border text-left text-xs font-medium transition-all",
                     inputs.assetClass === ac.id
                       ? "border-primary bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold shadow-sm"
@@ -355,7 +364,7 @@ export default function CapitalGainsCalculator() {
 
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div
-                  className={clsx(
+                  className={cn(
                     "p-3 rounded-xl border",
                     result.realEstateComparison.recommendedOption === "unindexed_12_5"
                       ? "border-green-500 bg-green-50/50 dark:bg-green-950/20 text-foreground"
@@ -375,7 +384,7 @@ export default function CapitalGainsCalculator() {
                 </div>
 
                 <div
-                  className={clsx(
+                  className={cn(
                     "p-3 rounded-xl border",
                     result.realEstateComparison.recommendedOption === "indexed_20"
                       ? "border-green-500 bg-green-50/50 dark:bg-green-950/20 text-foreground"

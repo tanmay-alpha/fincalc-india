@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";import { useMemo, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
@@ -13,7 +15,7 @@ import { calcHRAExemption } from "@/lib/math";
 import type { CityType, SalaryPeriod, HRAExemptionInput } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
-import { clsx } from "clsx";
+import { cn } from "@/lib/utils";
 import {
   ShieldCheck,
   Building2,
@@ -30,7 +32,7 @@ const HRAChart = dynamic(
 );
 
 export default function HRACalculator() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [salaryPeriod, setSalaryPeriod] = useState<SalaryPeriod>("monthly");
   const [basicSalary, setBasicSalary] = useState(50000);
   const [showAdvancedDa, setShowAdvancedDa] = useState(false);
@@ -45,10 +47,6 @@ export default function HRACalculator() {
   const [parentsSlabRate, setParentsSlabRate] = useState(0);
   const [userSlabRate, setUserSlabRate] = useState(30);
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const inputs: HRAExemptionInput = useMemo(
     () => ({
@@ -83,6 +81,17 @@ export default function HRACalculator() {
     return calcHRAExemption(debouncedInputs);
   }, [debouncedInputs]);
 
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "hra-exemption",
+        name: "HRA Exemption Calculator (Section 10(13A))",
+        route: "/hra-exemption",
+        category: "taxation",
+      });
+    }
+  }, [mounted]);
+
   if (!mounted) return <CalcPageSkeleton />;
 
   const isMonthly = salaryPeriod === "monthly";
@@ -112,7 +121,7 @@ export default function HRACalculator() {
                     }
                     setSalaryPeriod("monthly");
                   }}
-                  className={clsx(
+                  className={cn(
                     "px-3 py-1 text-xs font-medium rounded-md transition-colors",
                     isMonthly
                       ? "bg-background text-foreground shadow-sm font-semibold"
@@ -132,7 +141,7 @@ export default function HRACalculator() {
                     }
                     setSalaryPeriod("annual");
                   }}
-                  className={clsx(
+                  className={cn(
                     "px-3 py-1 text-xs font-medium rounded-md transition-colors",
                     !isMonthly
                       ? "bg-background text-foreground shadow-sm font-semibold"
@@ -153,7 +162,7 @@ export default function HRACalculator() {
                 <button
                   type="button"
                   onClick={() => setCityType("metro")}
-                  className={clsx(
+                  className={cn(
                     "p-3 rounded-xl border text-left transition-all",
                     cityType === "metro"
                       ? "border-primary bg-primary/10 text-primary font-semibold shadow-sm"
@@ -172,7 +181,7 @@ export default function HRACalculator() {
                 <button
                   type="button"
                   onClick={() => setCityType("non_metro")}
-                  className={clsx(
+                  className={cn(
                     "p-3 rounded-xl border text-left transition-all",
                     cityType === "non_metro"
                       ? "border-primary bg-primary/10 text-primary font-semibold shadow-sm"
@@ -380,7 +389,7 @@ export default function HRACalculator() {
             <div className="space-y-3">
               {/* Limit 1 */}
               <div
-                className={clsx(
+                className={cn(
                   "p-3.5 rounded-xl border transition-all",
                   result.bindingConstraint === "actual_hra"
                     ? "border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20 shadow-sm"
@@ -405,7 +414,7 @@ export default function HRACalculator() {
 
               {/* Limit 2 */}
               <div
-                className={clsx(
+                className={cn(
                   "p-3.5 rounded-xl border transition-all",
                   result.bindingConstraint === "rent_minus_10pct"
                     ? "border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20 shadow-sm"
@@ -430,7 +439,7 @@ export default function HRACalculator() {
 
               {/* Limit 3 */}
               <div
-                className={clsx(
+                className={cn(
                   "p-3.5 rounded-xl border transition-all",
                   result.bindingConstraint === "salary_cap"
                     ? "border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20 shadow-sm"

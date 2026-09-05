@@ -7,6 +7,7 @@ import ResultHero from "@/components/ui/ResultHero";
 import InsightCard from "@/components/ui/InsightCard";
 import ShareButton from "@/components/ui/ShareButton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
+import PdfExportButton from "@/components/ui/PdfExportButton";
 import StickyResultBar from "@/components/ui/StickyResultBar";
 import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
@@ -15,7 +16,9 @@ import type { CompoundingFrequency } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { generateFDInsights } from "@/lib/insights";
 import { useDebounce } from "@/hooks/useDebounce";
-import { clsx } from "clsx";
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";
+import { cn } from "@/lib/utils";
 
 const FDChart = dynamic(
   () => import("@/components/calculators/fd/FDChart"),
@@ -30,8 +33,7 @@ const compoundingOptions: { label: string; value: CompoundingFrequency }[] = [
 ];
 
 export default function FDCalculator() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useIsMounted();
 
   const [inputs, setInputs] = useState({
     principal: 100000,
@@ -46,6 +48,18 @@ export default function FDCalculator() {
   const [shareId, setShareId] = useState<string | null>(null);
 
   useEffect(() => setShareId(null), [debouncedInputs]);
+
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "fd",
+        name: "Fixed Deposit (FD) Calculator",
+        route: "/fd",
+        category: "investments",
+        summary: `₹${inputs.principal.toLocaleString("en-IN")} · ${inputs.annualRate}% · ${inputs.tenureYears}yr`,
+      });
+    }
+  }, [mounted, inputs.principal, inputs.annualRate, inputs.tenureYears]);
 
   const onPrincipal = useCallback((v: number) => setInputs(p => ({ ...p, principal: v })), []);
   const onRate = useCallback((v: number) => setInputs(p => ({ ...p, annualRate: v })), []);
@@ -100,7 +114,7 @@ export default function FDCalculator() {
                     key={o.value}
                     type="button"
                     onClick={() => onFreq(o.value)}
-                    className={clsx(
+                    className={cn(
                       "py-2.5 rounded-lg text-xs font-semibold transition-all duration-200 border",
                       inputs.compoundingFrequency === o.value
                         ? "bg-primary border-primary text-primary-foreground shadow-sm"
@@ -160,12 +174,26 @@ export default function FDCalculator() {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <ShareButton shareId={shareId} />
               <SaveCalculationButton
                 calcType="FD"
                 data={{ inputs: debouncedInputs, results: results as unknown as Record<string, unknown> }}
                 onSaved={setShareId}
+              />
+              <PdfExportButton
+                filename="fd-calculation"
+                calculatorTitle="Fixed Deposit (FD) Calculator"
+                calculatorRoute="/fd"
+                inputs={[
+                  { label: "Principal Amount", value: `₹${inputs.principal.toLocaleString("en-IN")}` },
+                  { label: "Interest Rate", value: `${inputs.annualRate}% p.a.` },
+                  { label: "Tenure", value: `${inputs.tenureYears} years` },
+                ]}
+                results={[
+                  { label: "Maturity Value", value: `₹${results.maturityAmount.toLocaleString("en-IN")}` },
+                  { label: "Interest Earned", value: `₹${results.totalInterest.toLocaleString("en-IN")}` },
+                ]}
               />
             </div>
           </div>

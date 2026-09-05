@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";import { useMemo, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
@@ -13,7 +15,7 @@ import { calcPresumptiveTax } from "@/lib/math";
 import type { PresumptiveProfessionType, PresumptiveTaxInput, TaxRegime, PresumptiveHistoryStatus } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
-import { clsx } from "clsx";
+import { cn } from "@/lib/utils";
 import {
   Stethoscope,
   Store,
@@ -30,7 +32,7 @@ const PresumptiveTaxChart = dynamic(
 );
 
 export default function PresumptiveTaxCalculator() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [professionType, setProfessionType] = useState<PresumptiveProfessionType>("44ADA_professional");
   const [grossTurnover, setGrossTurnover] = useState(4000000); // 40 Lakhs
   const [digitalReceiptsPct, setDigitalReceiptsPct] = useState(100);
@@ -42,10 +44,6 @@ export default function PresumptiveTaxCalculator() {
   const [pastPresumptiveHistory, setPastPresumptiveHistory] =
     useState<PresumptiveHistoryStatus>("first_time_opting_in");
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const inputs: PresumptiveTaxInput = useMemo(
     () => ({
@@ -77,6 +75,17 @@ export default function PresumptiveTaxCalculator() {
     return calcPresumptiveTax(debouncedInputs);
   }, [debouncedInputs]);
 
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "presumptive-tax",
+        name: "Presumptive Taxation (Section 44AD / 44ADA)",
+        route: "/presumptive-tax",
+        category: "taxation",
+      });
+    }
+  }, [mounted]);
+
   if (!mounted) return <CalcPageSkeleton />;
 
   return (
@@ -98,7 +107,7 @@ export default function PresumptiveTaxCalculator() {
                   setProfessionType("44ADA_professional");
                   if (grossTurnover > 7500000) setGrossTurnover(5000000);
                 }}
-                className={clsx(
+                className={cn(
                   "p-3.5 rounded-xl border text-left transition-all",
                   professionType === "44ADA_professional"
                     ? "border-primary bg-primary/10 text-primary font-semibold shadow-sm"
@@ -123,7 +132,7 @@ export default function PresumptiveTaxCalculator() {
                   setProfessionType("44AD_business");
                   if (grossTurnover < 5000000) setGrossTurnover(10000000);
                 }}
-                className={clsx(
+                className={cn(
                   "p-3.5 rounded-xl border text-left transition-all",
                   professionType === "44AD_business"
                     ? "border-primary bg-primary/10 text-primary font-semibold shadow-sm"
@@ -188,7 +197,7 @@ export default function PresumptiveTaxCalculator() {
               />
 
               <div
-                className={clsx(
+                className={cn(
                   "p-2.5 rounded-lg text-xs flex items-center gap-2",
                   digitalReceiptsPct >= 95
                     ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
@@ -256,7 +265,7 @@ export default function PresumptiveTaxCalculator() {
                 <button
                   type="button"
                   onClick={() => setRegime("new")}
-                  className={clsx(
+                  className={cn(
                     "px-3 py-1 text-xs font-medium rounded-md transition-colors",
                     regime === "new"
                       ? "bg-background text-foreground shadow-sm font-semibold"
@@ -268,7 +277,7 @@ export default function PresumptiveTaxCalculator() {
                 <button
                   type="button"
                   onClick={() => setRegime("old")}
-                  className={clsx(
+                  className={cn(
                     "px-3 py-1 text-xs font-medium rounded-md transition-colors",
                     regime === "old"
                       ? "bg-background text-foreground shadow-sm font-semibold"

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { ALL_CALCULATOR_ROUTES } from "../lib/calculators";
+import { ALL_CALCULATOR_ROUTES } from "../lib/registry";
 
 test.describe("Production Calculator Smoke Suite (All 31 Canonical Routes)", () => {
   for (const route of ALL_CALCULATOR_ROUTES) {

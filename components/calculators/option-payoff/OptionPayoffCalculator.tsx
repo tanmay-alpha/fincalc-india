@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";import { useMemo, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
@@ -12,7 +14,7 @@ import { calcOptionPayoff, getOptionPresetLegs } from "@/lib/math";
 import type { OptionLeg, OptionStrategyPreset } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
-import { clsx } from "clsx";
+import { cn } from "@/lib/utils";
 import { Plus, Trash2 } from "lucide-react";
 
 const OptionPayoffChart = dynamic(
@@ -30,17 +32,13 @@ const PRESETS: Array<{ id: OptionStrategyPreset; label: string; desc: string }> 
 ];
 
 export default function OptionPayoffCalculator() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [underlyingPrice, setUnderlyingPrice] = useState(24000);
   const [lotSize, setLotSize] = useState(50); // Nifty lot size
   const [selectedPreset, setSelectedPreset] = useState<OptionStrategyPreset>("bull_call_spread");
   const [legs, setLegs] = useState<OptionLeg[]>(() =>
     getOptionPresetLegs("bull_call_spread", 24000)
   );
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handleSelectPreset = (preset: OptionStrategyPreset) => {
     setSelectedPreset(preset);
@@ -86,6 +84,17 @@ export default function OptionPayoffCalculator() {
     });
   }, [debouncedLegs, lotSize, debouncedUnderlying]);
 
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "option-payoff",
+        name: "Option Strategy Payoff Visualizer",
+        route: "/option-payoff",
+        category: "trading",
+      });
+    }
+  }, [mounted]);
+
   if (!mounted) return <CalcPageSkeleton />;
 
   const displayMaxProfit =
@@ -124,7 +133,7 @@ export default function OptionPayoffCalculator() {
                   key={p.id}
                   type="button"
                   onClick={() => handleSelectPreset(p.id)}
-                  className={clsx(
+                  className={cn(
                     "p-2.5 rounded-xl border text-left text-xs transition-all",
                     selectedPreset === p.id
                       ? "border-primary bg-primary/10 text-primary font-semibold shadow-sm"
@@ -215,7 +224,7 @@ export default function OptionPayoffCalculator() {
                               position: leg.position === "long" ? "short" : "long",
                             })
                           }
-                          className={clsx(
+                          className={cn(
                             "px-2 py-0.5 rounded text-[11px] font-bold transition-all",
                             leg.position === "long"
                               ? "bg-green-600 text-white"

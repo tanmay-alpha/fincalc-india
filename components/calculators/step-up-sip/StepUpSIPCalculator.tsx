@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";import { useState, useMemo, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
@@ -12,7 +14,7 @@ import { calcStepUpSIP, calcGoalSIP } from "@/lib/math";
 import type { StepUpType } from "@/lib/math";
 import { formatINR, formatCompact } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
-import { clsx } from "clsx";
+import { cn } from "@/lib/utils";
 import { Target, TrendingUp, Sparkles } from "lucide-react";
 
 const StepUpSIPChart = dynamic(
@@ -21,8 +23,7 @@ const StepUpSIPChart = dynamic(
 );
 
 export default function StepUpSIPCalculator() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useIsMounted();
 
   const [isGoalMode, setIsGoalMode] = useState(false);
   const [stepUpType, setStepUpType] = useState<StepUpType>("percentage");
@@ -83,6 +84,17 @@ export default function StepUpSIPCalculator() {
     []
   );
 
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "step-up-sip",
+        name: "Step-Up SIP Calculator",
+        route: "/step-up-sip",
+        category: "investments",
+      });
+    }
+  }, [mounted]);
+
   if (!mounted) return <CalcPageSkeleton />;
 
   return (
@@ -98,7 +110,7 @@ export default function StepUpSIPCalculator() {
               <button
                 type="button"
                 onClick={() => setIsGoalMode(false)}
-                className={clsx(
+                className={cn(
                   "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all",
                   !isGoalMode
                     ? "bg-primary text-primary-foreground shadow-sm"
@@ -111,7 +123,7 @@ export default function StepUpSIPCalculator() {
               <button
                 type="button"
                 onClick={() => setIsGoalMode(true)}
-                className={clsx(
+                className={cn(
                   "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all",
                   isGoalMode
                     ? "bg-primary text-primary-foreground shadow-sm"
@@ -172,7 +184,7 @@ export default function StepUpSIPCalculator() {
                         setStepUpType("percentage");
                         setInputs((p) => ({ ...p, stepUpValue: 10 }));
                       }}
-                      className={clsx(
+                      className={cn(
                         "px-2.5 py-1 text-xs font-medium rounded-md transition-all",
                         stepUpType === "percentage"
                           ? "bg-primary text-primary-foreground font-semibold"
@@ -187,7 +199,7 @@ export default function StepUpSIPCalculator() {
                         setStepUpType("fixed");
                         setInputs((p) => ({ ...p, stepUpValue: 1000 }));
                       }}
-                      className={clsx(
+                      className={cn(
                         "px-2.5 py-1 text-xs font-medium rounded-md transition-all",
                         stepUpType === "fixed"
                           ? "bg-primary text-primary-foreground font-semibold"
@@ -369,7 +381,7 @@ export default function StepUpSIPCalculator() {
                   {stepUpResult.yearlyBreakdown.map((row, i) => (
                     <tr
                       key={row.year}
-                      className={clsx(
+                      className={cn(
                         "table-row",
                         i === stepUpResult.yearlyBreakdown.length - 1 &&
                           "bg-primary/10 font-semibold"

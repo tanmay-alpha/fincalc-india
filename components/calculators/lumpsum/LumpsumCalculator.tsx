@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
@@ -23,8 +25,7 @@ const LumpsumChart = dynamic(
 const INFLATION_RATE = 6;
 
 export default function LumpsumCalculator() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useIsMounted();
 
   const [inputs, setInputs] = useState({
     principal: 500000,
@@ -55,6 +56,18 @@ export default function LumpsumCalculator() {
   }, [inputs]);
 
   useEffect(() => setShareId(null), [debouncedInputs]);
+
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "lumpsum",
+        name: "Lumpsum Investment Calculator",
+        route: "/lumpsum",
+        category: "investments",
+        summary: `₹${formatCompact(inputs.principal)} · ${inputs.annualRate}% · ${inputs.years}yr`,
+      });
+    }
+  }, [mounted, inputs.principal, inputs.annualRate, inputs.years]);
 
   const onPrincipal = useCallback((v: number) => setInputs(p => ({ ...p, principal: v })), []);
   const onRate = useCallback((v: number) => setInputs(p => ({ ...p, annualRate: v })), []);

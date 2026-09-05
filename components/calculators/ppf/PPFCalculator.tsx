@@ -7,6 +7,7 @@ import ResultHero from "@/components/ui/ResultHero";
 import InsightCard from "@/components/ui/InsightCard";
 import ShareButton from "@/components/ui/ShareButton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
+import PdfExportButton from "@/components/ui/PdfExportButton";
 import StickyResultBar from "@/components/ui/StickyResultBar";
 import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
@@ -14,6 +15,8 @@ import { calcPPF } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { generatePPFInsights } from "@/lib/insights";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";
 
 const PPFChart = dynamic(
   () => import("@/components/calculators/ppf/PPFChart"),
@@ -21,13 +24,13 @@ const PPFChart = dynamic(
 );
 
 export default function PPFCalculator() {
+  const mounted = useIsMounted();
+
   const [inputs, setInputs] = useState({
     yearlyInvestment: 150000,
     years: 15,
     rate: 7.1,
   });
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
 
   const debouncedInputs = useDebounce(inputs, 250);
   const results = useMemo(() => calcPPF(debouncedInputs), [debouncedInputs]);
@@ -35,6 +38,18 @@ export default function PPFCalculator() {
   const [shareId, setShareId] = useState<string | null>(null);
 
   useEffect(() => setShareId(null), [debouncedInputs]);
+
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "ppf",
+        name: "Public Provident Fund (PPF) Calculator",
+        route: "/ppf",
+        category: "investments",
+        summary: `₹${inputs.yearlyInvestment.toLocaleString("en-IN")}/yr · ${inputs.years}yr`,
+      });
+    }
+  }, [mounted, inputs.yearlyInvestment, inputs.years]);
 
   const onInvestment = useCallback((v: number) => setInputs(p => ({ ...p, yearlyInvestment: v })), []);
   const onYears = useCallback((v: number) => setInputs(p => ({ ...p, years: v })), []);
@@ -160,12 +175,28 @@ export default function PPFCalculator() {
             </p>
 
             {/* Actions */}
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <ShareButton shareId={shareId} />
               <SaveCalculationButton
                 calcType="PPF"
                 data={{ inputs: debouncedInputs, results: results as unknown as Record<string, unknown> }}
                 onSaved={setShareId}
+              />
+              <PdfExportButton
+                filename="ppf-calculation"
+                calculatorTitle="Public Provident Fund (PPF) Calculator"
+                calculatorRoute="/ppf"
+                statutoryReference="Section 80C | EEE Tax Status"
+                inputs={[
+                  { label: "Yearly Investment", value: `₹${inputs.yearlyInvestment.toLocaleString("en-IN")}` },
+                  { label: "Interest Rate", value: `${inputs.rate}% p.a.` },
+                  { label: "Investment Period", value: `${inputs.years} years` },
+                ]}
+                results={[
+                  { label: "Maturity Value", value: `₹${results.maturityValue.toLocaleString("en-IN")}` },
+                  { label: "Total Invested", value: `₹${results.totalInvested.toLocaleString("en-IN")}` },
+                  { label: "Total Interest", value: `₹${results.totalInterest.toLocaleString("en-IN")}` },
+                ]}
               />
             </div>
           </div>

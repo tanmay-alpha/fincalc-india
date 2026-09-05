@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";import { useState, useMemo, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
@@ -12,7 +14,7 @@ import { calcPrepaymentVsInvest } from "@/lib/math";
 import type { PrepaymentType } from "@/lib/math";
 import { formatINR, formatCompact } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
-import { clsx } from "clsx";
+import { cn } from "@/lib/utils";
 import { Zap } from "lucide-react";
 
 const LoanPrepaymentChart = dynamic(
@@ -21,8 +23,7 @@ const LoanPrepaymentChart = dynamic(
 );
 
 export default function LoanPrepaymentCalculator() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useIsMounted();
 
   const [prepaymentType, setPrepaymentType] = useState<PrepaymentType>("extra_emi_yearly");
   const [tenureUnit, setTenureUnit] = useState<"years" | "months">("years");
@@ -80,6 +81,17 @@ export default function LoanPrepaymentCalculator() {
     (v: number) => setInputs((p) => ({ ...p, investmentRate: v })),
     []
   );
+
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "loan-prepayment",
+        name: "Loan Prepayment vs. Invest Calculator",
+        route: "/loan-prepayment",
+        category: "loans",
+      });
+    }
+  }, [mounted]);
 
   if (!mounted) return <CalcPageSkeleton />;
 
@@ -141,7 +153,7 @@ export default function LoanPrepaymentCalculator() {
                         setInputs((p) => ({ ...p, tenure: Math.round(p.tenure / 12) || 1 }));
                       }
                     }}
-                    className={clsx(
+                    className={cn(
                       "px-2.5 py-0.5 text-xs font-medium rounded-md transition-all",
                       tenureUnit === "years"
                         ? "bg-primary text-primary-foreground font-semibold"
@@ -158,7 +170,7 @@ export default function LoanPrepaymentCalculator() {
                         setInputs((p) => ({ ...p, tenure: p.tenure * 12 }));
                       }
                     }}
-                    className={clsx(
+                    className={cn(
                       "px-2.5 py-0.5 text-xs font-medium rounded-md transition-all",
                       tenureUnit === "months"
                         ? "bg-primary text-primary-foreground font-semibold"
@@ -203,7 +215,7 @@ export default function LoanPrepaymentCalculator() {
                 <button
                   type="button"
                   onClick={() => setPrepaymentType("extra_emi_yearly")}
-                  className={clsx(
+                  className={cn(
                     "py-2 px-1 text-xs font-semibold rounded-lg transition-all text-center leading-tight",
                     prepaymentType === "extra_emi_yearly"
                       ? "bg-primary text-primary-foreground shadow-sm"
@@ -215,7 +227,7 @@ export default function LoanPrepaymentCalculator() {
                 <button
                   type="button"
                   onClick={() => setPrepaymentType("monthly_topup")}
-                  className={clsx(
+                  className={cn(
                     "py-2 px-1 text-xs font-semibold rounded-lg transition-all text-center leading-tight",
                     prepaymentType === "monthly_topup"
                       ? "bg-primary text-primary-foreground shadow-sm"
@@ -227,7 +239,7 @@ export default function LoanPrepaymentCalculator() {
                 <button
                   type="button"
                   onClick={() => setPrepaymentType("lumpsum")}
-                  className={clsx(
+                  className={cn(
                     "py-2 px-1 text-xs font-semibold rounded-lg transition-all text-center leading-tight",
                     prepaymentType === "lumpsum"
                       ? "bg-primary text-primary-foreground shadow-sm"

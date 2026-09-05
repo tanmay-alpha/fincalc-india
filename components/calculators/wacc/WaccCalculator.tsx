@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+
+import { useState, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
@@ -15,6 +16,8 @@ import type { WaccInput } from "@/lib/math";
 import { getWACCInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";
 import { Scale, PieChart as PieIcon } from "lucide-react";
 
 const WaccChart = dynamic(
@@ -23,17 +26,13 @@ const WaccChart = dynamic(
 );
 
 export default function WaccCalculator() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [marketValueOfEquity, setMarketValueOfEquity] = useState(70000000); // 7 Cr
   const [marketValueOfDebt, setMarketValueOfDebt] = useState(30000000); // 3 Cr
   const [costOfEquity, setCostOfEquity] = useState(14.0);
   const [preTaxCostOfDebt, setPreTaxCostOfDebt] = useState(9.0);
   const [taxRate, setTaxRate] = useState(25.0);
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const inputs: WaccInput = useMemo(
     () => ({
@@ -55,6 +54,18 @@ export default function WaccCalculator() {
   const debouncedInputs = useDebounce(inputs, 150);
   const result = useMemo(() => calcWACC(debouncedInputs), [debouncedInputs]);
   const insights = useMemo(() => getWACCInsights(result), [result]);
+
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "wacc",
+        name: "WACC Calculator (Cost of Capital)",
+        route: "/wacc",
+        category: "corporate",
+        summary: `Equity ₹${marketValueOfEquity.toLocaleString("en-IN")} · Debt ₹${marketValueOfDebt.toLocaleString("en-IN")}`,
+      });
+    }
+  }, [mounted, marketValueOfEquity, marketValueOfDebt]);
 
   if (!mounted) {
     return <CalcPageSkeleton />;

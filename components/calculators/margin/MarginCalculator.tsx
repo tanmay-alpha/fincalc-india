@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+
+import { useState, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
@@ -15,6 +16,8 @@ import type { MarginRequiredInput, MarginInstrumentCategory } from "@/lib/math";
 import { getMarginRequiredInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";
 import { Shield, PieChart as PieIcon, AlertCircle } from "lucide-react";
 
 const MarginChart = dynamic(
@@ -23,7 +26,7 @@ const MarginChart = dynamic(
 );
 
 export default function MarginCalculator() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [instrumentCategory, setInstrumentCategory] = useState<MarginInstrumentCategory>("nifty_futures");
   const [lotSize, setLotSize] = useState<number>(FNO_CONTRACT_DEFAULTS.nifty.lotSize);
   const [numberOfLots, setNumberOfLots] = useState(2);
@@ -34,10 +37,6 @@ export default function MarginCalculator() {
   const [customSpanPercent, setCustomSpanPercent] = useState(10.5);
   const [customExposurePercent, setCustomExposurePercent] = useState(2.0);
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Update default lot sizes and educational margin rates based on category
   const handleCategoryChange = (cat: MarginInstrumentCategory) => {
@@ -103,6 +102,18 @@ export default function MarginCalculator() {
   const debouncedInputs = useDebounce(inputs, 150);
   const result = useMemo(() => calcMarginRequired(debouncedInputs), [debouncedInputs]);
   const insights = useMemo(() => getMarginRequiredInsights(result), [result]);
+
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "margin-calculator",
+        name: "F&O Margin Estimator",
+        route: "/margin-calculator",
+        category: "trading",
+        summary: `${instrumentCategory} · ${numberOfLots} lots @ ₹${price}`,
+      });
+    }
+  }, [mounted, instrumentCategory, numberOfLots, price]);
 
   if (!mounted) {
     return <CalcPageSkeleton />;

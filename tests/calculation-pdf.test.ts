@@ -34,3 +34,4 @@ describe("Calculation PDF Export Generator", () => {
     expect(outputBuffer.byteLength).toBeGreaterThan(500);
   });
 });
+

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CALCULATOR_REGISTRY } from "@/lib/calculators";
+import { CALCULATOR_REGISTRY } from "@/lib/registry";
 import {
   calcEMI,
   calcFD,

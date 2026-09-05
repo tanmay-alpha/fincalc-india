@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";import { useMemo, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
@@ -18,7 +20,7 @@ import type {
 } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
-import { clsx } from "clsx";
+import { cn } from "@/lib/utils";
 import {
   Building,
   Landmark,
@@ -36,7 +38,7 @@ const Section54Chart = dynamic(
 );
 
 export default function Section54Calculator() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [originalAssetType, setOriginalAssetType] =
     useState<Section54OriginalAssetType>("residential_house");
   const [capitalGainsAmount, setCapitalGainsAmount] = useState(6000000); // 60 Lakhs
@@ -71,10 +73,6 @@ export default function Section54Calculator() {
   const [section54fTimelineMonths, setSection54fTimelineMonths] = useState(6);
 
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const is54FApplicable =
     sectionType === "section_54f_property" ||
@@ -150,6 +148,17 @@ export default function Section54Calculator() {
     return calcSection54Exemption(debouncedInputs);
   }, [debouncedInputs]);
 
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "section-54-exemption",
+        name: "Section 54 / 54EC / 54F Exemption Planner",
+        route: "/section-54-exemption",
+        category: "taxation",
+      });
+    }
+  }, [mounted]);
+
   if (!mounted) return <CalcPageSkeleton />;
 
   return (
@@ -182,7 +191,7 @@ export default function Section54Calculator() {
                     setSectionType("section_54_property");
                   }
                 }}
-                className={clsx(
+                className={cn(
                   "p-3 rounded-xl border text-left transition-all",
                   originalAssetType === "residential_house"
                     ? "border-primary bg-primary/10 text-primary font-semibold shadow-sm ring-1 ring-primary/40"
@@ -206,7 +215,7 @@ export default function Section54Calculator() {
                     setSectionType("section_54ec_bonds");
                   }
                 }}
-                className={clsx(
+                className={cn(
                   "p-3 rounded-xl border text-left transition-all",
                   originalAssetType === "land_or_building_non_residential"
                     ? "border-primary bg-primary/10 text-primary font-semibold shadow-sm ring-1 ring-primary/40"
@@ -230,7 +239,7 @@ export default function Section54Calculator() {
                     setSectionType("section_54f_property");
                   }
                 }}
-                className={clsx(
+                className={cn(
                   "p-3 rounded-xl border text-left transition-all",
                   originalAssetType === "other_long_term_asset"
                     ? "border-primary bg-primary/10 text-primary font-semibold shadow-sm ring-1 ring-primary/40"
@@ -314,7 +323,7 @@ export default function Section54Calculator() {
                     setOriginalAssetType("residential_house");
                   }
                 }}
-                className={clsx(
+                className={cn(
                   "p-3 rounded-xl border text-center transition-all",
                   sectionType === "section_54_property"
                     ? "border-primary bg-primary/10 text-primary font-semibold shadow-sm"
@@ -335,7 +344,7 @@ export default function Section54Calculator() {
                     setOriginalAssetType("land_or_building_non_residential");
                   }
                 }}
-                className={clsx(
+                className={cn(
                   "p-3 rounded-xl border text-center transition-all",
                   sectionType === "section_54ec_bonds"
                     ? "border-primary bg-primary/10 text-primary font-semibold shadow-sm"
@@ -356,7 +365,7 @@ export default function Section54Calculator() {
                     setOriginalAssetType("land_or_building_non_residential");
                   }
                 }}
-                className={clsx(
+                className={cn(
                   "p-3 rounded-xl border text-center transition-all",
                   sectionType === "section_54f_property"
                     ? "border-primary bg-primary/10 text-primary font-semibold shadow-sm"
@@ -372,7 +381,7 @@ export default function Section54Calculator() {
               <button
                 type="button"
                 onClick={() => setSectionType("compare_both")}
-                className={clsx(
+                className={cn(
                   "p-3 rounded-xl border text-center transition-all",
                   sectionType === "compare_both"
                     ? "border-primary bg-primary/10 text-primary font-semibold shadow-sm"
@@ -428,7 +437,7 @@ export default function Section54Calculator() {
                     <button
                       type="button"
                       onClick={() => setSection54PropertyMode("purchase")}
-                      className={clsx(
+                      className={cn(
                         "py-1 rounded",
                         section54PropertyMode === "purchase"
                           ? "bg-background text-foreground shadow-sm font-bold"
@@ -440,7 +449,7 @@ export default function Section54Calculator() {
                     <button
                       type="button"
                       onClick={() => setSection54PropertyMode("construction")}
-                      className={clsx(
+                      className={cn(
                         "py-1 rounded",
                         section54PropertyMode === "construction"
                           ? "bg-background text-foreground shadow-sm font-bold"
@@ -566,7 +575,7 @@ export default function Section54Calculator() {
                                   <button
                                     type="button"
                                     onClick={() => setSecondPropertyMode("purchase")}
-                                    className={clsx(
+                                    className={cn(
                                       "px-3 py-1.5 text-xs font-medium rounded-lg border text-center transition-all",
                                       secondPropertyMode === "purchase"
                                         ? "border-primary bg-primary/10 text-primary font-semibold"
@@ -578,7 +587,7 @@ export default function Section54Calculator() {
                                   <button
                                     type="button"
                                     onClick={() => setSecondPropertyMode("construction")}
-                                    className={clsx(
+                                    className={cn(
                                       "px-3 py-1.5 text-xs font-medium rounded-lg border text-center transition-all",
                                       secondPropertyMode === "construction"
                                         ? "border-primary bg-primary/10 text-primary font-semibold"
@@ -733,7 +742,7 @@ export default function Section54Calculator() {
                     <button
                       type="button"
                       onClick={() => setSection54fPropertyMode("purchase")}
-                      className={clsx(
+                      className={cn(
                         "py-1 rounded",
                         section54fPropertyMode === "purchase"
                           ? "bg-background text-foreground shadow-sm font-bold"
@@ -745,7 +754,7 @@ export default function Section54Calculator() {
                     <button
                       type="button"
                       onClick={() => setSection54fPropertyMode("construction")}
-                      className={clsx(
+                      className={cn(
                         "py-1 rounded",
                         section54fPropertyMode === "construction"
                           ? "bg-background text-foreground shadow-sm font-bold"
@@ -858,7 +867,7 @@ export default function Section54Calculator() {
 
           {/* Advisory Notice for Two-House Option */}
           {result.activeResult.twoHousesOptionMessage && (
-            <div className={clsx(
+            <div className={cn(
               "surface-card p-4 rounded-xl border text-xs leading-relaxed flex items-start gap-2.5",
               result.activeResult.twoHousesOptionApplied
                 ? "border-blue-500/40 bg-blue-500/10 text-blue-900 dark:text-blue-300"

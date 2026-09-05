@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";import { useMemo, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
@@ -24,7 +26,7 @@ const DcfChart = dynamic(
 );
 
 export default function DcfCalculator() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [cashFlowYear1, setCashFlowYear1] = useState(50000000); // 5 Cr
   const [forecastYears, setForecastYears] = useState(5);
   const [growthRateYears1to5, setGrowthRateYears1to5] = useState(15);
@@ -34,10 +36,6 @@ export default function DcfCalculator() {
   const [cashAndEquivalents, setCashAndEquivalents] = useState(10000000); // 1 Cr
   const [sharesOutstanding, setSharesOutstanding] = useState(1000000); // 10 Lakh shares
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const fcfProjections = useMemo(() => {
     const list: number[] = [];
@@ -104,6 +102,17 @@ export default function DcfCalculator() {
       };
     });
   }, [debouncedInputs, discountRate, terminalGrowthRate, result.isValid]);
+
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "dcf-valuation",
+        name: "DCF Valuation Calculator",
+        route: "/dcf-valuation",
+        category: "corporate",
+      });
+    }
+  }, [mounted]);
 
   if (!mounted) return <CalcPageSkeleton />;
 

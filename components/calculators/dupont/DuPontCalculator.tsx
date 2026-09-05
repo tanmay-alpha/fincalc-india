@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+
+import { useState, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
@@ -14,6 +15,8 @@ import { calcDuPont } from "@/lib/math";
 import type { DuPontInput } from "@/lib/math";
 import { getDuPontInsights } from "@/lib/insights";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";
 import { Layers, ChevronDown, ChevronUp } from "lucide-react";
 
 const DuPontChart = dynamic(
@@ -22,7 +25,7 @@ const DuPontChart = dynamic(
 );
 
 export default function DuPontCalculator() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [netIncome, setNetIncome] = useState(15000000); // 1.5 Cr
   const [revenue, setRevenue] = useState(100000000); // 10 Cr
   const [totalAssets, setTotalAssets] = useState(80000000); // 8 Cr
@@ -34,10 +37,6 @@ export default function DuPontCalculator() {
   const [ebt, setEbt] = useState(20000000); // 2.0 Cr
 
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const inputs: DuPontInput = useMemo(
     () => ({
@@ -54,6 +53,18 @@ export default function DuPontCalculator() {
   const debouncedInputs = useDebounce(inputs, 150);
   const result = useMemo(() => calcDuPont(debouncedInputs), [debouncedInputs]);
   const insights = useMemo(() => getDuPontInsights(result), [result]);
+
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "dupont-analysis",
+        name: "DuPont 5-Step ROE Decomposition",
+        route: "/dupont-analysis",
+        category: "corporate",
+        summary: `Rev ₹${revenue.toLocaleString("en-IN")} · Net ₹${netIncome.toLocaleString("en-IN")}`,
+      });
+    }
+  }, [mounted, revenue, netIncome]);
 
   if (!mounted) {
     return <CalcPageSkeleton />;

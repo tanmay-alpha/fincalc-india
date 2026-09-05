@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CALCULATOR_REGISTRY } from "@/lib/calculators";
+import { CALCULATOR_REGISTRY } from "@/lib/registry";
 import {
   CALCULATOR_CONTRACTS,
   getCalculatorContract,

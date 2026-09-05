@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+
+import { useIsMounted } from "@/hooks/useIsMounted";import { useState, useMemo, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import InsightCard from "@/components/ui/InsightCard";
 import ShareButton from "@/components/ui/ShareButton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
+import PdfExportButton from "@/components/ui/PdfExportButton";
 import StickyResultBar from "@/components/ui/StickyResultBar";
 import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
@@ -16,7 +18,7 @@ import { generateEMIInsights } from "@/lib/insights";
 import { useDebounce } from "@/hooks/useDebounce";
 import EMIScenarioCompare from "@/components/calculators/emi/EMIScenarioCompare";
 import { getRestoredInputs, recordRecentCalculation } from "@/lib/storage-workflow";
-import { clsx } from "clsx";
+import { cn } from "@/lib/utils";
 
 const EMIPieChart = dynamic(
   () => import("@/components/calculators/emi/EMIChart").then((m) => ({ default: m.EMIPieChart })),
@@ -31,14 +33,13 @@ const EMIBalanceChart = dynamic(
 const ROWS_PER_PAGE = 12;
 
 export default function EMICalculator() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [inputs, setInputs] = useState({ principal: 3000000, annualRate: 8.5, tenureMonths: 240 });
   const [tenureUnit, setTenureUnit] = useState<"months" | "years">("years");
   const [page, setPage] = useState(1);
   const [shareId, setShareId] = useState<string | null>(null);
 
   useEffect(() => {
-    setMounted(true);
     const restored = getRestoredInputs("emi", {
       principal: 3000000,
       annualRate: 8.5,
@@ -108,7 +109,7 @@ export default function EMICalculator() {
               <label className="text-sm font-medium text-foreground">Loan Tenure</label>
               <div className="flex gap-2 mb-2">
                 <button onClick={() => setTenureUnit("years")}
-                  className={clsx(
+                  className={cn(
                     "flex-1 py-2 rounded-lg text-sm font-medium transition-all",
                     tenureUnit === "years"
                       ? "bg-primary text-primary-foreground"
@@ -117,7 +118,7 @@ export default function EMICalculator() {
                   Years
                 </button>
                 <button onClick={() => setTenureUnit("months")}
-                  className={clsx(
+                  className={cn(
                     "flex-1 py-2 rounded-lg text-sm font-medium transition-all",
                     tenureUnit === "months"
                       ? "bg-primary text-primary-foreground"
@@ -253,11 +254,28 @@ export default function EMICalculator() {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 mt-2">
+            <div className="flex flex-wrap gap-3 mt-2">
               <SaveCalculationButton
                 calcType="EMI"
                 data={{ inputs: debouncedInputs, results: results as unknown as Record<string, unknown> }}
                 onSaved={setShareId}
+              />
+              <PdfExportButton
+                filename="emi-calculation"
+                calculatorTitle="Loan EMI Calculator"
+                calculatorRoute="/emi"
+                taxYear="FY 2026-27"
+                inputs={[
+                  { label: "Loan Amount", value: formatINR(inputs.principal) },
+                  { label: "Interest Rate", value: `${inputs.annualRate}% p.a.` },
+                  { label: "Loan Tenure", value: `${Math.round(inputs.tenureMonths / 12)} years (${inputs.tenureMonths} months)` },
+                ]}
+                results={[
+                  { label: "Monthly EMI", value: formatINR(results.emi) },
+                  { label: "Total Principal", value: formatINR(results.principalAmount) },
+                  { label: "Total Interest", value: formatINR(results.totalInterest) },
+                  { label: "Total Payment", value: formatINR(results.totalPayment) },
+                ]}
               />
               <ShareButton shareId={shareId} />
             </div>

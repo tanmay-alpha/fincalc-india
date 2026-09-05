@@ -8,8 +8,10 @@ import BalanceTransferCalculator from "../../components/calculators/balance-tran
 import Section54Calculator from "../../components/calculators/section-54/Section54Calculator";
 import MarginCalculator from "../../components/calculators/margin/MarginCalculator";
 import XirrCalculator from "../../components/calculators/xirr/XirrCalculator";
+import PdfExportButton from "../../components/ui/PdfExportButton";
 import { FNO_CONTRACT_DEFAULTS } from "../../lib/math";
 import * as mathModule from "../../lib/math";
+import * as calculationPdfModule from "../../lib/calculation-pdf";
 
 // Mock next-auth
 vi.mock("next-auth/react", () => ({
@@ -181,5 +183,32 @@ describe("Calculator Component Suite UI Tests", () => {
       expect(screen.getByText(/10\.00%, 20\.00%/i)).toBeDefined();
     });
   });
+
+  describe("PdfExportButton UI", () => {
+    it("renders download button and handles click", () => {
+      const saveSpy = vi.fn();
+      vi.spyOn(calculationPdfModule, "generateCalculationPdf").mockReturnValueOnce({
+        save: saveSpy,
+      } as unknown as ReturnType<typeof calculationPdfModule.generateCalculationPdf>);
+
+      render(
+        <PdfExportButton
+          filename="test-calc"
+          calculatorTitle="Test Calculator"
+          calculatorRoute="/test"
+          inputs={[{ label: "Principal", value: "₹1,00,000" }]}
+          results={[{ label: "Maturity", value: "₹1,25,000" }]}
+        />
+      );
+
+      const btn = screen.getByRole("button", { name: /Download calculation as PDF/i });
+      expect(btn).toBeDefined();
+      expect(btn.textContent).toContain("Download PDF");
+
+      fireEvent.click(btn);
+      expect(saveSpy).toHaveBeenCalledWith("test-calc.pdf");
+    });
+  });
 });
+
 

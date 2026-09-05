@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";import { useMemo, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
@@ -37,18 +39,25 @@ const DEFAULT_INPUTS: FnOInputsState = {
 };
 
 export default function FnOBrokerageCalculator() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [inputs, setInputs] = useState<FnOInputsState>(DEFAULT_INPUTS);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const debouncedInputs = useDebounce(inputs, 150);
 
   const result = useMemo(() => {
     return calcFnOBreakeven(debouncedInputs);
   }, [debouncedInputs]);
+
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "fno-brokerage",
+        name: "F&O Brokerage & STT Calculator",
+        route: "/fno-brokerage",
+        category: "trading",
+      });
+    }
+  }, [mounted]);
 
   if (!mounted) return <CalcPageSkeleton />;
 

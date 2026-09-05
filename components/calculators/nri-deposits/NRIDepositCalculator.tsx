@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+
+import { useState, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
@@ -15,6 +16,8 @@ import type { NRIDepositInput } from "@/lib/math";
 import { getNRIDepositInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";
 import { Building, Sparkles } from "lucide-react";
 
 const NRIDepositChart = dynamic(
@@ -23,7 +26,7 @@ const NRIDepositChart = dynamic(
 );
 
 export default function NRIDepositCalculator() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [depositAmount, setDepositAmount] = useState(1000000); // 10 Lakhs
   const [tenureMonths, setTenureMonths] = useState(36); // 3 years
   const [nreInterestRatePercent, setNreInterestRatePercent] = useState(7.1);
@@ -32,10 +35,6 @@ export default function NRIDepositCalculator() {
   const [nroTdsRatePercent, setNroTdsRatePercent] = useState(31.2);
   const [compoundingFrequency, setCompoundingFrequency] = useState<"quarterly" | "annual">("quarterly");
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const inputs: NRIDepositInput = useMemo(
     () => ({
@@ -61,6 +60,18 @@ export default function NRIDepositCalculator() {
   const debouncedInputs = useDebounce(inputs, 150);
   const result = useMemo(() => calcNRIDepositReturns(debouncedInputs), [debouncedInputs]);
   const insights = useMemo(() => getNRIDepositInsights(result), [result]);
+
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "nre-nro-fcnr",
+        name: "NRI Deposit Comparator (NRE / NRO / FCNR)",
+        route: "/nre-nro-fcnr",
+        category: "taxation",
+        summary: `₹${depositAmount.toLocaleString("en-IN")} · ${Math.round(tenureMonths / 12)}yr tenure`,
+      });
+    }
+  }, [mounted, depositAmount, tenureMonths]);
 
   if (!mounted) {
     return <CalcPageSkeleton />;

@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+
+import { useIsMounted } from "@/hooks/useIsMounted";import { useState, useMemo, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import InsightCard from "@/components/ui/InsightCard";
 import ShareButton from "@/components/ui/ShareButton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
+import PdfExportButton from "@/components/ui/PdfExportButton";
 import StickyResultBar from "@/components/ui/StickyResultBar";
 import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
@@ -58,7 +60,7 @@ const DEFAULT_TAX_INPUTS: TaxInput = {
 };
 
 export default function TaxCalculator() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [activeTab, setActiveTab] = useState<TaxFlowTab>("income");
   const [showAdvancedIncome, setShowAdvancedIncome] = useState(false);
   const [showWhyComparison, setShowWhyComparison] = useState(false);
@@ -67,7 +69,6 @@ export default function TaxCalculator() {
   const [shareId, setShareId] = useState<string | null>(null);
 
   useEffect(() => {
-    setMounted(true);
     const restored = getRestoredInputs("tax", DEFAULT_TAX_INPUTS);
     setInputs(restored);
   }, []);
@@ -546,7 +547,7 @@ export default function TaxCalculator() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-3 pt-1">
+          <div className="flex flex-wrap items-center gap-3 pt-1">
             <SaveCalculationButton
               calcType="Tax"
               data={{
@@ -554,6 +555,22 @@ export default function TaxCalculator() {
                 results: results as unknown as Record<string, unknown>,
               }}
               onSaved={setShareId}
+            />
+            <PdfExportButton
+              filename="tax-calculation"
+              calculatorTitle="Income Tax Calculator (AY 2026-27)"
+              calculatorRoute="/tax"
+              statutoryReference="Finance Act 2026 | Section 157 Rebate"
+              taxYear="FY 2026-27 (AY 2027-28)"
+              inputs={[
+                { label: "Gross Income", value: `₹${results.grossIncome.toLocaleString("en-IN")}` },
+                { label: "Tax Regime", value: debouncedInputs.regime === "new" ? "New Regime" : "Old Regime" },
+              ]}
+              results={[
+                { label: "New Regime Tax", value: `₹${results.comparison.newRegimeTax.toLocaleString("en-IN")}` },
+                { label: "Old Regime Tax", value: `₹${results.comparison.oldRegimeTax.toLocaleString("en-IN")}` },
+                { label: "Recommended Regime", value: results.comparison.recommendation === "new" ? "New Regime" : "Old Regime" },
+              ]}
             />
             <ShareButton shareId={shareId} />
           </div>

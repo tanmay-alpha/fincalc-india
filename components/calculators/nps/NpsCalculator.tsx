@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+
+import { useState, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
@@ -15,8 +16,10 @@ import type { NPSInput, TaxRegime } from "@/lib/math";
 import { getNPSInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";
 import { Landmark, AlertTriangle, AlertCircle, TrendingUp, ChevronDown, ChevronUp, ShieldCheck } from "lucide-react";
-import { clsx } from "clsx";
+import { cn } from "@/lib/utils";
 
 const NpsChart = dynamic(
   () => import("@/components/calculators/nps/NpsChart"),
@@ -24,7 +27,7 @@ const NpsChart = dynamic(
 );
 
 export default function NpsCalculator() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [currentAge, setCurrentAge] = useState(30);
   const [retirementAge, setRetirementAge] = useState(60);
   const [monthlyContribution, setMonthlyContribution] = useState(10000);
@@ -46,10 +49,6 @@ export default function NpsCalculator() {
   const [shareId, setShareId] = useState<string | null>(null);
   // Bug 4 fix: max allowed lump-sum is engine-driven (e.g. 100% for small corpus, 80% standard)
   const [maxAllowedLumpSum, setMaxAllowedLumpSum] = useState(80);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const totalAllocation =
     equityAllocationPercent + corporateDebtAllocationPercent + govtBondsAllocationPercent;
@@ -110,6 +109,18 @@ export default function NpsCalculator() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result.exitOptionsAvailable]);
+
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "nps",
+        name: "NPS Calculator (National Pension System)",
+        route: "/nps",
+        category: "investments",
+        summary: `₹${monthlyContribution.toLocaleString("en-IN")}/mo · Age ${currentAge} to ${retirementAge}`,
+      });
+    }
+  }, [mounted, monthlyContribution, currentAge, retirementAge]);
 
   if (!mounted) {
     return <CalcPageSkeleton />;
@@ -275,7 +286,7 @@ export default function NpsCalculator() {
                         key={opt.id}
                         type="button"
                         onClick={() => setExitOptionChoice(opt.id as "standard" | "sur_6yr_split")}
-                        className={clsx(
+                        className={cn(
                           "p-2.5 rounded-lg border text-left text-xs transition",
                           exitOptionChoice === opt.id
                             ? "border-primary bg-primary/10 text-primary font-semibold"
@@ -313,7 +324,7 @@ export default function NpsCalculator() {
                         key={r}
                         type="button"
                         onClick={() => setRegime(r)}
-                        className={clsx(
+                        className={cn(
                           "py-2 px-3 rounded-lg text-xs font-semibold border transition text-left",
                           regime === r
                             ? "border-primary bg-primary text-primary-foreground"

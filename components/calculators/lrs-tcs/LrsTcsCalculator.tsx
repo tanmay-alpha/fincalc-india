@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+
+import { useState, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
@@ -15,6 +16,8 @@ import type { LrsTcsInput, LrsCategory } from "@/lib/math";
 import { getLRSTCSInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";
 import { Globe, PieChart as PieIcon } from "lucide-react";
 
 const LrsTcsChart = dynamic(
@@ -23,15 +26,11 @@ const LrsTcsChart = dynamic(
 );
 
 export default function LrsTcsCalculator() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [category, setCategory] = useState<LrsCategory>("general_investment");
   const [remittanceAmountInr, setRemittanceAmountInr] = useState(1200000); // 12 Lakhs
   const [panAvailable, setPanAvailable] = useState(true);
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const inputs: LrsTcsInput = useMemo(
     () => ({
@@ -45,6 +44,18 @@ export default function LrsTcsCalculator() {
   const debouncedInputs = useDebounce(inputs, 150);
   const result = useMemo(() => calcLRSTCS(debouncedInputs), [debouncedInputs]);
   const insights = useMemo(() => getLRSTCSInsights(result), [result]);
+
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "lrs-tcs",
+        name: "LRS TCS & Remittance (Section 394)",
+        route: "/lrs-tcs",
+        category: "taxation",
+        summary: `₹${remittanceAmountInr.toLocaleString("en-IN")} · ${category}`,
+      });
+    }
+  }, [mounted, remittanceAmountInr, category]);
 
   if (!mounted) {
     return <CalcPageSkeleton />;

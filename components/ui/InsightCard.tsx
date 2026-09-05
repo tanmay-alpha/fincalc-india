@@ -1,4 +1,4 @@
-import { clsx } from "clsx";
+import { cn } from "@/lib/utils";
 
 export interface InsightCardProps {
   icon: string;
@@ -27,7 +27,7 @@ export default function InsightCard({
 }: InsightCardProps) {
   return (
     <div
-      className={clsx(
+      className={cn(
         "rounded-xl border p-4",
         "transition-all duration-200",
         styles[type]
@@ -42,7 +42,7 @@ export default function InsightCard({
             {title}
           </p>
           {subtitle && (
-            <p className={clsx("mt-0.5 text-xs font-medium", subtitleStyles[type])}>
+            <p className={cn("mt-0.5 text-xs font-medium", subtitleStyles[type])}>
               {subtitle}
             </p>
           )}

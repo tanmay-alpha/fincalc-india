@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+
+import { useState, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
@@ -15,6 +16,8 @@ import type { CarTCOInput } from "@/lib/math";
 import { getCarTCOInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";
 import { Car, TrendingDown } from "lucide-react";
 
 const CarTcoChart = dynamic(
@@ -23,7 +26,7 @@ const CarTcoChart = dynamic(
 );
 
 export default function CarTcoCalculator() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [carOnRoadPrice, setCarOnRoadPrice] = useState(1500000);
   const [downPayment, setDownPayment] = useState(300000);
   const [loanInterestRate, setLoanInterestRate] = useState(9.0);
@@ -36,10 +39,6 @@ export default function CarTcoCalculator() {
   const [annualMaintenanceCost, setAnnualMaintenanceCost] = useState(15000);
   const [annualDepreciationPercent, setAnnualDepreciationPercent] = useState(15);
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const inputs: CarTCOInput = useMemo(
     () => ({
@@ -73,6 +72,18 @@ export default function CarTcoCalculator() {
   const debouncedInputs = useDebounce(inputs, 150);
   const result = useMemo(() => calcCarTCO(debouncedInputs), [debouncedInputs]);
   const insights = useMemo(() => getCarTCOInsights(result), [result]);
+
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "car-loan-tco",
+        name: "Car Loan Total Cost of Ownership (TCO)",
+        route: "/car-loan-tco",
+        category: "loans",
+        summary: `₹${carOnRoadPrice.toLocaleString("en-IN")} · ${loanTenureYears}yr loan · ${ownershipTenureYears}yr hold`,
+      });
+    }
+  }, [mounted, carOnRoadPrice, loanTenureYears, ownershipTenureYears]);
 
   if (!mounted) {
     return <CalcPageSkeleton />;

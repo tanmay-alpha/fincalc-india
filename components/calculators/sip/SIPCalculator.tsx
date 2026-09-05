@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+
+import { useIsMounted } from "@/hooks/useIsMounted";import { useState, useMemo, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import InsightCard from "@/components/ui/InsightCard";
 import ShareButton from "@/components/ui/ShareButton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
+import PdfExportButton from "@/components/ui/PdfExportButton";
 import StickyResultBar from "@/components/ui/StickyResultBar";
 import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
@@ -32,12 +34,11 @@ const DEFAULT_SIP_INPUTS = {
 };
 
 export default function SIPCalculator() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [inputs, setInputs] = useState(DEFAULT_SIP_INPUTS);
   const [shareId, setShareId] = useState<string | null>(null);
 
   useEffect(() => {
-    setMounted(true);
     const restored = getRestoredInputs("sip", DEFAULT_SIP_INPUTS);
     setInputs(restored);
   }, []);
@@ -152,7 +153,7 @@ export default function SIPCalculator() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-3 pt-1">
+          <div className="flex flex-wrap items-center gap-3 pt-1">
             <SaveCalculationButton
               calcType="SIP"
               data={{
@@ -160,6 +161,21 @@ export default function SIPCalculator() {
                 results: results as unknown as Record<string, unknown>,
               }}
               onSaved={setShareId}
+            />
+            <PdfExportButton
+              filename="sip-calculation"
+              calculatorTitle="SIP Calculator"
+              calculatorRoute="/sip"
+              inputs={[
+                { label: "Monthly Investment", value: `₹${inputs.monthlyAmount.toLocaleString("en-IN")}` },
+                { label: "Expected Return", value: `${inputs.annualRate}% p.a.` },
+                { label: "Investment Period", value: `${inputs.years} years` },
+              ]}
+              results={[
+                { label: "Total Corpus", value: `₹${results.totalCorpus.toLocaleString("en-IN")}` },
+                { label: "Total Invested", value: `₹${results.totalInvested.toLocaleString("en-IN")}` },
+                { label: "Total Returns", value: `₹${results.estimatedReturns.toLocaleString("en-IN")}` },
+              ]}
             />
             <ShareButton shareId={shareId} />
           </div>

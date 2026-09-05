@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+
+import { useState, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
@@ -14,6 +15,8 @@ import { calcBlackScholes } from "@/lib/math";
 import type { BlackScholesInput } from "@/lib/math";
 import { getBlackScholesInsights } from "@/lib/insights";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";
 import { Zap, Activity } from "lucide-react";
 
 const GreeksChart = dynamic(
@@ -22,7 +25,7 @@ const GreeksChart = dynamic(
 );
 
 export default function BlackScholesCalculator() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [spotPrice, setSpotPrice] = useState(24000);
   const [strikePrice, setStrikePrice] = useState(24000);
   const [timeToExpiryDays, setTimeToExpiryDays] = useState(15);
@@ -30,10 +33,6 @@ export default function BlackScholesCalculator() {
   const [riskFreeRatePercent, setRiskFreeRatePercent] = useState(6.5);
   const [dividendYieldPercent, setDividendYieldPercent] = useState(1.2);
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const inputs: BlackScholesInput = useMemo(
     () => ({
@@ -57,6 +56,18 @@ export default function BlackScholesCalculator() {
   const debouncedInputs = useDebounce(inputs, 150);
   const result = useMemo(() => calcBlackScholes(debouncedInputs), [debouncedInputs]);
   const insights = useMemo(() => getBlackScholesInsights(result), [result]);
+
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "black-scholes",
+        name: "Black-Scholes Option Pricing & Greeks",
+        route: "/black-scholes",
+        category: "trading",
+        summary: `Spot ₹${spotPrice} · Strike ₹${strikePrice} · IV ${volatilityPercent}%`,
+      });
+    }
+  }, [mounted, spotPrice, strikePrice, volatilityPercent]);
 
   if (!mounted) {
     return <CalcPageSkeleton />;

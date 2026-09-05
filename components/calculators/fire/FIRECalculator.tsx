@@ -11,6 +11,8 @@ import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcFIRE } from "@/lib/math";
 import { formatINR, formatCompact } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";
 
 const FIREChart = dynamic(
   () => import("@/components/calculators/fire/FIREChart"),
@@ -18,8 +20,7 @@ const FIREChart = dynamic(
 );
 
 export default function FIRECalculator() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useIsMounted();
 
   const [inputs, setInputs] = useState({
     currentAge: 28,
@@ -79,6 +80,17 @@ export default function FIRECalculator() {
     (v: number) => setInputs((p) => ({ ...p, currentSavings: v })),
     []
   );
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "fire",
+        name: "FIRE Calculator (Financial Independence)",
+        route: "/fire",
+        category: "investments",
+        summary: `Retire ${inputs.retirementAge} · ₹${inputs.currentMonthlyExpenses.toLocaleString("en-IN")}/mo`,
+      });
+    }
+  }, [mounted, inputs.retirementAge, inputs.currentMonthlyExpenses]);
 
   if (!mounted) return <CalcPageSkeleton />;
 

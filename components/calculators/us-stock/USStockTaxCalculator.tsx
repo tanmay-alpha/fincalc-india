@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+
+import { useState, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
@@ -15,6 +16,8 @@ import type { USStockReturnInput } from "@/lib/math";
 import { getUSStockReturnInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { recordRecentCalculation } from "@/lib/storage-workflow";
 import { DollarSign, TrendingUp } from "lucide-react";
 
 const USStockChart = dynamic(
@@ -23,7 +26,7 @@ const USStockChart = dynamic(
 );
 
 export default function USStockTaxCalculator() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [investmentAmountInr, setInvestmentAmountInr] = useState(840000); // ~ $10,000
   const [purchaseUsdInrRate, setPurchaseUsdInrRate] = useState(84.0);
   const [saleUsdInrRate, setSaleUsdInrRate] = useState(88.0);
@@ -32,10 +35,6 @@ export default function USStockTaxCalculator() {
   const [holdingMonths, setHoldingMonths] = useState(24); // 24 months (LTCG boundary)
   const [userTaxBracketPercent, setUserTaxBracketPercent] = useState(30.0);
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const inputs: USStockReturnInput = useMemo(
     () => ({
@@ -61,6 +60,18 @@ export default function USStockTaxCalculator() {
   const debouncedInputs = useDebounce(inputs, 150);
   const result = useMemo(() => calcUSStockReturn(debouncedInputs), [debouncedInputs]);
   const insights = useMemo(() => getUSStockReturnInsights(result), [result]);
+
+  useEffect(() => {
+    if (mounted) {
+      recordRecentCalculation({
+        id: "us-stock-tax",
+        name: "US Stock Tax & Net Return (DTAA FTC)",
+        route: "/us-stock-tax",
+        category: "taxation",
+        summary: `₹${investmentAmountInr.toLocaleString("en-IN")} · $${capitalGainUsd} gain · ${holdingMonths}m hold`,
+      });
+    }
+  }, [mounted, investmentAmountInr, capitalGainUsd, holdingMonths]);
 
   if (!mounted) {
     return <CalcPageSkeleton />;
