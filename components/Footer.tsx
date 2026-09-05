@@ -34,7 +34,7 @@ export default function Footer() {
               <span>Free · Privacy-first · No tracking</span>
             </div>
             <span className="hidden sm:inline" aria-hidden>·</span>
-            <span className="text-[11px] text-muted-foreground/80">
+            <span className="text-xs text-foreground/80 font-medium">
               Tax Year 2026–27 · For educational & estimation purposes only
             </span>
           </div>
