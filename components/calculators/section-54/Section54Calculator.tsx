@@ -324,7 +324,7 @@ export default function Section54Calculator() {
                 <Building className="w-5 h-5 mx-auto mb-1 text-blue-500" />
                 <div className="text-xs font-bold">Section 82</div>
                 <div className="text-[10px] text-muted-foreground">formerly Sec 54</div>
-                <div className="text-[9px] text-primary/80 font-medium">House → House</div>
+                <div className="text-[10px] font-semibold text-blue-700 dark:text-blue-300">House → House</div>
               </button>
 
               <button
@@ -345,7 +345,7 @@ export default function Section54Calculator() {
                 <Landmark className="w-5 h-5 mx-auto mb-1 text-emerald-500" />
                 <div className="text-xs font-bold">Section 85</div>
                 <div className="text-[10px] text-muted-foreground">formerly Sec 54EC</div>
-                <div className="text-[9px] text-primary/80 font-medium">REC / NHAI Bonds</div>
+                <div className="text-[10px] font-semibold text-blue-700 dark:text-blue-300">REC / NHAI Bonds</div>
               </button>
 
               <button
@@ -366,7 +366,7 @@ export default function Section54Calculator() {
                 <Gem className="w-5 h-5 mx-auto mb-1 text-amber-500" />
                 <div className="text-xs font-bold">Section 86</div>
                 <div className="text-[10px] text-muted-foreground">formerly Sec 54F</div>
-                <div className="text-[9px] text-primary/80 font-medium">Other → House</div>
+                <div className="text-[10px] font-semibold text-blue-700 dark:text-blue-300">Other → House</div>
               </button>
 
               <button
@@ -382,7 +382,7 @@ export default function Section54Calculator() {
                 <Scale className="w-5 h-5 mx-auto mb-1 text-purple-500" />
                 <div className="text-xs font-bold">Compare All</div>
                 <div className="text-[10px] text-muted-foreground">Sec 82, 85, 86</div>
-                <div className="text-[9px] text-primary/80 font-medium">Eligible Routes</div>
+                <div className="text-[10px] font-semibold text-blue-700 dark:text-blue-300">Eligible Routes</div>
               </button>
             </div>
           </div>

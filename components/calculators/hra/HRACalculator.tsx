@@ -280,14 +280,20 @@ export default function HRACalculator() {
                   Paying Rent to Parents Mode
                 </h3>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
+              <label
+                htmlFor="paying-rent-to-parents-toggle"
+                className="relative inline-flex items-center cursor-pointer"
+              >
                 <input
+                  id="paying-rent-to-parents-toggle"
                   type="checkbox"
                   checked={isPayingToParents}
                   onChange={(e) => setIsPayingToParents(e.target.checked)}
                   className="sr-only peer"
+                  aria-label="Toggle Paying Rent to Parents Mode"
                 />
                 <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
+                <span className="sr-only">Toggle Paying Rent to Parents Mode</span>
               </label>
             </div>
 
