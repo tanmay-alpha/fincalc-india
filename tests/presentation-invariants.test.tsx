@@ -33,7 +33,7 @@ import FDCalculator from "@/components/calculators/fd/FDCalculator";
 import HRACalculator from "@/components/calculators/hra/HRACalculator";
 import FnoBrokerageCalculator from "@/components/calculators/fno-brokerage/FnOBrokerageCalculator";
 import CarTcoCalculator from "@/components/calculators/car-tco/CarTcoCalculator";
-import DCFCalculator from "@/components/calculators/dcf/DCFCalculator";
+import DCFCalculator from "@/components/calculators/dcf/DcfCalculator";
 import DuPontCalculator from "@/components/calculators/dupont/DuPontCalculator";
 import WACCCalculator from "@/components/calculators/wacc/WaccCalculator";
 import ResultHero from "@/components/ui/ResultHero";
@@ -127,12 +127,12 @@ describe("Presentation Invariants Across Calculator Suite", () => {
   it("guarantees ResultHero presentation invariants under edge cases", () => {
     const { container } = render(
       <ResultHero
-        title="Net Position"
+        label="Net Position"
         value={-150000}
-        subValue="Calculated"
-        items={[
-          { label: "Ordinary Loss", value: -50000, color: "bg-red-500" },
-          { label: "Deductions", value: 100000, color: "bg-emerald-500" },
+        interpretation="Calculated"
+        breakdown={[
+          { label: "Ordinary Loss", value: -50000, color: "red" },
+          { label: "Deductions", value: 100000, color: "green" },
         ]}
       />
     );
