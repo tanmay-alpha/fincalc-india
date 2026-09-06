@@ -235,11 +235,13 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              <GoogleSignInButton
-                text="Sign in with Google"
-                callbackUrl="/calculators"
-                size="sm"
-              />
+              <div className="hidden sm:inline-flex">
+                <GoogleSignInButton
+                  text="Sign in with Google"
+                  callbackUrl="/calculators"
+                  size="sm"
+                />
+              </div>
             )}
 
             {/* Mobile Hamburger Toggle Button */}

@@ -89,7 +89,7 @@ export default function FnOBrokerageChart({
         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           Itemized Charges Breakdown
         </p>
-        <div className="grid grid-cols-3 gap-2 text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
           {chargeBreakdownData.map((c) => (
             <div key={c.name} className="p-2 rounded-lg bg-muted/40 border border-border">
               <span className="text-[11px] text-muted-foreground block">{c.name}</span>
