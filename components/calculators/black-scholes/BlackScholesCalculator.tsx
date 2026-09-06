@@ -143,7 +143,7 @@ export default function BlackScholesCalculator() {
             </h3>
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl space-y-1">
-                <span className="font-semibold text-emerald-400 block">Call Option (CE)</span>
+                <span className="font-semibold text-emerald-700 dark:text-emerald-400 block">Call Option (CE)</span>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Intrinsic:</span>
                   <span className="font-medium text-foreground">₹{result.callIntrinsic}</span>
@@ -155,7 +155,7 @@ export default function BlackScholesCalculator() {
               </div>
 
               <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl space-y-1">
-                <span className="font-semibold text-rose-400 block">Put Option (PE)</span>
+                <span className="font-semibold text-rose-700 dark:text-rose-400 block">Put Option (PE)</span>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Intrinsic:</span>
                   <span className="font-medium text-foreground">₹{result.putIntrinsic}</span>
@@ -184,19 +184,19 @@ export default function BlackScholesCalculator() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
               <p className="text-[11px] text-muted-foreground">Put Price (PE)</p>
-              <p className="text-base font-bold text-rose-400 mt-0.5">
+              <p className="text-base font-bold text-rose-700 dark:text-rose-400 mt-0.5">
                 ₹{result.putPrice}
               </p>
             </div>
             <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
               <p className="text-[11px] text-muted-foreground">Call Delta (Δ)</p>
-              <p className="text-base font-bold text-emerald-400 mt-0.5">
+              <p className="text-base font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">
                 {result.callGreeks.delta}
               </p>
             </div>
             <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
               <p className="text-[11px] text-muted-foreground">Theta Decay (θ)</p>
-              <p className="text-base font-bold text-rose-400 mt-0.5">
+              <p className="text-base font-bold text-rose-700 dark:text-rose-400 mt-0.5">
                 -₹{Math.abs(result.callGreeks.theta)}/d
               </p>
             </div>

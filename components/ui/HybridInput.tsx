@@ -302,12 +302,12 @@ export default function HybridInput({
                 setRawText(clamped.toString());
               }}
               className={clsx(
-                "text-[11px] rounded-md px-2.5 py-0.5",
+                "text-xs font-semibold rounded-md px-2.5 py-0.5",
                 "border transition-all duration-150",
-                "font-medium disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                "disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                 value === chip.value
-                  ? "border-primary bg-primary text-primary-foreground font-semibold"
-                  : "border-border text-muted-foreground hover:text-foreground hover:bg-muted"
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border text-foreground/80 hover:text-foreground hover:bg-muted"
               )}
             >
               {chip.label}

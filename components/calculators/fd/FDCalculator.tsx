@@ -121,7 +121,7 @@ export default function FDCalculator() {
                 <p className="text-xl font-bold text-success">
                   {formatINR(results.totalInterest)}
                 </p>
-                <p className="text-xs text-success/80 mt-1">
+                <p className="text-xs text-success font-medium mt-1">
                   {results.totalReturnPct.toFixed(2)}% total return
                 </p>
               </div>
@@ -130,7 +130,7 @@ export default function FDCalculator() {
                 <p className="text-xl font-bold text-primary">
                   {results.effectiveAnnualYield.toFixed(2)}%
                 </p>
-                <p className="text-xs text-primary/80 mt-1">
+                <p className="text-xs text-primary font-medium mt-1">
                   Per year after compounding
                 </p>
               </div>

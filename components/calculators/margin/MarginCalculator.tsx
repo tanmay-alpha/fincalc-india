@@ -259,7 +259,7 @@ export default function MarginCalculator() {
             </div>
             <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
               <p className="text-[11px] text-muted-foreground">Effective Leverage</p>
-              <p className="text-base font-bold text-emerald-400 mt-0.5">
+              <p className="text-base font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">
                 {result.effectiveLeverage}x
               </p>
             </div>

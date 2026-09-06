@@ -143,7 +143,7 @@ export default function WaccCalculator() {
             </div>
             <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
               <p className="text-[11px] text-muted-foreground">After-Tax Debt Cost</p>
-              <p className="text-base font-bold text-emerald-400 mt-0.5">
+              <p className="text-base font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">
                 {result.afterTaxCostOfDebt}%
               </p>
             </div>

@@ -238,7 +238,7 @@ export default function CarTcoCalculator() {
             </div>
             <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
               <p className="text-[11px] text-muted-foreground">Effective Monthly Cost</p>
-              <p className="text-base font-bold text-rose-400 mt-0.5">
+              <p className="text-base font-bold text-rose-700 dark:text-rose-400 mt-0.5">
                 {formatINR(result.effectiveMonthlyCost)}/mo
               </p>
             </div>
@@ -250,7 +250,7 @@ export default function CarTcoCalculator() {
             </div>
             <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
               <p className="text-[11px] text-muted-foreground">Resale Value</p>
-              <p className="text-base font-bold text-emerald-400 mt-0.5">
+              <p className="text-base font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">
                 {formatINR(result.estimatedResaleValue)}
               </p>
             </div>

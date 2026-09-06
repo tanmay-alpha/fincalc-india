@@ -168,7 +168,7 @@ export default function USStockTaxCalculator() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
               <p className="text-[11px] text-muted-foreground">Annualized Return</p>
-              <p className="text-base font-bold text-emerald-400 mt-0.5">
+              <p className="text-base font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">
                 {result.annualizedReturnCagr}% CAGR
               </p>
             </div>
@@ -186,7 +186,7 @@ export default function USStockTaxCalculator() {
             </div>
             <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
               <p className="text-[11px] text-muted-foreground">DTAA FTC Credit</p>
-              <p className="text-base font-bold text-emerald-400 mt-0.5">
+              <p className="text-base font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">
                 {formatINR(result.foreignTaxCreditInr)}
               </p>
             </div>

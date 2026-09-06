@@ -33,17 +33,9 @@
 
   body {
     min-height: 100%;
-    background:
-      radial-gradient(circle at top left, rgb(var(--primary) / 0.08), transparent 28rem),
-      rgb(var(--background));
+    background-color: rgb(var(--background));
     color: rgb(var(--foreground));
     @apply text-base;
-  }
-
-  .dark body {
-    background:
-      radial-gradient(circle at top left, rgb(var(--primary) / 0.10), transparent 30rem),
-      rgb(var(--background));
   }
 
   h1 {

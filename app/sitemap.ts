@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next';
-import { CALCULATOR_REGISTRY } from '@/lib/calculators';
+import { CALCULATOR_REGISTRY } from '@/lib/registry';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = 'https://fincalc-india.vercel.app';
@@ -11,6 +11,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified,
       changeFrequency: 'weekly',
       priority: 1.0,
+    },
+    {
+      url: `${base}/calculators`,
+      lastModified,
+      changeFrequency: 'weekly',
+      priority: 0.9,
     },
     {
       url: `${base}/history`,

@@ -1,9 +1,9 @@
 /**
  * FINCALC INDIA — Canonical Product Registry & Search Architecture
- * 
+ *
  * Single source of truth for all 31 Indian financial calculators,
  * categories, metadata, search aliases, icon mappings, and related graphs.
- * 
+ *
  * Strict constraint: Pure metadata and search utility only.
  * Mathematical computation remains in lib/math.ts and domain engines.
  */
@@ -22,6 +22,43 @@ export interface CategoryInfo {
   iconName: "TrendingUp" | "Building2" | "FileText" | "LineChart" | "Scale";
 }
 
+/**
+ * Lucide icon name for each calculator. These are distinct per-calculator icons
+ * (not the generic category icon) to improve visual discoverability.
+ */
+export type CalculatorIconName =
+  | "PiggyBank"
+  | "TrendingUp"
+  | "Banknote"
+  | "Landmark"
+  | "Shield"
+  | "Flame"
+  | "Briefcase"
+  | "BarChart3"
+  | "CreditCard"
+  | "ArrowLeftRight"
+  | "AlertTriangle"
+  | "Car"
+  | "RefreshCw"
+  | "Receipt"
+  | "SlidersHorizontal"
+  | "ArrowUpRight"
+  | "Home"
+  | "Store"
+  | "Building"
+  | "Globe"
+  | "DollarSign"
+  | "Wallet"
+  | "Tag"
+  | "Activity"
+  | "FlaskConical"
+  | "Target"
+  | "Gauge"
+  | "ShieldAlert"
+  | "Calculator"
+  | "Percent"
+  | "Layers";
+
 export interface CalculatorMeta {
   id: string;
   name: string;
@@ -33,6 +70,8 @@ export interface CalculatorMeta {
   isPopular?: boolean;
   searchAliases: string[];
   relatedIds: string[];
+  /** Unique Lucide icon name for this specific calculator (not the category icon). */
+  iconName: CalculatorIconName;
 }
 
 // ─── Canonical Categories ───────────────────────────────────────────────────
@@ -90,6 +129,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     isPopular: true,
     searchAliases: ["sip", "systematic investment plan", "mutual fund", "mf", "compounding", "wealth", "equity", "crorepati"],
     relatedIds: ["step-up-sip", "lumpsum", "fire", "xirr-cagr-twrr"],
+    iconName: "PiggyBank",
   },
   {
     id: "step-up-sip",
@@ -101,6 +141,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     isPopular: true,
     searchAliases: ["step-up sip", "top up sip", "incremental sip", "annual increment", "inflation", "mutual fund"],
     relatedIds: ["sip", "lumpsum", "fire", "xirr-cagr-twrr"],
+    iconName: "TrendingUp",
   },
   {
     id: "lumpsum",
@@ -111,6 +152,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     description: "Analyze compounding growth, CAGR, and wealth ratio for one-time investments.",
     searchAliases: ["lumpsum", "one time investment", "mutual fund", "cagr", "wealth ratio", "fixed investment"],
     relatedIds: ["sip", "fd", "step-up-sip", "xirr-cagr-twrr"],
+    iconName: "Banknote",
   },
   {
     id: "fd",
@@ -121,6 +163,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     description: "Compute maturity values with monthly, quarterly, and annual compounding payouts.",
     searchAliases: ["fd", "fixed deposit", "bank deposit", "term deposit", "safe return", "quarterly compounding"],
     relatedIds: ["ppf", "lumpsum", "sip", "nre-nro-fcnr"],
+    iconName: "Landmark",
   },
   {
     id: "ppf",
@@ -131,6 +174,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     description: "Model 15-year EEE compounding with statutory deposit limits and partial withdrawals.",
     searchAliases: ["ppf", "public provident fund", "80c", "tax free return", "eee", "post office", "15 year"],
     relatedIds: ["fd", "nps", "sip", "tax"],
+    iconName: "Shield",
   },
   {
     id: "fire",
@@ -142,6 +186,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     isPopular: true,
     searchAliases: ["fire", "financial independence", "retire early", "retirement", "swr", "safe withdrawal rate", "corpus"],
     relatedIds: ["sip", "nps", "step-up-sip", "lumpsum"],
+    iconName: "Flame",
   },
   {
     id: "nps",
@@ -154,6 +199,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     isPopular: true,
     searchAliases: ["nps", "national pension system", "pfrda", "80ccd", "80ccd1b", "80ccd2", "corporate nps", "tier 1", "annuity"],
     relatedIds: ["fire", "tax", "ppf", "sip"],
+    iconName: "Briefcase",
   },
   {
     id: "xirr-cagr-twrr",
@@ -165,6 +211,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     isPopular: true,
     searchAliases: ["xirr", "cagr", "twrr", "returns suite", "money weighted return", "portfolio return", "mutual fund return"],
     relatedIds: ["sip", "lumpsum", "portfolio-risk", "step-up-sip"],
+    iconName: "BarChart3",
   },
 
   // ─── 2. Loans & Refinancing (5) ───────────────────────────────────────────
@@ -178,6 +225,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     isPopular: true,
     searchAliases: ["emi", "home loan emi", "car loan", "personal loan", "loan calculator", "reducing balance", "amortization"],
     relatedIds: ["loan-prepayment", "balance-transfer", "car-loan-tco", "no-cost-emi"],
+    iconName: "CreditCard",
   },
   {
     id: "loan-prepayment",
@@ -188,6 +236,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     description: "Compare interest saved via prepayment against wealth generated through equity SIPs.",
     searchAliases: ["loan prepayment", "prepay home loan", "prepayment vs invest", "part payment", "foreclosure", "interest saved"],
     relatedIds: ["emi", "balance-transfer", "sip", "car-loan-tco"],
+    iconName: "ArrowLeftRight",
   },
   {
     id: "no-cost-emi",
@@ -198,6 +247,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     description: "Uncover hidden merchant discounts, processing fees, and 18% GST on zero-cost EMIs.",
     searchAliases: ["no cost emi", "zero cost emi", "amazon emi", "flipkart emi", "hidden interest", "processing fee", "18% gst"],
     relatedIds: ["emi", "loan-prepayment", "car-loan-tco"],
+    iconName: "AlertTriangle",
   },
   {
     id: "car-loan-tco",
@@ -208,6 +258,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     description: "Calculate true vehicle costs including depreciation, fuel inflation, insurance, and maintenance.",
     searchAliases: ["car loan", "car tco", "vehicle cost", "depreciation", "running cost", "fuel inflation", "car emi"],
     relatedIds: ["emi", "loan-prepayment", "balance-transfer"],
+    iconName: "Car",
   },
   {
     id: "balance-transfer",
@@ -218,6 +269,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     description: "Evaluate switching fees, MODT stamp duty, and breakeven timeline against net interest savings.",
     searchAliases: ["balance transfer", "refinance home loan", "switch bank", "modt", "stamp duty", "interest reduction", "processing fee"],
     relatedIds: ["emi", "loan-prepayment", "car-loan-tco"],
+    iconName: "RefreshCw",
   },
 
   // ─── 3. Taxation & Statutory Planning (9) ────────────────────────────────
@@ -232,6 +284,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     isPopular: true,
     searchAliases: ["income tax", "tax calculator", "new regime", "old regime", "budget 2026", "section 157", "rebate 12l", "slab", "salary tax"],
     relatedIds: ["marginal-relief", "capital-gains-tax", "hra-exemption", "presumptive-tax"],
+    iconName: "Receipt",
   },
   {
     id: "marginal-relief",
@@ -242,6 +295,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     description: "Calculate statutory marginal relief at ₹50L, ₹1Cr, ₹2Cr, and ₹5Cr surcharge boundaries.",
     searchAliases: ["marginal relief", "surcharge", "50 lakh", "1 crore", "high net worth", "hni tax", "section 89"],
     relatedIds: ["tax", "capital-gains-tax", "presumptive-tax"],
+    iconName: "SlidersHorizontal",
   },
   {
     id: "capital-gains-tax",
@@ -254,6 +308,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     isPopular: true,
     searchAliases: ["capital gains", "ltcg", "stcg", "12.5%", "20%", "equity shares", "mutual funds", "real estate", "grandfathering", "july 2024"],
     relatedIds: ["section-54-exemption", "tax", "us-stock-tax", "marginal-relief"],
+    iconName: "ArrowUpRight",
   },
   {
     id: "hra-exemption",
@@ -264,6 +319,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     description: "Calculate statutory 3-condition HRA tax exemption for metro and non-metro cities.",
     searchAliases: ["hra", "house rent allowance", "section 10(13a)", "metro non metro", "rent receipt", "tax exemption", "salary slip"],
     relatedIds: ["tax", "section-54-exemption", "presumptive-tax"],
+    iconName: "Home",
   },
   {
     id: "presumptive-tax",
@@ -274,6 +330,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     description: "Compute 6%/8% business profit or 50% professional profit with Section 44AB audit triggers.",
     searchAliases: ["presumptive tax", "44ad", "44ada", "freelancer tax", "consultant tax", "small business tax", "tax audit 44ab", "professional tax"],
     relatedIds: ["tax", "marginal-relief", "dupont-analysis"],
+    iconName: "Store",
   },
   {
     id: "section-54-exemption",
@@ -284,6 +341,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     description: "Plan capital gains roll-over into residential property, 54EC bonds (₹50L cap), or 54F proportionate exemption.",
     searchAliases: ["section 54", "section 54ec", "section 54f", "capital gain exemption", "property sale tax", "54ec bonds", "residential house"],
     relatedIds: ["capital-gains-tax", "tax", "marginal-relief"],
+    iconName: "Building",
   },
   {
     id: "lrs-tcs",
@@ -295,6 +353,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     badge: "FA 2026",
     searchAliases: ["lrs", "tcs", "remittance", "foreign remittance", "section 394", "liberalised remittance scheme", "tour package", "overseas education"],
     relatedIds: ["us-stock-tax", "nre-nro-fcnr", "tax"],
+    iconName: "Globe",
   },
   {
     id: "us-stock-tax",
@@ -305,6 +364,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     description: "Model Rule 115 INR conversion, 24m holding period, and Section 90 FTC on 25% US dividend withholding.",
     searchAliases: ["us stock tax", "vested", "indmoney", "dtaa", "foreign tax credit", "ftc", "rule 115", "esop", "rsu"],
     relatedIds: ["capital-gains-tax", "lrs-tcs", "nre-nro-fcnr", "tax"],
+    iconName: "DollarSign",
   },
   {
     id: "nre-nro-fcnr",
@@ -315,6 +375,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     description: "Compare tax-free NRE interest, 31.2% NRO TDS, and USD FCNR exchange rate yields.",
     searchAliases: ["nre", "nro", "fcnr", "nri deposits", "nri banking", "tds on nro", "repatriation", "tax free nre"],
     relatedIds: ["tax", "fd", "lrs-tcs", "us-stock-tax"],
+    iconName: "Wallet",
   },
 
   // ─── 4. Trading, Derivatives & Quantitative Risk (6) ─────────────
@@ -328,6 +389,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     isPopular: true,
     searchAliases: ["fno", "f&o brokerage", "futures and options", "zerodha brokerage", "groww charges", "stt", "sebi charges", "breakeven tick"],
     relatedIds: ["option-payoff", "black-scholes", "position-size", "margin-calculator"],
+    iconName: "Tag",
   },
   {
     id: "option-payoff",
@@ -338,6 +400,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     description: "Visualize multi-leg PnL curves and Greeks for Spreads, Straddles, Strangles, and Iron Condors.",
     searchAliases: ["option payoff", "strategy visualizer", "bull call spread", "iron condor", "straddle", "strangle", "pnl curve", "greeks"],
     relatedIds: ["black-scholes", "fno-brokerage", "margin-calculator", "position-size"],
+    iconName: "Activity",
   },
   {
     id: "black-scholes",
@@ -348,6 +411,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     description: "Compute theoretical European option prices with Delta, Gamma, Theta, Vega, and Rho Greeks.",
     searchAliases: ["black scholes", "option pricing", "implied volatility", "iv", "delta", "gamma", "theta", "vega", "rho", "greeks"],
     relatedIds: ["option-payoff", "fno-brokerage", "margin-calculator"],
+    iconName: "FlaskConical",
   },
   {
     id: "position-size",
@@ -358,6 +422,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     description: "Calculate optimal share quantity based on capital risk budget, stop loss distance, and R:R ratio.",
     searchAliases: ["position sizing", "risk per trade", "stop loss distance", "risk reward", "capital management", "lot size"],
     relatedIds: ["fno-brokerage", "portfolio-risk", "margin-calculator"],
+    iconName: "Target",
   },
   {
     id: "margin-calculator",
@@ -368,6 +433,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     description: "Estimate initial SPAN and exposure margin requirements across Index and Stock derivatives with illustrative assumptions.",
     searchAliases: ["margin calculator", "span margin", "exposure margin", "fno margin", "derivative margin", "hedged margin"],
     relatedIds: ["fno-brokerage", "option-payoff", "position-size"],
+    iconName: "Gauge",
   },
   {
     id: "portfolio-risk",
@@ -378,6 +444,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     description: "Compute Sharpe, Sortino (with zero-downside handling), Beta, Treynor, and Max Drawdown.",
     searchAliases: ["portfolio risk", "sharpe ratio", "sortino ratio", "beta", "treynor", "max drawdown", "volatility", "risk adjusted return"],
     relatedIds: ["xirr-cagr-twrr", "position-size", "sip"],
+    iconName: "ShieldAlert",
   },
 
   // ─── 5. Corporate Finance & Valuation (3) ─────────────────────────
@@ -390,6 +457,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     description: "Multi-stage FCFF discounting, Gordon Growth terminal value, net debt bridge, and 2D WACC matrix.",
     searchAliases: ["dcf", "discounted cash flow", "intrinsic value", "valuation", "fcff", "terminal value", "equity value", "wacc"],
     relatedIds: ["wacc", "dupont-analysis", "xirr-cagr-twrr"],
+    iconName: "Calculator",
   },
   {
     id: "wacc",
@@ -400,6 +468,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     description: "Compute Weighted Average Cost of Capital using CAPM Cost of Equity and post-tax debt shields.",
     searchAliases: ["wacc", "cost of capital", "capm", "cost of equity", "post tax debt", "beta", "hurdle rate"],
     relatedIds: ["dcf-valuation", "dupont-analysis", "portfolio-risk"],
+    iconName: "Percent",
   },
   {
     id: "dupont-analysis",
@@ -410,6 +479,7 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
     description: "Decompose ROE into Tax Burden, Interest Burden, Operating Margin, Asset Turnover, and Leverage.",
     searchAliases: ["dupont", "roe decomposition", "5 step dupont", "operating margin", "asset turnover", "financial leverage", "tax burden"],
     relatedIds: ["dcf-valuation", "wacc", "presumptive-tax"],
+    iconName: "Layers",
   },
 ];
 
@@ -489,7 +559,7 @@ export function searchCalculators(
   categoryFilter: CalculatorCategory | "all" = "all"
 ): CalculatorMeta[] {
   const trimmed = query.trim().toLowerCase();
-  
+
   let candidates = CALCULATOR_REGISTRY;
   if (categoryFilter !== "all") {
     candidates = candidates.filter((c) => c.category === categoryFilter);
