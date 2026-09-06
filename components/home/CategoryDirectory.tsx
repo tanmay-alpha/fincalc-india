@@ -39,7 +39,7 @@ function CalculatorCard({ calc }: { calc: CalculatorMeta }) {
             </span>
           )}
         </div>
-        <p className="mt-2 text-[13px] text-muted-foreground truncate leading-relaxed">
+        <p className="mt-2 text-[13px] text-muted-foreground line-clamp-2 leading-relaxed">
           {calc.description}
         </p>
       </div>
@@ -171,7 +171,7 @@ export default function CategoryDirectory() {
       <div
         role="tablist"
         aria-label="Filter by category"
-        className="flex flex-wrap gap-2"
+        className="flex items-center gap-1.5 overflow-x-auto pb-1.5 pt-0.5 scrollbar-none sm:flex-wrap"
       >
         <TabButton
           id={ALL_TAB}

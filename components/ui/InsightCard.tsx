@@ -7,16 +7,16 @@ export interface InsightCardProps {
   type: "info" | "good" | "warning";
 }
 
-const styles = {
-  info: "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-100",
-  good: "border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100",
-  warning: "border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-100",
+const indicatorStyles = {
+  info: "bg-primary/10 text-primary border-primary/20",
+  good: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25",
+  warning: "bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/25",
 };
 
-const subtitleStyles = {
-  info: "text-blue-700 dark:text-blue-300",
-  good: "text-emerald-800 dark:text-emerald-300",
-  warning: "text-amber-800 dark:text-amber-300",
+const borderAccentStyles = {
+  info: "border-l-primary/60",
+  good: "border-l-emerald-500/70",
+  warning: "border-l-amber-500/70",
 };
 
 export default function InsightCard({
@@ -28,21 +28,27 @@ export default function InsightCard({
   return (
     <div
       className={clsx(
-        "rounded-xl border p-4",
-        "transition-all duration-200",
-        styles[type]
+        "rounded-xl border border-border/70 bg-card p-3.5 sm:p-4 text-foreground shadow-2xs",
+        "border-l-[3px] transition-all duration-150 hover:border-border-strong hover:bg-muted/20",
+        borderAccentStyles[type]
       )}
     >
       <div className="flex gap-3 items-start">
-        <span className="text-lg leading-none mt-0.5">
+        <div
+          className={clsx(
+            "w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 text-sm font-medium",
+            indicatorStyles[type]
+          )}
+          aria-hidden="true"
+        >
           {icon}
-        </span>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold leading-snug">
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs sm:text-sm font-semibold text-foreground leading-snug tracking-tight">
             {title}
           </p>
           {subtitle && (
-            <p className={clsx("mt-0.5 text-xs font-medium", subtitleStyles[type])}>
+            <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
               {subtitle}
             </p>
           )}
