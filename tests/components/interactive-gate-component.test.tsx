@@ -16,8 +16,11 @@ vi.mock("next-auth/react", () => ({
   signIn: (...args: unknown[]) => mockSignIn(...args),
 }));
 
+let mockSearchParams: URLSearchParams | null = null;
+
 vi.mock("next/navigation", () => ({
   usePathname: () => "/sip",
+  useSearchParams: () => mockSearchParams,
 }));
 
 describe("InteractiveCalculatorGate Component", () => {
@@ -47,6 +50,7 @@ describe("InteractiveCalculatorGate Component", () => {
 
   it("triggers signIn with safe callback URL on button click", () => {
     mockStatus = "unauthenticated";
+    mockSearchParams = null;
 
     render(
       <InteractiveCalculatorGate calcName="SIP Calculator">
@@ -58,6 +62,22 @@ describe("InteractiveCalculatorGate Component", () => {
     fireEvent.click(button);
 
     expect(mockSignIn).toHaveBeenCalledWith("google", { callbackUrl: "/sip" });
+  });
+
+  it("preserves safe query params in callback URL during signIn", () => {
+    mockStatus = "unauthenticated";
+    mockSearchParams = new URLSearchParams({ regime: "new", year: "2026" });
+
+    render(
+      <InteractiveCalculatorGate calcName="Income Tax Calculator">
+        <div>Active Calculator Content</div>
+      </InteractiveCalculatorGate>
+    );
+
+    const button = screen.getByTestId("gate-signin-btn");
+    fireEvent.click(button);
+
+    expect(mockSignIn).toHaveBeenCalledWith("google", { callbackUrl: "/sip?regime=new&year=2026" });
   });
 
   it("renders interactive children when user is authenticated", () => {

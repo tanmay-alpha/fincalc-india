@@ -16,40 +16,32 @@ import CalculatorIcon from "@/components/ui/CalculatorIcon";
 const ALL_TAB = "all" as const;
 type TabId = CalculatorCategory | typeof ALL_TAB;
 
-// ─── Calculator Card ─────────────────────────────────────────────────────────
+// ─── Restrained Low-Border Tool Index Item ────────────────────────────────────
 function CalculatorCard({ calc }: { calc: CalculatorMeta }) {
   return (
     <Link
       href={calc.route}
-      className="group p-4 rounded-xl border border-border/70 bg-card hover:border-primary/40 hover:shadow-xs transition-all flex flex-col justify-between gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="group p-3.5 rounded-lg border border-border/70 bg-card hover:border-border-strong hover:bg-muted/30 transition-colors flex flex-col justify-between gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
-      <div className="space-y-2.5">
-        <div className="flex items-start justify-between gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
-            <CalculatorIcon id={calc.id} className="w-4 h-4" aria-hidden="true" />
+      <div>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center text-foreground shrink-0 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+              <CalculatorIcon id={calc.id} className="w-3.5 h-3.5" aria-hidden="true" />
+            </div>
+            <h3 className="text-[14px] font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+              {calc.shortName || calc.name}
+            </h3>
           </div>
           {calc.badge && (
-            <span className="text-[10px] font-medium tracking-wide px-2 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">
+            <span className="text-xs text-muted-foreground shrink-0">
               {calc.badge}
             </span>
           )}
         </div>
-
-        <div>
-          <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors leading-snug">
-            {calc.name}
-          </h3>
-          <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
-            {calc.description}
-          </p>
-        </div>
-      </div>
-
-      <div className="pt-2 border-t border-border/30 flex items-center justify-between text-[11px] text-muted-foreground">
-        <span className="capitalize">{calc.category}</span>
-        <span className="group-hover:text-primary group-hover:translate-x-0.5 transition-all">
-          Launch →
-        </span>
+        <p className="mt-2 text-[13px] text-muted-foreground truncate leading-relaxed">
+          {calc.description}
+        </p>
       </div>
     </Link>
   );
@@ -86,8 +78,8 @@ function TabButton({
     >
       {label}
       <span
-        className={`tabular-nums text-[10px] ${
-          active ? "text-primary-foreground/80" : "text-muted-foreground"
+        className={`tabular-nums text-xs ${
+          active ? "text-primary-foreground/85" : "text-muted-foreground"
         }`}
       >
         {count}
@@ -139,14 +131,11 @@ export default function CategoryDirectory() {
       {/* Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/60">
         <div>
-          <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-            Calculators
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground mt-0.5">
-            Directory & Search
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            All calculators
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            Browse all 31 mathematical models across investments, taxation, loans, trading, and valuation.
+            31 tools · statutory logic current for FY 2026–27
           </p>
         </div>
 
@@ -203,7 +192,7 @@ export default function CategoryDirectory() {
         ))}
       </div>
 
-      {/* Results Grid */}
+      {/* Results Grid - Low-border 3-column tool index */}
       {displayedCalcs.length === 0 ? (
         <div className="text-center py-12 border border-dashed border-border rounded-xl">
           <p className="text-sm text-muted-foreground">
@@ -224,7 +213,7 @@ export default function CategoryDirectory() {
         <div
           role="tabpanel"
           aria-label={`${activeTab === "all" ? "All" : CATEGORIES.find((c) => c.id === activeTab)?.label} calculators`}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5"
         >
           {displayedCalcs.map((calc) => (
             <CalculatorCard key={calc.id} calc={calc} />
