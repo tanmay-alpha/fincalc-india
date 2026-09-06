@@ -88,7 +88,7 @@ export default function CalculatorPageShell({
 
         {/* Interactive Calculator Workspace with Login Gate */}
         <div className="calculator-workspace">
-          <InteractiveCalculatorGate calcName={displayTitle} category={displayCategory}>
+          <InteractiveCalculatorGate calcName={displayTitle}>
             {children}
           </InteractiveCalculatorGate>
         </div>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { useTheme } from "next-themes";
-import { useSession, signIn, signOut } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import {
   History,
   LogOut,
@@ -20,7 +20,7 @@ import {
 import CommandSearch from "@/components/ui/CommandSearch";
 import { cn } from "@/lib/utils";
 import DialogPrimitive from "@/components/ui/DialogPrimitive";
-import GoogleIcon from "@/components/ui/GoogleIcon";
+import GoogleSignInButton from "@/components/ui/GoogleSignInButton";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -235,14 +235,11 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={() => signIn("google", { callbackUrl: "/calculators" })}
-                className="inline-flex items-center justify-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <GoogleIcon className="w-3.5 h-3.5" />
-                <span>Sign in</span>
-              </button>
+              <GoogleSignInButton
+                text="Sign in with Google"
+                callbackUrl="/calculators"
+                size="sm"
+              />
             )}
 
             {/* Mobile Hamburger Toggle Button */}
@@ -398,14 +395,12 @@ export default function Navbar() {
               </button>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => signIn("google", { callbackUrl: "/calculators" })}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-xs hover:bg-primary/90 transition shadow-xs"
-            >
-              <GoogleIcon className="w-4 h-4" />
-              <span>Sign in with Google</span>
-            </button>
+            <GoogleSignInButton
+              text="Sign in with Google"
+              callbackUrl="/calculators"
+              size="md"
+              className="w-full"
+            />
           )}
         </div>
       </DialogPrimitive>

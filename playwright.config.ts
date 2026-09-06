@@ -32,6 +32,7 @@ export default defineConfig({
     timeout: 120 * 1000,
     env: {
       PORT,
+      ENABLE_TEST_AUTH: "true",
       NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || "ci-testing-secret-at-least-32-characters-long",
       NEXTAUTH_URL: process.env.NEXTAUTH_URL || BASE_URL,
       DATABASE_URL: process.env.DATABASE_URL || "postgresql://postgres:postgrespassword@localhost:5432/fincalc_test",
