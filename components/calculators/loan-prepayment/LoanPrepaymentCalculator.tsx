@@ -305,9 +305,20 @@ export default function LoanPrepaymentCalculator() {
           <ResultHero
             label="Total Interest Saved"
             value={result.interestSaved}
+            breakdownMode="metrics"
             breakdown={[
-              { label: "Original Total Interest", value: result.originalTotalInterest, color: "blue" },
-              { label: "New Total Interest", value: result.newTotalInterest, color: "green" },
+              {
+                label: "Original Total Interest",
+                value: result.originalTotalInterest,
+                color: "blue",
+                formattedValue: formatINR(result.originalTotalInterest),
+              },
+              {
+                label: "New Total Interest",
+                value: result.newTotalInterest,
+                color: "green",
+                formattedValue: formatINR(result.newTotalInterest),
+              },
             ]}
           />
 

@@ -139,6 +139,12 @@ export default function HybridInput({
   const displayError = error ?? localError ?? undefined;
   const effectiveAriaLabel = ariaLabel || label || (suffix ? `Value in ${suffix.trim()}` : "Numeric value");
 
+  const liveParsed = parseInput(rawText);
+  const liveFormatted =
+    !Number.isNaN(liveParsed) && Number.isFinite(liveParsed)
+      ? formatDisplayValue(liveParsed, prefix)
+      : rawText;
+
   return (
     <div className="space-y-2">
       {/* Label and Formatted Output Header */}
@@ -158,7 +164,7 @@ export default function HybridInput({
             aria-live="polite"
           >
             {prefix}
-            {isFocused ? rawText : formatDisplayValue(value, prefix)}
+            {isFocused ? liveFormatted : formatDisplayValue(value, prefix)}
             {suffix}
           </span>
         </div>
@@ -166,7 +172,7 @@ export default function HybridInput({
 
       {/* Interactive Range Slider (if not disabled via hideSlider) */}
       {!hideSlider && (
-        <div className="relative h-5 flex items-center">
+        <div className="relative h-7 flex items-center py-1">
           <input
             id={sliderId}
             type="range"
@@ -302,7 +308,7 @@ export default function HybridInput({
                 setRawText(clamped.toString());
               }}
               className={clsx(
-                "text-xs font-semibold rounded-md px-2.5 py-0.5",
+                "text-xs font-semibold rounded-md px-2.5 py-1 min-h-[28px] inline-flex items-center",
                 "border transition-all duration-150",
                 "disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                 value === chip.value

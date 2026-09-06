@@ -157,6 +157,14 @@
     background: rgb(var(--input) / 0.55);
   }
 
+  input[type="range"]:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 3px rgb(var(--card)), 0 0 0 6px rgb(var(--primary));
+  }
+
+  input[type="range"]:focus-visible::-moz-range-thumb {
+    box-shadow: 0 0 0 3px rgb(var(--card)), 0 0 0 6px rgb(var(--primary));
+  }
+
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button {
     -webkit-appearance: none;
@@ -172,14 +180,39 @@
   outline: none !important;
 }
 
+.recharts-default-tooltip {
+  background-color: rgb(15 23 42 / 0.96) !important;
+  border: 1px solid rgb(51 65 85) !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.3) !important;
+  padding: 8px 12px !important;
+}
+
+.recharts-tooltip-item {
+  color: #f8fafc !important;
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+}
+
+.recharts-tooltip-label {
+  color: #94a3b8 !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  margin-bottom: 4px !important;
+}
+
 :root {
-  background-color: #ffffff;
-  color: #0f172a;
+  background-color: rgb(var(--background));
+  color: rgb(var(--foreground));
 }
 
 .dark {
-  background-color: #020617;
-  color: #f1f5f9;
+  background-color: rgb(var(--background));
+  color: rgb(var(--foreground));
 }
 
 html, body {

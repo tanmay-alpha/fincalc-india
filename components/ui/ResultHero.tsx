@@ -31,7 +31,10 @@ export interface ResultHeroProps {
 const COLOR_MAP: Record<string, string> = {
   blue: "bg-blue-600 dark:bg-blue-500",
   green: "bg-emerald-600 dark:bg-emerald-500",
+  emerald: "bg-emerald-600 dark:bg-emerald-500",
+  teal: "bg-teal-600 dark:bg-teal-500",
   red: "bg-rose-600 dark:bg-rose-500",
+  rose: "bg-rose-600 dark:bg-rose-500",
   purple: "bg-purple-600 dark:bg-purple-500",
   amber: "bg-amber-600 dark:bg-amber-500",
 };
@@ -139,7 +142,13 @@ export default function ResultHero({
       {secondaryMetrics && secondaryMetrics.length > 0 && (
         <div className="mt-4 pt-4 border-t border-border/60 grid grid-cols-2 sm:grid-cols-3 gap-3">
           {secondaryMetrics.map((metric, idx) => (
-            <div key={idx} className="min-w-0">
+            <div
+              key={idx}
+              className={cn(
+                "min-w-0",
+                secondaryMetrics.length === 3 && idx === 2 && "col-span-2 sm:col-span-1"
+              )}
+            >
               <span className="block text-[11px] text-muted-foreground font-medium truncate">
                 {metric.label}
               </span>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Share2 } from "lucide-react";
+import { Share2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { getCalculatorContract, isShareSupportedContract } from "@/lib/calculator-contracts";
@@ -60,15 +60,21 @@ export default function ShareButton({ shareId, className, calcType }: ShareButto
     <button
       onClick={handleShare}
       disabled={!shareId || sharing}
+      title={shareId ? "Share public link to this calculation" : "Save this calculation to generate a share link"}
+      aria-label={shareId ? "Share calculation" : "Save calculation to share"}
       className={cn(
         "flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-xl border transition-all duration-200",
         shareId
-          ? "border-border bg-card text-card-foreground hover:border-primary/35 hover:bg-primary/10 hover:text-primary"
-          : "cursor-not-allowed border-border/60 text-muted-foreground/50",
+          ? "border-border bg-card text-card-foreground hover:border-primary/35 hover:bg-primary/10 hover:text-primary cursor-pointer"
+          : "cursor-not-allowed border-border/60 text-muted-foreground/50 bg-muted/20",
         className
       )}
     >
-      <Share2 size={15} />
+      {sharing ? (
+        <Loader2 size={15} className="animate-spin text-primary" />
+      ) : (
+        <Share2 size={15} />
+      )}
       {sharing ? "Sharing…" : "Share"}
     </button>
   );
