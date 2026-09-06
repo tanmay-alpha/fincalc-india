@@ -309,11 +309,11 @@ export default function SIPScenarioMilestones({
 
             {/* Scenario B (Adjustable) */}
             <div className="p-4 rounded-xl border border-primary/30 bg-primary/5 space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-primary">
                   Scenario B (Alternative)
                 </span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <span className="text-xs font-semibold text-primary tabular-nums">
                     {scenarioDelta.corpusDelta >= 0 ? "+" : ""}{formatINR(scenarioDelta.corpusDelta)}
                   </span>

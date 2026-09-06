@@ -66,6 +66,47 @@ const nextConfig = {
     ];
   },
 
+  // ─── Redirects ───────────────────────────────────────────
+  async redirects() {
+    return [
+      {
+        source: "/income-tax",
+        destination: "/tax",
+        permanent: true,
+      },
+      {
+        source: "/sip-calculator",
+        destination: "/sip",
+        permanent: true,
+      },
+      {
+        source: "/emi-calculator",
+        destination: "/emi",
+        permanent: true,
+      },
+      {
+        source: "/nps-calculator",
+        destination: "/nps",
+        permanent: true,
+      },
+      {
+        source: "/ppf-calculator",
+        destination: "/ppf",
+        permanent: true,
+      },
+      {
+        source: "/fixed-deposit",
+        destination: "/fd",
+        permanent: true,
+      },
+      {
+        source: "/lrs",
+        destination: "/lrs-tcs",
+        permanent: true,
+      },
+    ];
+  },
+
   // ─── Build hygiene ──────────────────────────────────────
   // Fail the build on lint or type errors instead of shipping a broken bundle.
   eslint: { ignoreDuringBuilds: false },
