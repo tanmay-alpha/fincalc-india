@@ -39,21 +39,21 @@ export default function Section54Info() {
             <tbody className="divide-y divide-border/60 text-foreground">
               <tr>
                 <td className="py-2.5 pr-3 font-medium">Residential House Property</td>
-                <td className="py-2.5 px-3 text-emerald-600 dark:text-emerald-400 font-bold">Eligible (House → House)</td>
-                <td className="py-2.5 px-3 text-emerald-600 dark:text-emerald-400 font-bold">Eligible (Max ₹50L Bonds)</td>
+                <td className="py-2.5 px-3 text-emerald-700 dark:text-emerald-400 font-bold">Eligible (House → House)</td>
+                <td className="py-2.5 px-3 text-emerald-700 dark:text-emerald-400 font-bold">Eligible (Max ₹50L Bonds)</td>
                 <td className="py-2.5 pl-3 text-destructive font-semibold">Ineligible (Excludes residential house)</td>
               </tr>
               <tr>
                 <td className="py-2.5 pr-3 font-medium">Commercial Property / Land / Plot</td>
                 <td className="py-2.5 px-3 text-destructive font-semibold">Ineligible (House transfer only)</td>
-                <td className="py-2.5 px-3 text-emerald-600 dark:text-emerald-400 font-bold">Eligible (Land/Building → Bonds)</td>
-                <td className="py-2.5 pl-3 text-emerald-600 dark:text-emerald-400 font-bold">Eligible (Plot/Office → House)</td>
+                <td className="py-2.5 px-3 text-emerald-700 dark:text-emerald-400 font-bold">Eligible (Land/Building → Bonds)</td>
+                <td className="py-2.5 pl-3 text-emerald-700 dark:text-emerald-400 font-bold">Eligible (Plot/Office → House)</td>
               </tr>
               <tr>
                 <td className="py-2.5 pr-3 font-medium">Other LTCG Assets (Shares, Gold, Mutual Funds)</td>
                 <td className="py-2.5 px-3 text-destructive font-semibold">Ineligible</td>
                 <td className="py-2.5 px-3 text-destructive font-semibold">Ineligible (Land/Building only)</td>
-                <td className="py-2.5 pl-3 text-emerald-600 dark:text-emerald-400 font-bold">Eligible (Non-house asset → House)</td>
+                <td className="py-2.5 pl-3 text-emerald-700 dark:text-emerald-400 font-bold">Eligible (Non-house asset → House)</td>
               </tr>
             </tbody>
           </table>
@@ -122,7 +122,7 @@ export default function Section54Info() {
       {/* Scope & Post-Reinvestment Compliance Disclosure */}
       <section className="bg-card rounded-xl p-5 border border-amber-500/30 text-xs space-y-2 text-muted-foreground shadow-2xs border-l-[3px] border-l-amber-500">
         <h3 className="font-bold text-foreground text-sm flex items-center gap-1.5">
-          <span className="text-amber-600 dark:text-amber-400 font-bold">Important:</span>
+          <span className="text-amber-800 dark:text-amber-300 font-bold">Important:</span>
           <span>Statutory Scope & Post-Reinvestment Future Compliance Disclosure</span>
         </h3>
         <p className="leading-relaxed">
