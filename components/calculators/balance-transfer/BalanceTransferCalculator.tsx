@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import ShareButton from "@/components/ui/ShareButton";
@@ -14,7 +13,6 @@ import { calcBalanceTransfer } from "@/lib/math";
 import type { BalanceTransferInput } from "@/lib/math";
 import { getBalanceTransferInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
-import { useDebounce } from "@/hooks/useDebounce";
 import { ArrowRightLeft, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -24,7 +22,6 @@ const BalanceTransferChart = dynamic(
 );
 
 export default function BalanceTransferCalculator() {
-  const [mounted, setMounted] = useState(false);
   const [currentOutstandingPrincipal, setCurrentOutstandingPrincipal] = useState(5000000); // 50L
   const [currentInterestRate, setCurrentInterestRate] = useState(9.5);
   const [currentRemainingTenureMonths, setCurrentRemainingTenureMonths] = useState(180); // 15 years
@@ -34,10 +31,6 @@ export default function BalanceTransferCalculator() {
   const [processingFeeValue, setProcessingFeeValue] = useState(0.5); // 0.5%
   const [otherSwitchingCharges, setOtherSwitchingCharges] = useState(15000);
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const inputs: BalanceTransferInput = useMemo(
     () => ({
@@ -62,13 +55,8 @@ export default function BalanceTransferCalculator() {
     ]
   );
 
-  const debouncedInputs = useDebounce(inputs, 150);
-  const result = useMemo(() => calcBalanceTransfer(debouncedInputs), [debouncedInputs]);
+  const result = useMemo(() => calcBalanceTransfer(inputs), [inputs]);
   const insights = useMemo(() => getBalanceTransferInsights(result), [result]);
-
-  if (!mounted) {
-    return <CalcPageSkeleton />;
-  }
 
   const isProfitable = result.netBenefit > 0;
 

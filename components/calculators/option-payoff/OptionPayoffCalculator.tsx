@@ -1,17 +1,15 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import StickyResultBar from "@/components/ui/StickyResultBar";
 import InsightCard from "@/components/ui/InsightCard";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcOptionPayoff, getOptionPresetLegs } from "@/lib/math";
 import type { OptionLeg, OptionStrategyPreset } from "@/lib/math";
 import { formatINR } from "@/lib/format";
-import { useDebounce } from "@/hooks/useDebounce";
 import { clsx } from "clsx";
 import { Plus, Trash2 } from "lucide-react";
 
@@ -30,17 +28,12 @@ const PRESETS: Array<{ id: OptionStrategyPreset; label: string; desc: string }> 
 ];
 
 export default function OptionPayoffCalculator() {
-  const [mounted, setMounted] = useState(false);
   const [underlyingPrice, setUnderlyingPrice] = useState(24000);
   const [lotSize, setLotSize] = useState(50); // Nifty lot size
   const [selectedPreset, setSelectedPreset] = useState<OptionStrategyPreset>("bull_call_spread");
   const [legs, setLegs] = useState<OptionLeg[]>(() =>
     getOptionPresetLegs("bull_call_spread", 24000)
   );
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handleSelectPreset = (preset: OptionStrategyPreset) => {
     setSelectedPreset(preset);
@@ -75,18 +68,13 @@ export default function OptionPayoffCalculator() {
     );
   };
 
-  const debouncedUnderlying = useDebounce(underlyingPrice, 150);
-  const debouncedLegs = useDebounce(legs, 150);
-
   const result = useMemo(() => {
     return calcOptionPayoff({
-      legs: debouncedLegs,
+      legs,
       lotSize,
-      underlyingPrice: debouncedUnderlying,
+      underlyingPrice,
     });
-  }, [debouncedLegs, lotSize, debouncedUnderlying]);
-
-  if (!mounted) return <CalcPageSkeleton />;
+  }, [legs, lotSize, underlyingPrice]);
 
   const displayMaxProfit =
     result.maxProfit === "Unlimited"
@@ -128,11 +116,20 @@ export default function OptionPayoffCalculator() {
                     "p-2.5 rounded-xl border text-left text-xs transition-all",
                     selectedPreset === p.id
                       ? "border-primary bg-primary/10 text-primary font-semibold shadow-sm"
-                      : "border-border text-muted-foreground hover:border-primary/40 hover:bg-accent/40"
+                      : "border-border text-foreground hover:border-primary/40 hover:bg-accent/40"
                   )}
                 >
                   <p className="font-semibold truncate">{p.label}</p>
-                  <p className="text-[10px] opacity-75 truncate">{p.desc}</p>
+                  <p
+                    className={clsx(
+                      "text-[10px] truncate",
+                      selectedPreset === p.id
+                        ? "text-foreground font-medium"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    {p.desc}
+                  </p>
                 </button>
               ))}
             </div>
@@ -218,8 +215,8 @@ export default function OptionPayoffCalculator() {
                           className={clsx(
                             "px-2 py-0.5 rounded text-[11px] font-bold transition-all",
                             leg.position === "long"
-                              ? "bg-green-600 text-white"
-                              : "bg-red-600 text-white"
+                              ? "bg-emerald-700 text-white"
+                              : "bg-rose-700 text-white"
                           )}
                         >
                           {leg.position === "long" ? "BUY (Long)" : "SELL (Short)"}
@@ -253,10 +250,15 @@ export default function OptionPayoffCalculator() {
 
                     <div className="grid grid-cols-3 gap-2">
                       <div>
-                        <label className="text-[10px] text-muted-foreground uppercase font-semibold">
+                        <label
+                          htmlFor={`leg-strike-${leg.id}`}
+                          className="text-[10px] text-muted-foreground uppercase font-semibold"
+                        >
                           Strike Price
                         </label>
                         <input
+                          id={`leg-strike-${leg.id}`}
+                          aria-label={`Leg ${index + 1} Strike Price`}
                           type="number"
                           step={50}
                           value={leg.strike}
@@ -268,10 +270,15 @@ export default function OptionPayoffCalculator() {
                       </div>
 
                       <div>
-                        <label className="text-[10px] text-muted-foreground uppercase font-semibold">
+                        <label
+                          htmlFor={`leg-premium-${leg.id}`}
+                          className="text-[10px] text-muted-foreground uppercase font-semibold"
+                        >
                           Premium (₹)
                         </label>
                         <input
+                          id={`leg-premium-${leg.id}`}
+                          aria-label={`Leg ${index + 1} Premium`}
                           type="number"
                           step={0.5}
                           value={leg.premium}
@@ -283,10 +290,15 @@ export default function OptionPayoffCalculator() {
                       </div>
 
                       <div>
-                        <label className="text-[10px] text-muted-foreground uppercase font-semibold">
+                        <label
+                          htmlFor={`leg-lots-${leg.id}`}
+                          className="text-[10px] text-muted-foreground uppercase font-semibold"
+                        >
                           Lots
                         </label>
                         <input
+                          id={`leg-lots-${leg.id}`}
+                          aria-label={`Leg ${index + 1} Lots`}
                           type="number"
                           min={1}
                           max={50}

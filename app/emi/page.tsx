@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import EMICalculator from "@/components/calculators/emi/EMICalculatorIsland";
+import EMICalculator from "@/components/calculators/emi/EMICalculator";
 import EMIInfo from "@/components/seo/EMIInfo";
 import CalculatorPageShell from "@/components/layout/CalculatorPageShell";
 

@@ -1,15 +1,13 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcFnOBreakeven } from "@/lib/math";
 import type { FnOInstrument, FnOTaxYear } from "@/lib/math";
-import { useDebounce } from "@/hooks/useDebounce";
 import { Target, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,20 +35,11 @@ const DEFAULT_INPUTS: FnOInputsState = {
 };
 
 export default function FnOBrokerageCalculator() {
-  const [mounted, setMounted] = useState(false);
   const [inputs, setInputs] = useState<FnOInputsState>(DEFAULT_INPUTS);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const debouncedInputs = useDebounce(inputs, 150);
-
   const result = useMemo(() => {
-    return calcFnOBreakeven(debouncedInputs);
-  }, [debouncedInputs]);
-
-  if (!mounted) return <CalcPageSkeleton />;
+    return calcFnOBreakeven(inputs);
+  }, [inputs]);
 
   const isProfitable = result.netPnl >= 0;
 
@@ -404,7 +393,7 @@ export default function FnOBrokerageCalculator() {
                     <td className="px-4 py-3" colSpan={2}>
                       Total Statutory Taxes & Brokerage
                     </td>
-                    <td className="px-4 py-3 text-right text-rose-600 dark:text-rose-400 font-extrabold tabular-nums">
+                    <td className="px-4 py-3 text-right text-rose-700 dark:text-rose-400 font-extrabold tabular-nums">
                       ₹{result.totalCharges.toFixed(2)}
                     </td>
                   </tr>

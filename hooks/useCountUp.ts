@@ -15,7 +15,7 @@ import { useEffect, useRef, useState } from "react";
  *     re-anchor `startValRef` to the current (mid-animation) value, so the
  *     motion is continuous rather than snapping back to the previous value.
  */
-export function useCountUp(target: number, duration: number = 600): number {
+export function useCountUp(target: number, duration: number = 150): number {
   const [current, setCurrent] = useState<number>(() =>
     Number.isFinite(target) ? target : 0
   );
@@ -26,10 +26,20 @@ export function useCountUp(target: number, duration: number = 600): number {
 
   useEffect(() => {
     if (!Number.isFinite(target)) return;
+
+    // Check if user prefers reduced motion — skip animation for instant update
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+
+    if (prefersReducedMotion || duration <= 0) {
+      setCurrent(target);
+      return;
+    }
+
     targetRef.current = target;
 
-    // Re-anchor: if an animation is already running, start from the current
-    // displayed value (not the previous target) so the motion is smooth.
+    // Re-anchor: start from current value for seamless continuous updates
     startRef.current =
       typeof performance !== "undefined" ? performance.now() : Date.now();
     startValRef.current = current;
@@ -37,7 +47,7 @@ export function useCountUp(target: number, duration: number = 600): number {
     const animate = (now: number) => {
       const elapsed = now - startRef.current;
       const progress = Math.min(elapsed / duration, 1);
-      // Cubic ease-out
+      // Fast cubic ease-out
       const eased = 1 - Math.pow(1 - progress, 3);
       const next =
         startValRef.current + (targetRef.current - startValRef.current) * eased;
@@ -52,7 +62,6 @@ export function useCountUp(target: number, duration: number = 600): number {
     cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(rafRef.current);
-    // We intentionally exclude `current` from deps to avoid restart loops.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [target, duration]);
 

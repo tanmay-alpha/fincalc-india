@@ -1,17 +1,15 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import InsightCard from "@/components/ui/InsightCard";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcStepUpSIP, calcGoalSIP } from "@/lib/math";
 import type { StepUpType } from "@/lib/math";
 import { formatINR, formatCompact } from "@/lib/format";
-import { useDebounce } from "@/hooks/useDebounce";
 import { clsx } from "clsx";
 import { Target, TrendingUp, Sparkles } from "lucide-react";
 
@@ -21,9 +19,6 @@ const StepUpSIPChart = dynamic(
 );
 
 export default function StepUpSIPCalculator() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
   const [isGoalMode, setIsGoalMode] = useState(false);
   const [stepUpType, setStepUpType] = useState<StepUpType>("percentage");
 
@@ -35,32 +30,30 @@ export default function StepUpSIPCalculator() {
     stepUpValue: 10, // 10% or ₹1,000
   });
 
-  const debouncedInputs = useDebounce(inputs, 250);
-
   const goalResult = useMemo(() => {
     if (!isGoalMode) return null;
     return calcGoalSIP({
-      targetCorpus: debouncedInputs.targetCorpus,
-      annualRate: debouncedInputs.annualRate,
-      years: debouncedInputs.years,
+      targetCorpus: inputs.targetCorpus,
+      annualRate: inputs.annualRate,
+      years: inputs.years,
       stepUpType,
-      stepUpValue: debouncedInputs.stepUpValue,
+      stepUpValue: inputs.stepUpValue,
     });
-  }, [isGoalMode, debouncedInputs, stepUpType]);
+  }, [isGoalMode, inputs, stepUpType]);
 
   const stepUpResult = useMemo(() => {
     const monthlyAmt = isGoalMode && goalResult
       ? goalResult.requiredStartingSip
-      : debouncedInputs.monthlyAmount;
+      : inputs.monthlyAmount;
 
     return calcStepUpSIP({
       monthlyAmount: monthlyAmt,
-      annualRate: debouncedInputs.annualRate,
-      years: debouncedInputs.years,
+      annualRate: inputs.annualRate,
+      years: inputs.years,
       stepUpType,
-      stepUpValue: debouncedInputs.stepUpValue,
+      stepUpValue: inputs.stepUpValue,
     });
-  }, [isGoalMode, goalResult, debouncedInputs, stepUpType]);
+  }, [isGoalMode, goalResult, inputs, stepUpType]);
 
   const setMonthly = useCallback(
     (v: number) => setInputs((p) => ({ ...p, monthlyAmount: v })),
@@ -82,8 +75,6 @@ export default function StepUpSIPCalculator() {
     (v: number) => setInputs((p) => ({ ...p, stepUpValue: v })),
     []
   );
-
-  if (!mounted) return <CalcPageSkeleton />;
 
   return (
     <>

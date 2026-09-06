@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import ShareButton from "@/components/ui/ShareButton";
@@ -14,7 +13,6 @@ import { calcDCF } from "@/lib/math";
 import type { DcfInput } from "@/lib/math";
 import { getDCFInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
-import { useDebounce } from "@/hooks/useDebounce";
 import { SlidersHorizontal, ShieldAlert, BarChart2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,7 +22,6 @@ const DcfChart = dynamic(
 );
 
 export default function DcfCalculator() {
-  const [mounted, setMounted] = useState(false);
   const [cashFlowYear1, setCashFlowYear1] = useState(50000000); // 5 Cr
   const [forecastYears, setForecastYears] = useState(5);
   const [growthRateYears1to5, setGrowthRateYears1to5] = useState(15);
@@ -34,10 +31,6 @@ export default function DcfCalculator() {
   const [cashAndEquivalents, setCashAndEquivalents] = useState(10000000); // 1 Cr
   const [sharesOutstanding, setSharesOutstanding] = useState(1000000); // 10 Lakh shares
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const fcfProjections = useMemo(() => {
     const list: number[] = [];
@@ -71,8 +64,7 @@ export default function DcfCalculator() {
     ]
   );
 
-  const debouncedInputs = useDebounce(inputs, 150);
-  const result = useMemo(() => calcDCF(debouncedInputs), [debouncedInputs]);
+  const result = useMemo(() => calcDCF(inputs), [inputs]);
   const insights = useMemo(() => getDCFInsights(result), [result]);
 
   // Sensitivity Matrix Calculations (Discount Rate vs Terminal Growth)
@@ -84,9 +76,9 @@ export default function DcfCalculator() {
       discountRate + 1.5,
     ];
     const terminalRates = [
-      Math.max(1, terminalGrowthRate - 0.5),
+      Math.max(1, terminalGrowthRate - 1),
       terminalGrowthRate,
-      terminalGrowthRate + 0.5,
+      terminalGrowthRate + 1,
     ];
 
     return discountRates.map((dRate) => {
@@ -95,7 +87,7 @@ export default function DcfCalculator() {
         values: terminalRates.map((tRate) => {
           if (dRate <= tRate) return null;
           const matrixRes = calcDCF({
-            ...debouncedInputs,
+            ...inputs,
             discountRate: dRate,
             terminalGrowthRate: tRate,
           });
@@ -103,9 +95,7 @@ export default function DcfCalculator() {
         }),
       };
     });
-  }, [debouncedInputs, discountRate, terminalGrowthRate, result.isValid]);
-
-  if (!mounted) return <CalcPageSkeleton />;
+  }, [inputs, discountRate, terminalGrowthRate, result.isValid]);
 
   return (
     <>

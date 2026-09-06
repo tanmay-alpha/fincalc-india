@@ -1,12 +1,11 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import StickyResultBar from "@/components/ui/StickyResultBar";
 import InsightCard from "@/components/ui/InsightCard";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcCapitalGains } from "@/lib/math";
 import type {
@@ -16,7 +15,6 @@ import type {
   SgbRedemptionType,
 } from "@/lib/math";
 import { formatINR } from "@/lib/format";
-import { useDebounce } from "@/hooks/useDebounce";
 import { clsx } from "clsx";
 import { ShieldCheck, Scale, CheckCircle2, AlertCircle } from "lucide-react";
 
@@ -70,20 +68,11 @@ const ASSET_CLASSES: Array<{ id: AssetClass; label: string; icon: string }> = [
 ];
 
 export default function CapitalGainsCalculator() {
-  const [mounted, setMounted] = useState(false);
   const [inputs, setInputs] = useState<CapitalGainsInputsState>(DEFAULT_INPUTS);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const debouncedInputs = useDebounce(inputs, 150);
-
   const result = useMemo(() => {
-    return calcCapitalGains(debouncedInputs);
-  }, [debouncedInputs]);
-
-  if (!mounted) return <CalcPageSkeleton />;
+    return calcCapitalGains(inputs);
+  }, [inputs]);
 
   const netInPocket = result.netSaleValue - result.totalTaxPayable;
 

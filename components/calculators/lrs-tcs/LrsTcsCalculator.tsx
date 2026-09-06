@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import ShareButton from "@/components/ui/ShareButton";
@@ -14,7 +13,6 @@ import { calcLRSTCS } from "@/lib/math";
 import type { LrsTcsInput, LrsCategory } from "@/lib/math";
 import { getLRSTCSInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
-import { useDebounce } from "@/hooks/useDebounce";
 import { Globe, PieChart as PieIcon } from "lucide-react";
 
 const LrsTcsChart = dynamic(
@@ -23,15 +21,10 @@ const LrsTcsChart = dynamic(
 );
 
 export default function LrsTcsCalculator() {
-  const [mounted, setMounted] = useState(false);
   const [category, setCategory] = useState<LrsCategory>("general_investment");
   const [remittanceAmountInr, setRemittanceAmountInr] = useState(1200000); // 12 Lakhs
   const [panAvailable, setPanAvailable] = useState(true);
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const inputs: LrsTcsInput = useMemo(
     () => ({
@@ -42,13 +35,8 @@ export default function LrsTcsCalculator() {
     [category, remittanceAmountInr, panAvailable]
   );
 
-  const debouncedInputs = useDebounce(inputs, 150);
-  const result = useMemo(() => calcLRSTCS(debouncedInputs), [debouncedInputs]);
+  const result = useMemo(() => calcLRSTCS(inputs), [inputs]);
   const insights = useMemo(() => getLRSTCSInsights(result), [result]);
-
-  if (!mounted) {
-    return <CalcPageSkeleton />;
-  }
 
   return (
     <div className="space-y-6">

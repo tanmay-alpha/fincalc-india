@@ -8,12 +8,10 @@ import InsightCard from "@/components/ui/InsightCard";
 import ShareButton from "@/components/ui/ShareButton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcPPF } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { generatePPFInsights } from "@/lib/insights";
-import { useDebounce } from "@/hooks/useDebounce";
 
 const PPFChart = dynamic(
   () => import("@/components/calculators/ppf/PPFChart"),
@@ -26,21 +24,16 @@ export default function PPFCalculator() {
     years: 15,
     rate: 7.1,
   });
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
 
-  const debouncedInputs = useDebounce(inputs, 250);
-  const results = useMemo(() => calcPPF(debouncedInputs), [debouncedInputs]);
+  const results = useMemo(() => calcPPF(inputs), [inputs]);
   const insights = useMemo(() => generatePPFInsights(results), [results]);
   const [shareId, setShareId] = useState<string | null>(null);
 
-  useEffect(() => setShareId(null), [debouncedInputs]);
+  useEffect(() => setShareId(null), [inputs]);
 
   const onInvestment = useCallback((v: number) => setInputs(p => ({ ...p, yearlyInvestment: v })), []);
   const onYears = useCallback((v: number) => setInputs(p => ({ ...p, years: v })), []);
   const onRate = useCallback((v: number) => setInputs(p => ({ ...p, rate: v })), []);
-
-  if (!mounted) return <CalcPageSkeleton />;
 
   return (
     <>
@@ -164,7 +157,7 @@ export default function PPFCalculator() {
               <ShareButton shareId={shareId} />
               <SaveCalculationButton
                 calcType="PPF"
-                data={{ inputs: debouncedInputs, results: results as unknown as Record<string, unknown> }}
+                data={{ inputs, results: results as unknown as Record<string, unknown> }}
                 onSaved={setShareId}
               />
             </div>

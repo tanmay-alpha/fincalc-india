@@ -1,18 +1,16 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import ShareButton from "@/components/ui/ShareButton";
 import { calcHRAExemption } from "@/lib/math";
 import type { CityType, SalaryPeriod, HRAExemptionInput } from "@/lib/math";
 import { formatINR } from "@/lib/format";
-import { useDebounce } from "@/hooks/useDebounce";
 import { clsx } from "clsx";
 import {
   ShieldCheck,
@@ -30,7 +28,6 @@ const HRAChart = dynamic(
 );
 
 export default function HRACalculator() {
-  const [mounted, setMounted] = useState(false);
   const [salaryPeriod, setSalaryPeriod] = useState<SalaryPeriod>("monthly");
   const [basicSalary, setBasicSalary] = useState(50000);
   const [showAdvancedDa, setShowAdvancedDa] = useState(false);
@@ -45,10 +42,6 @@ export default function HRACalculator() {
   const [parentsSlabRate, setParentsSlabRate] = useState(0);
   const [userSlabRate, setUserSlabRate] = useState(30);
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const inputs: HRAExemptionInput = useMemo(
     () => ({
@@ -77,13 +70,9 @@ export default function HRACalculator() {
     ]
   );
 
-  const debouncedInputs = useDebounce(inputs, 150);
-
   const result = useMemo(() => {
-    return calcHRAExemption(debouncedInputs);
-  }, [debouncedInputs]);
-
-  if (!mounted) return <CalcPageSkeleton />;
+    return calcHRAExemption(inputs);
+  }, [inputs]);
 
   const isMonthly = salaryPeriod === "monthly";
 

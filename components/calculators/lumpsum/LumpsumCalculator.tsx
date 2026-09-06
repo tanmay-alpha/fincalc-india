@@ -8,12 +8,10 @@ import InsightCard from "@/components/ui/InsightCard";
 import ShareButton from "@/components/ui/ShareButton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcLumpsum, calcSIP } from "@/lib/math";
 import { formatINR, formatCompact } from "@/lib/format";
 import { generateLumpsumInsights } from "@/lib/insights";
-import { useDebounce } from "@/hooks/useDebounce";
 
 const LumpsumChart = dynamic(
   () => import("@/components/calculators/lumpsum/LumpsumChart"),
@@ -23,8 +21,6 @@ const LumpsumChart = dynamic(
 const INFLATION_RATE = 6;
 
 export default function LumpsumCalculator() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
 
   const [inputs, setInputs] = useState({
     principal: 500000,
@@ -34,8 +30,7 @@ export default function LumpsumCalculator() {
   const [showAdjusted, setShowAdjusted] = useState(false);
   const [shareId, setShareId] = useState<string | null>(null);
 
-  const debouncedInputs = useDebounce(inputs, 250);
-  const results = useMemo(() => calcLumpsum(debouncedInputs), [debouncedInputs]);
+  const results = useMemo(() => calcLumpsum(inputs), [inputs]);
   const insights = useMemo(() => generateLumpsumInsights(results), [results]);
 
   // Inflation-adjusted value
@@ -54,13 +49,11 @@ export default function LumpsumCalculator() {
     });
   }, [inputs]);
 
-  useEffect(() => setShareId(null), [debouncedInputs]);
+  useEffect(() => setShareId(null), [inputs]);
 
   const onPrincipal = useCallback((v: number) => setInputs(p => ({ ...p, principal: v })), []);
   const onRate = useCallback((v: number) => setInputs(p => ({ ...p, annualRate: v })), []);
   const onYears = useCallback((v: number) => setInputs(p => ({ ...p, years: v })), []);
-
-  if (!mounted) return <CalcPageSkeleton />;
 
   return (
     <>
@@ -201,7 +194,7 @@ export default function LumpsumCalculator() {
               <ShareButton shareId={shareId} />
               <SaveCalculationButton
                 calcType="Lumpsum"
-                data={{ inputs: debouncedInputs, results: results as unknown as Record<string, unknown> }}
+                data={{ inputs, results: results as unknown as Record<string, unknown> }}
                 onSaved={setShareId}
               />
             </div>

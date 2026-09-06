@@ -1,16 +1,14 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import InsightCard from "@/components/ui/InsightCard";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcNoCostEMITruth } from "@/lib/math";
 import { formatINR, formatCompact } from "@/lib/format";
-import { useDebounce } from "@/hooks/useDebounce";
 import { clsx } from "clsx";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 
@@ -20,9 +18,6 @@ const NoCostEMIChart = dynamic(
 );
 
 export default function NoCostEMICalculator() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
   const [inputs, setInputs] = useState({
     productPrice: 79999, // e.g. iPhone 15 / Galaxy S24
     tenureMonths: 6,
@@ -32,18 +27,16 @@ export default function NoCostEMICalculator() {
     gstRatePercent: 18,
   });
 
-  const debouncedInputs = useDebounce(inputs, 250);
-
   const result = useMemo(() => {
     return calcNoCostEMITruth({
-      productPrice: debouncedInputs.productPrice,
-      tenureMonths: debouncedInputs.tenureMonths,
-      bankInterestRate: debouncedInputs.bankInterestRate,
-      processingFee: debouncedInputs.processingFee,
-      upfrontDiscountForfeited: debouncedInputs.upfrontDiscountForfeited,
-      gstRatePercent: debouncedInputs.gstRatePercent,
+      productPrice: inputs.productPrice,
+      tenureMonths: inputs.tenureMonths,
+      bankInterestRate: inputs.bankInterestRate,
+      processingFee: inputs.processingFee,
+      upfrontDiscountForfeited: inputs.upfrontDiscountForfeited,
+      gstRatePercent: inputs.gstRatePercent,
     });
-  }, [debouncedInputs]);
+  }, [inputs]);
 
   const setPrice = useCallback(
     (v: number) => setInputs((p) => ({ ...p, productPrice: v })),
@@ -65,8 +58,6 @@ export default function NoCostEMICalculator() {
     (v: number) => setInputs((p) => ({ ...p, bankInterestRate: v })),
     []
   );
-
-  if (!mounted) return <CalcPageSkeleton />;
 
   return (
     <>

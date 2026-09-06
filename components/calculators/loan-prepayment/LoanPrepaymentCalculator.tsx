@@ -1,17 +1,15 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import InsightCard from "@/components/ui/InsightCard";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcPrepaymentVsInvest } from "@/lib/math";
 import type { PrepaymentType } from "@/lib/math";
 import { formatINR, formatCompact } from "@/lib/format";
-import { useDebounce } from "@/hooks/useDebounce";
 import { clsx } from "clsx";
 import { Zap } from "lucide-react";
 
@@ -21,9 +19,6 @@ const LoanPrepaymentChart = dynamic(
 );
 
 export default function LoanPrepaymentCalculator() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
   const [prepaymentType, setPrepaymentType] = useState<PrepaymentType>("extra_emi_yearly");
   const [tenureUnit, setTenureUnit] = useState<"years" | "months">("years");
 
@@ -36,25 +31,23 @@ export default function LoanPrepaymentCalculator() {
     investmentRate: 12, // 12% equity CAGR
   });
 
-  const debouncedInputs = useDebounce(inputs, 250);
-
   const tenureMonths = useMemo(() => {
     return tenureUnit === "years"
-      ? debouncedInputs.tenure * 12
-      : debouncedInputs.tenure;
-  }, [debouncedInputs.tenure, tenureUnit]);
+      ? inputs.tenure * 12
+      : inputs.tenure;
+  }, [inputs.tenure, tenureUnit]);
 
   const result = useMemo(() => {
     return calcPrepaymentVsInvest({
-      principal: debouncedInputs.principal,
-      annualRate: debouncedInputs.annualRate,
+      principal: inputs.principal,
+      annualRate: inputs.annualRate,
       tenureMonths,
       prepaymentType,
-      prepaymentAmount: debouncedInputs.prepaymentAmount,
-      lumpsumYear: debouncedInputs.lumpsumYear,
-      investmentRate: debouncedInputs.investmentRate,
+      prepaymentAmount: inputs.prepaymentAmount,
+      lumpsumYear: inputs.lumpsumYear,
+      investmentRate: inputs.investmentRate,
     });
-  }, [debouncedInputs, tenureMonths, prepaymentType]);
+  }, [inputs, tenureMonths, prepaymentType]);
 
   const setPrincipal = useCallback(
     (v: number) => setInputs((p) => ({ ...p, principal: v })),
@@ -80,8 +73,6 @@ export default function LoanPrepaymentCalculator() {
     (v: number) => setInputs((p) => ({ ...p, investmentRate: v })),
     []
   );
-
-  if (!mounted) return <CalcPageSkeleton />;
 
   return (
     <>

@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import ShareButton from "@/components/ui/ShareButton";
@@ -13,7 +12,6 @@ import InsightCard from "@/components/ui/InsightCard";
 import { calcRiskRatios } from "@/lib/math";
 import type { RiskRatiosInput } from "@/lib/math";
 import { getRiskRatiosInsights } from "@/lib/insights";
-import { useDebounce } from "@/hooks/useDebounce";
 import { ShieldCheck, BarChart2 } from "lucide-react";
 
 const RiskChart = dynamic(
@@ -22,16 +20,11 @@ const RiskChart = dynamic(
 );
 
 export default function PortfolioRiskCalculator() {
-  const [mounted, setMounted] = useState(false);
   const [returnsInput, setReturnsInput] = useState("12, -4, 18, 8, -2, 22, 14, -6, 16, 10, 5, -1");
   const [benchmarkReturnsInput, setBenchmarkReturnsInput] = useState("10, -2, 14, 6, -1, 18, 11, -4, 13, 8, 4, 0");
   const [periodFrequency, setPeriodFrequency] = useState<"monthly" | "annual">("monthly");
   const [riskFreeRate, setRiskFreeRate] = useState(6.5);
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const parsedReturns = useMemo(() => {
     return returnsInput
@@ -62,13 +55,8 @@ export default function PortfolioRiskCalculator() {
     [parsedReturns, parsedBenchmarkReturns, isSeriesLengthMatched, periodFrequency, riskFreeRate]
   );
 
-  const debouncedInputs = useDebounce(inputs, 150);
-  const result = useMemo(() => calcRiskRatios(debouncedInputs), [debouncedInputs]);
+  const result = useMemo(() => calcRiskRatios(inputs), [inputs]);
   const insights = useMemo(() => getRiskRatiosInsights(result), [result]);
-
-  if (!mounted) {
-    return <CalcPageSkeleton />;
-  }
 
   return (
     <div className="space-y-6">

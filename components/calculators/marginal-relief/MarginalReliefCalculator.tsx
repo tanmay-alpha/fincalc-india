@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import ShareButton from "@/components/ui/ShareButton";
@@ -14,7 +13,6 @@ import { calcMarginalRelief } from "@/lib/math";
 import type { MarginalReliefInput, TaxRegime } from "@/lib/math";
 import { getMarginalReliefInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
-import { useDebounce } from "@/hooks/useDebounce";
 import { Landmark, Activity } from "lucide-react";
 
 const MarginalReliefChart = dynamic(
@@ -23,14 +21,9 @@ const MarginalReliefChart = dynamic(
 );
 
 export default function MarginalReliefCalculator() {
-  const [mounted, setMounted] = useState(false);
   const [grossTotalIncome, setGrossTotalIncome] = useState(5100000); // 51 Lakhs (just above 50L threshold)
   const [regime, setRegime] = useState<TaxRegime>("new");
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const inputs: MarginalReliefInput = useMemo(
     () => ({
@@ -40,13 +33,8 @@ export default function MarginalReliefCalculator() {
     [grossTotalIncome, regime]
   );
 
-  const debouncedInputs = useDebounce(inputs, 150);
-  const result = useMemo(() => calcMarginalRelief(debouncedInputs), [debouncedInputs]);
+  const result = useMemo(() => calcMarginalRelief(inputs), [inputs]);
   const insights = useMemo(() => getMarginalReliefInsights(result), [result]);
-
-  if (!mounted) {
-    return <CalcPageSkeleton />;
-  }
 
   return (
     <div className="space-y-6">

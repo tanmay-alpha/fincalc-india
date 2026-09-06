@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import ShareButton from "@/components/ui/ShareButton";
@@ -14,7 +13,6 @@ import { calcMarginRequired, FNO_CONTRACT_DEFAULTS } from "@/lib/math";
 import type { MarginRequiredInput, MarginInstrumentCategory } from "@/lib/math";
 import { getMarginRequiredInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
-import { useDebounce } from "@/hooks/useDebounce";
 import { Shield, PieChart as PieIcon, AlertCircle } from "lucide-react";
 
 const MarginChart = dynamic(
@@ -23,7 +21,6 @@ const MarginChart = dynamic(
 );
 
 export default function MarginCalculator() {
-  const [mounted, setMounted] = useState(false);
   const [instrumentCategory, setInstrumentCategory] = useState<MarginInstrumentCategory>("nifty_futures");
   const [lotSize, setLotSize] = useState<number>(FNO_CONTRACT_DEFAULTS.nifty.lotSize);
   const [numberOfLots, setNumberOfLots] = useState(2);
@@ -34,10 +31,6 @@ export default function MarginCalculator() {
   const [customSpanPercent, setCustomSpanPercent] = useState(10.5);
   const [customExposurePercent, setCustomExposurePercent] = useState(2.0);
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Update default lot sizes and educational margin rates based on category
   const handleCategoryChange = (cat: MarginInstrumentCategory) => {
@@ -100,13 +93,8 @@ export default function MarginCalculator() {
     ]
   );
 
-  const debouncedInputs = useDebounce(inputs, 150);
-  const result = useMemo(() => calcMarginRequired(debouncedInputs), [debouncedInputs]);
+  const result = useMemo(() => calcMarginRequired(inputs), [inputs]);
   const insights = useMemo(() => getMarginRequiredInsights(result), [result]);
-
-  if (!mounted) {
-    return <CalcPageSkeleton />;
-  }
 
   return (
     <div className="space-y-6">

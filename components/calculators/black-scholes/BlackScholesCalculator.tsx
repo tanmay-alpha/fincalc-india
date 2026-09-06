@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import ShareButton from "@/components/ui/ShareButton";
@@ -13,7 +12,6 @@ import InsightCard from "@/components/ui/InsightCard";
 import { calcBlackScholes } from "@/lib/math";
 import type { BlackScholesInput } from "@/lib/math";
 import { getBlackScholesInsights } from "@/lib/insights";
-import { useDebounce } from "@/hooks/useDebounce";
 import { Zap, Activity } from "lucide-react";
 
 const GreeksChart = dynamic(
@@ -22,7 +20,6 @@ const GreeksChart = dynamic(
 );
 
 export default function BlackScholesCalculator() {
-  const [mounted, setMounted] = useState(false);
   const [spotPrice, setSpotPrice] = useState(24000);
   const [strikePrice, setStrikePrice] = useState(24000);
   const [timeToExpiryDays, setTimeToExpiryDays] = useState(15);
@@ -30,10 +27,6 @@ export default function BlackScholesCalculator() {
   const [riskFreeRatePercent, setRiskFreeRatePercent] = useState(6.5);
   const [dividendYieldPercent, setDividendYieldPercent] = useState(1.2);
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const inputs: BlackScholesInput = useMemo(
     () => ({
@@ -54,13 +47,8 @@ export default function BlackScholesCalculator() {
     ]
   );
 
-  const debouncedInputs = useDebounce(inputs, 150);
-  const result = useMemo(() => calcBlackScholes(debouncedInputs), [debouncedInputs]);
+  const result = useMemo(() => calcBlackScholes(inputs), [inputs]);
   const insights = useMemo(() => getBlackScholesInsights(result), [result]);
-
-  if (!mounted) {
-    return <CalcPageSkeleton />;
-  }
 
   return (
     <div className="space-y-6">

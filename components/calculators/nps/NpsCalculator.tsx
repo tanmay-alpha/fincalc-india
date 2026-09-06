@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import ShareButton from "@/components/ui/ShareButton";
@@ -14,7 +13,6 @@ import { calcNPS } from "@/lib/math";
 import type { NPSInput, TaxRegime } from "@/lib/math";
 import { getNPSInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
-import { useDebounce } from "@/hooks/useDebounce";
 import { Landmark, AlertTriangle, AlertCircle, TrendingUp, ChevronDown, ChevronUp, ShieldCheck } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -24,7 +22,6 @@ const NpsChart = dynamic(
 );
 
 export default function NpsCalculator() {
-  const [mounted, setMounted] = useState(false);
   const [currentAge, setCurrentAge] = useState(30);
   const [retirementAge, setRetirementAge] = useState(60);
   const [monthlyContribution, setMonthlyContribution] = useState(10000);
@@ -46,10 +43,6 @@ export default function NpsCalculator() {
   const [shareId, setShareId] = useState<string | null>(null);
   // Bug 4 fix: max allowed lump-sum is engine-driven (e.g. 100% for small corpus, 80% standard)
   const [maxAllowedLumpSum, setMaxAllowedLumpSum] = useState(80);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const totalAllocation =
     equityAllocationPercent + corporateDebtAllocationPercent + govtBondsAllocationPercent;
@@ -95,8 +88,7 @@ export default function NpsCalculator() {
     ]
   );
 
-  const debouncedInputs = useDebounce(inputs, 150);
-  const result = useMemo(() => calcNPS(debouncedInputs), [debouncedInputs]);
+  const result = useMemo(() => calcNPS(inputs), [inputs]);
   const insights = useMemo(() => getNPSInsights(result), [result]);
 
   // Bug 4 fix: sync slider cap from engine's regulatory exit category
@@ -110,10 +102,6 @@ export default function NpsCalculator() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result.exitOptionsAvailable]);
-
-  if (!mounted) {
-    return <CalcPageSkeleton />;
-  }
 
   return (
     <div className="space-y-6">

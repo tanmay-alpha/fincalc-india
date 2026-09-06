@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import ShareButton from "@/components/ui/ShareButton";
@@ -17,7 +16,6 @@ import type {
   Section54ExemptionInput,
 } from "@/lib/math";
 import { formatINR } from "@/lib/format";
-import { useDebounce } from "@/hooks/useDebounce";
 import { clsx } from "clsx";
 import {
   Building,
@@ -36,7 +34,6 @@ const Section54Chart = dynamic(
 );
 
 export default function Section54Calculator() {
-  const [mounted, setMounted] = useState(false);
   const [originalAssetType, setOriginalAssetType] =
     useState<Section54OriginalAssetType>("residential_house");
   const [capitalGainsAmount, setCapitalGainsAmount] = useState(6000000); // 60 Lakhs
@@ -71,10 +68,6 @@ export default function Section54Calculator() {
   const [section54fTimelineMonths, setSection54fTimelineMonths] = useState(6);
 
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const is54FApplicable =
     sectionType === "section_54f_property" ||
@@ -144,13 +137,9 @@ export default function Section54Calculator() {
     ]
   );
 
-  const debouncedInputs = useDebounce(inputs, 150);
-
   const result = useMemo(() => {
-    return calcSection54Exemption(debouncedInputs);
-  }, [debouncedInputs]);
-
-  if (!mounted) return <CalcPageSkeleton />;
+    return calcSection54Exemption(inputs);
+  }, [inputs]);
 
   return (
     <>
@@ -403,7 +392,7 @@ export default function Section54Calculator() {
                     </div>
                   </div>
                 </div>
-                <span className="text-[10px] font-bold text-blue-600 bg-blue-100 dark:bg-blue-900/50 px-2 py-0.5 rounded">
+                <span className="text-[10px] font-bold text-blue-800 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/50 px-2 py-0.5 rounded">
                   Max Cap: ₹10 Cr
                 </span>
               </div>

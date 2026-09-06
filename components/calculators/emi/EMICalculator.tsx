@@ -8,12 +8,10 @@ import InsightCard from "@/components/ui/InsightCard";
 import ShareButton from "@/components/ui/ShareButton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcEMI } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { generateEMIInsights } from "@/lib/insights";
-import { useDebounce } from "@/hooks/useDebounce";
 import EMIScenarioCompare from "@/components/calculators/emi/EMIScenarioCompare";
 import { getRestoredInputs, recordRecentCalculation } from "@/lib/storage-workflow";
 import { clsx } from "clsx";
@@ -47,11 +45,10 @@ export default function EMICalculator() {
     setInputs(restored);
   }, []);
 
-  const debouncedInputs = useDebounce(inputs, 250);
-  const results = useMemo(() => calcEMI(debouncedInputs), [debouncedInputs]);
+  const results = useMemo(() => calcEMI(inputs), [inputs]);
   const insights = useMemo(() => generateEMIInsights(results), [results]);
 
-  useEffect(() => setShareId(null), [debouncedInputs]);
+  useEffect(() => setShareId(null), [inputs]);
 
   useEffect(() => {
     if (mounted) {
@@ -74,8 +71,6 @@ export default function EMICalculator() {
   const pageData = results.amortizationSchedule.slice((page - 1) * ROWS_PER_PAGE, page * ROWS_PER_PAGE);
 
   // Cumulative summary for current page
-
-  if (!mounted) return <CalcPageSkeleton />;
 
   return (
     <>
@@ -256,7 +251,7 @@ export default function EMICalculator() {
             <div className="flex gap-3 mt-2">
               <SaveCalculationButton
                 calcType="EMI"
-                data={{ inputs: debouncedInputs, results: results as unknown as Record<string, unknown> }}
+                data={{ inputs, results: results as unknown as Record<string, unknown> }}
                 onSaved={setShareId}
               />
               <ShareButton shareId={shareId} />

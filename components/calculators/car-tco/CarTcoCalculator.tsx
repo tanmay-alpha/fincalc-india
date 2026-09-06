@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import ShareButton from "@/components/ui/ShareButton";
@@ -14,7 +13,6 @@ import { calcCarTCO } from "@/lib/math";
 import type { CarTCOInput } from "@/lib/math";
 import { getCarTCOInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
-import { useDebounce } from "@/hooks/useDebounce";
 import { Car, TrendingDown } from "lucide-react";
 
 const CarTcoChart = dynamic(
@@ -23,7 +21,6 @@ const CarTcoChart = dynamic(
 );
 
 export default function CarTcoCalculator() {
-  const [mounted, setMounted] = useState(false);
   const [carOnRoadPrice, setCarOnRoadPrice] = useState(1500000);
   const [downPayment, setDownPayment] = useState(300000);
   const [loanInterestRate, setLoanInterestRate] = useState(9.0);
@@ -36,10 +33,6 @@ export default function CarTcoCalculator() {
   const [annualMaintenanceCost, setAnnualMaintenanceCost] = useState(15000);
   const [annualDepreciationPercent, setAnnualDepreciationPercent] = useState(15);
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const inputs: CarTCOInput = useMemo(
     () => ({
@@ -70,13 +63,8 @@ export default function CarTcoCalculator() {
     ]
   );
 
-  const debouncedInputs = useDebounce(inputs, 150);
-  const result = useMemo(() => calcCarTCO(debouncedInputs), [debouncedInputs]);
+  const result = useMemo(() => calcCarTCO(inputs), [inputs]);
   const insights = useMemo(() => getCarTCOInsights(result), [result]);
-
-  if (!mounted) {
-    return <CalcPageSkeleton />;
-  }
 
   return (
     <div className="space-y-6">

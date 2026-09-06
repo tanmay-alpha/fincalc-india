@@ -8,13 +8,11 @@ import InsightCard from "@/components/ui/InsightCard";
 import ShareButton from "@/components/ui/ShareButton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcFD } from "@/lib/math";
 import type { CompoundingFrequency } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { generateFDInsights } from "@/lib/insights";
-import { useDebounce } from "@/hooks/useDebounce";
 import { clsx } from "clsx";
 
 const FDChart = dynamic(
@@ -30,8 +28,6 @@ const compoundingOptions: { label: string; value: CompoundingFrequency }[] = [
 ];
 
 export default function FDCalculator() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
 
   const [inputs, setInputs] = useState({
     principal: 100000,
@@ -40,12 +36,11 @@ export default function FDCalculator() {
     compoundingFrequency: 4 as CompoundingFrequency,
   });
 
-  const debouncedInputs = useDebounce(inputs, 250);
-  const results = useMemo(() => calcFD(debouncedInputs), [debouncedInputs]);
+  const results = useMemo(() => calcFD(inputs), [inputs]);
   const insights = useMemo(() => generateFDInsights(results), [results]);
   const [shareId, setShareId] = useState<string | null>(null);
 
-  useEffect(() => setShareId(null), [debouncedInputs]);
+  useEffect(() => setShareId(null), [inputs]);
 
   const onPrincipal = useCallback((v: number) => setInputs(p => ({ ...p, principal: v })), []);
   const onRate = useCallback((v: number) => setInputs(p => ({ ...p, annualRate: v })), []);
@@ -53,10 +48,6 @@ export default function FDCalculator() {
   const onFreq = useCallback((freq: CompoundingFrequency) => {
     setInputs(p => ({ ...p, compoundingFrequency: freq }));
   }, []);
-
-
-
-  if (!mounted) return <CalcPageSkeleton />;
 
   return (
     <>
@@ -164,7 +155,7 @@ export default function FDCalculator() {
               <ShareButton shareId={shareId} />
               <SaveCalculationButton
                 calcType="FD"
-                data={{ inputs: debouncedInputs, results: results as unknown as Record<string, unknown> }}
+                data={{ inputs, results: results as unknown as Record<string, unknown> }}
                 onSaved={setShareId}
               />
             </div>

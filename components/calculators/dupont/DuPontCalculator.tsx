@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import ShareButton from "@/components/ui/ShareButton";
@@ -13,7 +12,6 @@ import InsightCard from "@/components/ui/InsightCard";
 import { calcDuPont } from "@/lib/math";
 import type { DuPontInput } from "@/lib/math";
 import { getDuPontInsights } from "@/lib/insights";
-import { useDebounce } from "@/hooks/useDebounce";
 import { Layers, ChevronDown, ChevronUp } from "lucide-react";
 
 const DuPontChart = dynamic(
@@ -22,7 +20,6 @@ const DuPontChart = dynamic(
 );
 
 export default function DuPontCalculator() {
-  const [mounted, setMounted] = useState(false);
   const [netIncome, setNetIncome] = useState(15000000); // 1.5 Cr
   const [revenue, setRevenue] = useState(100000000); // 10 Cr
   const [totalAssets, setTotalAssets] = useState(80000000); // 8 Cr
@@ -34,10 +31,6 @@ export default function DuPontCalculator() {
   const [ebt, setEbt] = useState(20000000); // 2.0 Cr
 
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const inputs: DuPontInput = useMemo(
     () => ({
@@ -51,13 +44,8 @@ export default function DuPontCalculator() {
     [netIncome, revenue, totalAssets, totalEquity, isFiveStepEnabled, ebit, ebt]
   );
 
-  const debouncedInputs = useDebounce(inputs, 150);
-  const result = useMemo(() => calcDuPont(debouncedInputs), [debouncedInputs]);
+  const result = useMemo(() => calcDuPont(inputs), [inputs]);
   const insights = useMemo(() => getDuPontInsights(result), [result]);
-
-  if (!mounted) {
-    return <CalcPageSkeleton />;
-  }
 
   return (
     <div className="space-y-6">

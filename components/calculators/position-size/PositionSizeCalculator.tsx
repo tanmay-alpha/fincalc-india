@@ -1,24 +1,21 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import ShareButton from "@/components/ui/ShareButton";
 import PositionSizeVisualizer from "@/components/calculators/position-size/PositionSizeVisualizer";
 import { calcPositionSize } from "@/lib/math";
 import type { PositionSizeInput } from "@/lib/math";
 import { formatINR } from "@/lib/format";
-import { useDebounce } from "@/hooks/useDebounce";
 import { clsx } from "clsx";
 import {
   AlertTriangle,
 } from "lucide-react";
 
 export default function PositionSizeCalculator() {
-  const [mounted, setMounted] = useState(false);
   const [capital, setCapital] = useState(100000);
   const [riskPercent, setRiskPercent] = useState(1);
   const [entryPrice, setEntryPrice] = useState(500);
@@ -27,10 +24,6 @@ export default function PositionSizeCalculator() {
   const [tradeDirection, setTradeDirection] = useState<"auto" | "long" | "short">("auto");
   const [leverageMultiplier, setLeverageMultiplier] = useState(1);
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const inputs: PositionSizeInput = useMemo(
     () => ({
@@ -53,13 +46,9 @@ export default function PositionSizeCalculator() {
     ]
   );
 
-  const debouncedInputs = useDebounce(inputs, 150);
-
   const result = useMemo(() => {
-    return calcPositionSize(debouncedInputs);
-  }, [debouncedInputs]);
-
-  if (!mounted) return <CalcPageSkeleton />;
+    return calcPositionSize(inputs);
+  }, [inputs]);
 
   return (
     <>

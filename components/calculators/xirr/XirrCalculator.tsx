@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import ShareButton from "@/components/ui/ShareButton";
@@ -23,7 +22,6 @@ const XirrChart = dynamic(
 );
 
 export default function XirrCalculator() {
-  const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<"xirr" | "cagr" | "twrr">("xirr");
 
   // XIRR State
@@ -48,10 +46,6 @@ export default function XirrCalculator() {
   ]);
 
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handleAddRow = () => {
     const lastDate = cashflows[cashflows.length - 1]?.date || "2025-01-01";
@@ -95,10 +89,6 @@ export default function XirrCalculator() {
   const twrrResult = useMemo(() => calcTWRR(twrrPeriods), [twrrPeriods]);
 
   const insights = useMemo(() => getXIRRInsights(xirrResult), [xirrResult]);
-
-  if (!mounted) {
-    return <CalcPageSkeleton />;
-  }
 
   return (
     <div className="space-y-6">

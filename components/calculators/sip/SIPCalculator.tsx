@@ -8,7 +8,6 @@ import InsightCard from "@/components/ui/InsightCard";
 import ShareButton from "@/components/ui/ShareButton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcSIP } from "@/lib/math";
 import { formatINR } from "@/lib/format";
@@ -43,10 +42,10 @@ export default function SIPCalculator() {
   }, []);
 
   const debouncedInputs = useDebounce(inputs, 200);
-  const results = useMemo(() => calcSIP(debouncedInputs), [debouncedInputs]);
+  const results = useMemo(() => calcSIP(inputs), [inputs]);
   const insights = useMemo(() => generateSIPInsights(results), [results]);
 
-  useEffect(() => setShareId(null), [debouncedInputs]);
+  useEffect(() => setShareId(null), [inputs]);
 
   useEffect(() => {
     if (mounted) {
@@ -72,8 +71,6 @@ export default function SIPCalculator() {
     (v: number) => setInputs((p) => ({ ...p, years: v })),
     []
   );
-
-  if (!mounted) return <CalcPageSkeleton />;
 
   const wealthRatio = (results.totalCorpus / results.totalInvested || 1).toFixed(2);
 

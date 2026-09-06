@@ -1,16 +1,14 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import InsightCard from "@/components/ui/InsightCard";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcFIRE } from "@/lib/math";
 import { formatINR, formatCompact } from "@/lib/format";
-import { useDebounce } from "@/hooks/useDebounce";
 
 const FIREChart = dynamic(
   () => import("@/components/calculators/fire/FIREChart"),
@@ -18,9 +16,6 @@ const FIREChart = dynamic(
 );
 
 export default function FIRECalculator() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
   const [inputs, setInputs] = useState({
     currentAge: 28,
     retirementAge: 45,
@@ -32,20 +27,18 @@ export default function FIRECalculator() {
     currentSavings: 1000000, // ₹10 Lakhs existing corpus
   });
 
-  const debouncedInputs = useDebounce(inputs, 250);
-
   const result = useMemo(() => {
     return calcFIRE({
-      currentAge: debouncedInputs.currentAge,
-      retirementAge: debouncedInputs.retirementAge,
-      lifeExpectancy: debouncedInputs.lifeExpectancy,
-      currentMonthlyExpenses: debouncedInputs.currentMonthlyExpenses,
-      preRetirementReturn: debouncedInputs.preRetirementReturn,
-      postRetirementReturn: debouncedInputs.postRetirementReturn,
-      inflationRate: debouncedInputs.inflationRate,
-      currentSavings: debouncedInputs.currentSavings,
+      currentAge: inputs.currentAge,
+      retirementAge: inputs.retirementAge,
+      lifeExpectancy: inputs.lifeExpectancy,
+      currentMonthlyExpenses: inputs.currentMonthlyExpenses,
+      preRetirementReturn: inputs.preRetirementReturn,
+      postRetirementReturn: inputs.postRetirementReturn,
+      inflationRate: inputs.inflationRate,
+      currentSavings: inputs.currentSavings,
     });
-  }, [debouncedInputs]);
+  }, [inputs]);
 
   const setCurrAge = useCallback(
     (v: number) => setInputs((p) => ({ ...p, currentAge: v })),
@@ -79,8 +72,6 @@ export default function FIRECalculator() {
     (v: number) => setInputs((p) => ({ ...p, currentSavings: v })),
     []
   );
-
-  if (!mounted) return <CalcPageSkeleton />;
 
   return (
     <>

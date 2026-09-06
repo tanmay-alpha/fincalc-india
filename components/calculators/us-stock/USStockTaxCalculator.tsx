@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import ShareButton from "@/components/ui/ShareButton";
@@ -14,7 +13,6 @@ import { calcUSStockReturn } from "@/lib/math";
 import type { USStockReturnInput } from "@/lib/math";
 import { getUSStockReturnInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
-import { useDebounce } from "@/hooks/useDebounce";
 import { DollarSign, TrendingUp } from "lucide-react";
 
 const USStockChart = dynamic(
@@ -23,7 +21,6 @@ const USStockChart = dynamic(
 );
 
 export default function USStockTaxCalculator() {
-  const [mounted, setMounted] = useState(false);
   const [investmentAmountInr, setInvestmentAmountInr] = useState(840000); // ~ $10,000
   const [purchaseUsdInrRate, setPurchaseUsdInrRate] = useState(84.0);
   const [saleUsdInrRate, setSaleUsdInrRate] = useState(88.0);
@@ -32,10 +29,6 @@ export default function USStockTaxCalculator() {
   const [holdingMonths, setHoldingMonths] = useState(24); // 24 months (LTCG boundary)
   const [userTaxBracketPercent, setUserTaxBracketPercent] = useState(30.0);
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const inputs: USStockReturnInput = useMemo(
     () => ({
@@ -58,13 +51,8 @@ export default function USStockTaxCalculator() {
     ]
   );
 
-  const debouncedInputs = useDebounce(inputs, 150);
-  const result = useMemo(() => calcUSStockReturn(debouncedInputs), [debouncedInputs]);
+  const result = useMemo(() => calcUSStockReturn(inputs), [inputs]);
   const insights = useMemo(() => getUSStockReturnInsights(result), [result]);
-
-  if (!mounted) {
-    return <CalcPageSkeleton />;
-  }
 
   return (
     <div className="space-y-6">

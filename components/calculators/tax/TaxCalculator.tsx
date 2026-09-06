@@ -8,7 +8,6 @@ import InsightCard from "@/components/ui/InsightCard";
 import ShareButton from "@/components/ui/ShareButton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcTax } from "@/lib/math";
 import type {
@@ -19,7 +18,6 @@ import type {
 } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { generateTaxInsights } from "@/lib/insights";
-import { useDebounce } from "@/hooks/useDebounce";
 import {
   ChevronDown,
   UserCheck,
@@ -58,7 +56,6 @@ const DEFAULT_TAX_INPUTS: TaxInput = {
 };
 
 export default function TaxCalculator() {
-  const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<TaxFlowTab>("income");
   const [showAdvancedIncome, setShowAdvancedIncome] = useState(false);
   const [showWhyComparison, setShowWhyComparison] = useState(false);
@@ -67,28 +64,24 @@ export default function TaxCalculator() {
   const [shareId, setShareId] = useState<string | null>(null);
 
   useEffect(() => {
-    setMounted(true);
     const restored = getRestoredInputs("tax", DEFAULT_TAX_INPUTS);
     setInputs(restored);
   }, []);
 
-  const debouncedInputs = useDebounce(inputs, 200);
-  const results = useMemo(() => calcTax(debouncedInputs), [debouncedInputs]);
+  const results = useMemo(() => calcTax(inputs), [inputs]);
   const insights = useMemo(() => generateTaxInsights(results), [results]);
 
-  useEffect(() => setShareId(null), [debouncedInputs]);
+  useEffect(() => setShareId(null), [inputs]);
 
   useEffect(() => {
-    if (mounted) {
-      recordRecentCalculation({
-        id: "tax",
-        name: "Income Tax Calculator",
-        route: "/tax",
-        category: "taxation",
-        summary: `${formatINR(inputs.grossIncome || inputs.salaryIncome || 0)} · ${String(inputs.regime).toUpperCase()}`,
-      });
-    }
-  }, [mounted, inputs.grossIncome, inputs.salaryIncome, inputs.regime]);
+    recordRecentCalculation({
+      id: "tax",
+      name: "Income Tax Calculator",
+      route: "/tax",
+      category: "taxation",
+      summary: `${formatINR(inputs.grossIncome || inputs.salaryIncome || 0)} · ${String(inputs.regime).toUpperCase()}`,
+    });
+  }, [inputs.grossIncome, inputs.salaryIncome, inputs.regime]);
 
   // Synchronize simple salary vs total gross
   const onSimpleSalary = useCallback((v: number) => {
@@ -110,13 +103,11 @@ export default function TaxCalculator() {
   const potential80CSavings = useMemo(() => {
     if (inputs.regime !== "old" || (inputs.deduction80C ?? 0) >= 150000) return 0;
     const optimized = calcTax({
-      ...debouncedInputs,
+      ...inputs,
       deduction80C: 150000,
     });
     return Math.max(0, results.totalTax - optimized.totalTax);
-  }, [inputs.regime, inputs.deduction80C, debouncedInputs, results.totalTax]);
-
-  if (!mounted) return <CalcPageSkeleton />;
+  }, [inputs, results.totalTax]);
 
   const effectiveTaxRate =
     results.grossIncome > 0
@@ -550,7 +541,7 @@ export default function TaxCalculator() {
             <SaveCalculationButton
               calcType="Tax"
               data={{
-                inputs: debouncedInputs as unknown as Record<string, unknown>,
+                inputs: inputs as unknown as Record<string, unknown>,
                 results: results as unknown as Record<string, unknown>,
               }}
               onSaved={setShareId}

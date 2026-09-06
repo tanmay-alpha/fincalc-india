@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import ShareButton from "@/components/ui/ShareButton";
@@ -14,7 +13,6 @@ import { calcNRIDepositReturns } from "@/lib/math";
 import type { NRIDepositInput } from "@/lib/math";
 import { getNRIDepositInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
-import { useDebounce } from "@/hooks/useDebounce";
 import { Building, Sparkles } from "lucide-react";
 
 const NRIDepositChart = dynamic(
@@ -23,7 +21,6 @@ const NRIDepositChart = dynamic(
 );
 
 export default function NRIDepositCalculator() {
-  const [mounted, setMounted] = useState(false);
   const [depositAmount, setDepositAmount] = useState(1000000); // 10 Lakhs
   const [tenureMonths, setTenureMonths] = useState(36); // 3 years
   const [nreInterestRatePercent, setNreInterestRatePercent] = useState(7.1);
@@ -32,10 +29,6 @@ export default function NRIDepositCalculator() {
   const [nroTdsRatePercent, setNroTdsRatePercent] = useState(31.2);
   const [compoundingFrequency, setCompoundingFrequency] = useState<"quarterly" | "annual">("quarterly");
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const inputs: NRIDepositInput = useMemo(
     () => ({
@@ -58,13 +51,8 @@ export default function NRIDepositCalculator() {
     ]
   );
 
-  const debouncedInputs = useDebounce(inputs, 150);
-  const result = useMemo(() => calcNRIDepositReturns(debouncedInputs), [debouncedInputs]);
+  const result = useMemo(() => calcNRIDepositReturns(inputs), [inputs]);
   const insights = useMemo(() => getNRIDepositInsights(result), [result]);
-
-  if (!mounted) {
-    return <CalcPageSkeleton />;
-  }
 
   return (
     <div className="space-y-6">

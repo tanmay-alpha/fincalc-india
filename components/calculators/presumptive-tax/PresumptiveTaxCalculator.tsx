@@ -1,18 +1,16 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import ShareButton from "@/components/ui/ShareButton";
 import { calcPresumptiveTax } from "@/lib/math";
 import type { PresumptiveProfessionType, PresumptiveTaxInput, TaxRegime, PresumptiveHistoryStatus } from "@/lib/math";
 import { formatINR } from "@/lib/format";
-import { useDebounce } from "@/hooks/useDebounce";
 import { clsx } from "clsx";
 import {
   Stethoscope,
@@ -30,7 +28,6 @@ const PresumptiveTaxChart = dynamic(
 );
 
 export default function PresumptiveTaxCalculator() {
-  const [mounted, setMounted] = useState(false);
   const [professionType, setProfessionType] = useState<PresumptiveProfessionType>("44ADA_professional");
   const [grossTurnover, setGrossTurnover] = useState(4000000); // 40 Lakhs
   const [digitalReceiptsPct, setDigitalReceiptsPct] = useState(100);
@@ -42,10 +39,6 @@ export default function PresumptiveTaxCalculator() {
   const [pastPresumptiveHistory, setPastPresumptiveHistory] =
     useState<PresumptiveHistoryStatus>("first_time_opting_in");
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const inputs: PresumptiveTaxInput = useMemo(
     () => ({
@@ -71,13 +64,9 @@ export default function PresumptiveTaxCalculator() {
     ]
   );
 
-  const debouncedInputs = useDebounce(inputs, 150);
-
   const result = useMemo(() => {
-    return calcPresumptiveTax(debouncedInputs);
-  }, [debouncedInputs]);
-
-  if (!mounted) return <CalcPageSkeleton />;
+    return calcPresumptiveTax(inputs);
+  }, [inputs]);
 
   return (
     <>

@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import HybridInput from "@/components/ui/HybridInput";
 import ResultHero from "@/components/ui/ResultHero";
 import StickyResultBar from "@/components/ui/StickyResultBar";
-import CalcPageSkeleton from "@/components/ui/CalcPageSkeleton";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import ShareButton from "@/components/ui/ShareButton";
@@ -14,7 +13,6 @@ import { calcWACC } from "@/lib/math";
 import type { WaccInput } from "@/lib/math";
 import { getWACCInsights } from "@/lib/insights";
 import { formatINR } from "@/lib/format";
-import { useDebounce } from "@/hooks/useDebounce";
 import { Scale, PieChart as PieIcon } from "lucide-react";
 
 const WaccChart = dynamic(
@@ -23,17 +21,12 @@ const WaccChart = dynamic(
 );
 
 export default function WaccCalculator() {
-  const [mounted, setMounted] = useState(false);
   const [marketValueOfEquity, setMarketValueOfEquity] = useState(70000000); // 7 Cr
   const [marketValueOfDebt, setMarketValueOfDebt] = useState(30000000); // 3 Cr
   const [costOfEquity, setCostOfEquity] = useState(14.0);
   const [preTaxCostOfDebt, setPreTaxCostOfDebt] = useState(9.0);
   const [taxRate, setTaxRate] = useState(25.0);
   const [shareId, setShareId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const inputs: WaccInput = useMemo(
     () => ({
@@ -52,13 +45,8 @@ export default function WaccCalculator() {
     ]
   );
 
-  const debouncedInputs = useDebounce(inputs, 150);
-  const result = useMemo(() => calcWACC(debouncedInputs), [debouncedInputs]);
+  const result = useMemo(() => calcWACC(inputs), [inputs]);
   const insights = useMemo(() => getWACCInsights(result), [result]);
-
-  if (!mounted) {
-    return <CalcPageSkeleton />;
-  }
 
   return (
     <div className="space-y-6">
