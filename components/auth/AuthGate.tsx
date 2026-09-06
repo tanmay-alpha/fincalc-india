@@ -43,7 +43,7 @@ export default function AuthGate({
 
   if (status === "loading") {
     return (
-      <div className="transition-opacity duration-150 opacity-70 pointer-events-none select-none">
+      <div className="pointer-events-none select-none">
         {children}
       </div>
     );
@@ -70,8 +70,8 @@ export default function AuthGate({
           aria-label="Sign in with Google to use calculator"
           title="Sign in to calculate"
         />
-        {/* Inputs rendered underneath — visible but not interactive */}
-        <div className="pointer-events-none select-none opacity-60">
+        {/* Inputs rendered underneath — fully clear contrast, interaction disabled */}
+        <div className="pointer-events-none select-none">
           {children}
         </div>
       </div>
