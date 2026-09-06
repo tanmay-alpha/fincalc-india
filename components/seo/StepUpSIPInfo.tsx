@@ -1,37 +1,37 @@
 export default function StepUpSIPInfo() {
   return (
-    <div className="mt-12 space-y-8 border-t border-slate-200 dark:border-slate-800 pt-8">
+    <div className="mt-12 space-y-8 border-t border-border/60 pt-8">
       <section>
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-3">
+        <h2 className="text-lg font-bold text-foreground mb-3">
           What is a Step-Up SIP (Top-Up SIP)?
         </h2>
-        <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
-          A <strong>Step-Up SIP</strong> (also known as a Top-Up SIP) allows you to periodically increase your monthly SIP contribution by a fixed percentage (e.g., 10% each year) or a fixed rupee amount (e.g., +₹1,000 every year) in line with annual salary increments. This enhances portfolio accumulation over time as savings capacity expands.
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          A <strong className="text-foreground">Step-Up SIP</strong> (also known as a Top-Up SIP) allows you to periodically increase your monthly SIP contribution by a fixed percentage (e.g., 10% each year) or a fixed rupee amount (e.g., +₹1,000 every year) in line with annual salary increments. This enhances portfolio accumulation over time as savings capacity expands.
         </p>
       </section>
 
       <section>
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-3">
+        <h2 className="text-lg font-bold text-foreground mb-3">
           Step-Up SIP vs Regular SIP Example
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 text-sm">
-            <p className="font-semibold text-slate-900 dark:text-white mb-2">Standard Flat SIP</p>
-            <p className="text-xs text-slate-700 dark:text-slate-300">₹10,000/month for 15 years @ 12%</p>
-            <p className="text-lg font-bold text-slate-900 dark:text-white mt-2">Corpus: ≈ ₹50.45 Lakhs</p>
-            <p className="text-xs text-slate-700 dark:text-slate-300 mt-1">Invested: ₹18.00 Lakhs · Returns: ₹32.45 Lakhs</p>
+          <div className="bg-card rounded-xl p-4 border border-border/80 text-sm shadow-2xs">
+            <p className="font-semibold text-foreground mb-2">Standard Flat SIP</p>
+            <p className="text-xs text-muted-foreground">₹10,000/month for 15 years @ 12%</p>
+            <p className="text-lg font-bold text-foreground mt-2">Corpus: ≈ ₹50.45 Lakhs</p>
+            <p className="text-xs text-muted-foreground mt-1">Invested: ₹18.00 Lakhs · Returns: ₹32.45 Lakhs</p>
           </div>
-          <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl p-4 border border-blue-200 dark:border-blue-900 text-sm">
-            <p className="font-semibold text-blue-900 dark:text-blue-300 mb-2">Step-Up SIP (+10%/year)</p>
-            <p className="text-xs text-blue-800 dark:text-blue-300">₹10,000/month with 10% annual top-up @ 12%</p>
-            <p className="text-lg font-bold text-blue-950 dark:text-blue-200 mt-2">Corpus: ≈ ₹92.05 Lakhs</p>
-            <p className="text-xs text-blue-800 dark:text-blue-300 mt-1 font-medium">Incremental Corpus: +₹41.60 Lakhs (from ₹19.98L additional investment). Assumes an illustrative constant return; market returns vary year-to-year.</p>
+          <div className="bg-card rounded-xl p-4 border border-primary/30 text-sm shadow-2xs border-l-[3px] border-l-primary">
+            <p className="font-semibold text-foreground mb-2">Step-Up SIP (+10%/year)</p>
+            <p className="text-xs text-muted-foreground">₹10,000/month with 10% annual top-up @ 12%</p>
+            <p className="text-lg font-bold text-primary mt-2">Corpus: ≈ ₹92.05 Lakhs</p>
+            <p className="text-xs text-muted-foreground mt-1 font-medium">Incremental Corpus: +₹41.60 Lakhs (from ₹19.98L additional investment). Assumes an illustrative constant return; market returns vary year-to-year.</p>
           </div>
         </div>
       </section>
 
       <section>
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Frequently Asked Questions</h2>
+        <h2 className="text-lg font-bold text-foreground mb-4">Frequently Asked Questions</h2>
         <div className="space-y-4">
           {[
             {
@@ -47,9 +47,9 @@ export default function StepUpSIPInfo() {
               a: "Yes, many Asset Management Companies (AMCs) and RTAs (CAMS/KFintech) allow you to specify a maximum monthly limit beyond which your SIP stays constant."
             },
           ].map((faq, i) => (
-            <div key={i} className="border-b border-slate-100 dark:border-slate-800 pb-4 last:border-0">
-              <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-200 mb-1">{faq.q}</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{faq.a}</p>
+            <div key={i} className="border-b border-border/60 pb-4 last:border-0">
+              <h3 className="font-semibold text-sm text-foreground mb-1">{faq.q}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{faq.a}</p>
             </div>
           ))}
         </div>
