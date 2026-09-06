@@ -2,11 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { History, ArrowRight, X } from "lucide-react";
-import { getRecentCalculations, clearRecentCalculations, RecentCalculation } from "@/lib/storage-workflow";
+import { History, ArrowRight, X, Calculator } from "lucide-react";
+import {
+  getRecentCalculations,
+  clearRecentCalculations,
+  RecentCalculation,
+} from "@/lib/storage-workflow";
 import { getCategoryIcon } from "@/components/ui/CategoryIcon";
+import { useSession } from "next-auth/react";
 
 export default function RecentCalculationsCard() {
+  const { status } = useSession();
   const [recents, setRecents] = useState<RecentCalculation[]>([]);
   const [mounted, setMounted] = useState(false);
 
@@ -15,8 +21,38 @@ export default function RecentCalculationsCard() {
     setRecents(getRecentCalculations());
   }, []);
 
-  if (!mounted || recents.length === 0) {
+  // Don't render anything for unauthenticated users or before hydration
+  if (!mounted || status === "unauthenticated") {
     return null;
+  }
+
+  // Loading state — render nothing (no skeleton per V2 hardening)
+  if (status === "loading") {
+    return null;
+  }
+
+  // Empty state for authenticated users with no history
+  if (recents.length === 0) {
+    return (
+      <section
+        className="mb-10 p-5 rounded-2xl border border-border/70 bg-muted/30"
+        aria-label="Recent calculations — empty"
+      >
+        <div className="flex items-center gap-2 mb-2">
+          <History className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+          <h2 className="text-sm font-bold text-foreground tracking-tight">
+            Recent Calculations
+          </h2>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          No recent calculations yet.{" "}
+          <Link href="/calculators" className="text-primary hover:underline font-medium">
+            Open a calculator
+          </Link>{" "}
+          to get started.
+        </p>
+      </section>
+    );
   }
 
   const handleClear = () => {
@@ -25,14 +61,17 @@ export default function RecentCalculationsCard() {
   };
 
   return (
-    <section className="mb-10 p-5 rounded-2xl border border-primary/20 bg-primary/5 shadow-sm" aria-label="Recent calculations">
+    <section
+      className="mb-10 p-5 rounded-2xl border border-primary/20 bg-primary/5 shadow-sm"
+      aria-label="Recent calculations"
+    >
       <div className="flex items-center justify-between mb-3.5">
         <div className="flex items-center gap-2">
-          <History className="w-4 h-4 text-primary" />
+          <History className="w-4 h-4 text-primary" aria-hidden="true" />
           <h2 className="text-sm font-bold text-foreground tracking-tight">
             Continue Calculating
           </h2>
-          <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.2 bg-primary/10 text-primary rounded">
+          <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 bg-primary/10 text-primary rounded">
             Local History
           </span>
         </div>
@@ -43,7 +82,7 @@ export default function RecentCalculationsCard() {
           aria-label="Clear recent calculations"
         >
           <span>Clear</span>
-          <X className="w-3.5 h-3.5" />
+          <X className="w-3.5 h-3.5" aria-hidden="true" />
         </button>
       </div>
 
@@ -58,7 +97,7 @@ export default function RecentCalculationsCard() {
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-4 h-4" aria-hidden="true" />
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors truncate">
@@ -71,7 +110,10 @@ export default function RecentCalculationsCard() {
                   )}
                 </div>
               </div>
-              <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
+              <ArrowRight
+                className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0"
+                aria-hidden="true"
+              />
             </Link>
           );
         })}

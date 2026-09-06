@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import SIPScenarioMilestones from "@/components/calculators/sip/SIPScenarioMilestones";
 
 import { getRestoredInputs, recordRecentCalculation } from "@/lib/storage-workflow";
+import AuthGate from "@/components/auth/AuthGate";
 
 const SIPChart = dynamic(
   () => import("@/components/calculators/sip/SIPChart"),
@@ -86,80 +87,82 @@ export default function SIPCalculator() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
         {/* ────── INPUT PANEL (~42%) ────── */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="bg-card rounded-2xl border border-border/80 p-5 sm:p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-5 pb-3 border-b border-border/60">
-              <SlidersHorizontal className="w-4 h-4 text-primary" />
-              <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                Investment Parameters
-              </h2>
+          <AuthGate promptContext="Sign in to calculate and save SIP results">
+            <div className="bg-card rounded-2xl border border-border/80 p-5 sm:p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-5 pb-3 border-b border-border/60">
+                <SlidersHorizontal className="w-4 h-4 text-primary" />
+                <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                  Investment Parameters
+                </h2>
+              </div>
+
+              <div className="space-y-5">
+                <HybridInput
+                  label="Monthly Investment"
+                  value={inputs.monthlyAmount}
+                  onChange={setMonthly}
+                  min={500}
+                  max={10000000}
+                  step={500}
+                  prefix="₹"
+                  quickChips={[
+                    { label: "₹5K", value: 5000 },
+                    { label: "₹10K", value: 10000 },
+                    { label: "₹25K", value: 25000 },
+                    { label: "₹50K", value: 50000 },
+                    { label: "₹1L", value: 100000 },
+                  ]}
+                />
+
+                <HybridInput
+                  label="Expected Annual Return Rate"
+                  value={inputs.annualRate}
+                  onChange={setRate}
+                  min={1}
+                  max={40}
+                  step={0.5}
+                  suffix="% p.a."
+                  hint="Benchmark equity mutual fund historical average: 12% - 15%"
+                  quickChips={[
+                    { label: "10%", value: 10 },
+                    { label: "12%", value: 12 },
+                    { label: "14%", value: 14 },
+                    { label: "16%", value: 16 },
+                  ]}
+                />
+
+                <HybridInput
+                  label="Investment Horizon"
+                  value={inputs.years}
+                  onChange={setYears}
+                  min={1}
+                  max={40}
+                  step={1}
+                  suffix=" Years"
+                  quickChips={[
+                    { label: "5Y", value: 5 },
+                    { label: "10Y", value: 10 },
+                    { label: "15Y", value: 15 },
+                    { label: "20Y", value: 20 },
+                    { label: "25Y", value: 25 },
+                  ]}
+                />
+              </div>
             </div>
 
-            <div className="space-y-5">
-              <HybridInput
-                label="Monthly Investment"
-                value={inputs.monthlyAmount}
-                onChange={setMonthly}
-                min={500}
-                max={10000000}
-                step={500}
-                prefix="₹"
-                quickChips={[
-                  { label: "₹5K", value: 5000 },
-                  { label: "₹10K", value: 10000 },
-                  { label: "₹25K", value: 25000 },
-                  { label: "₹50K", value: 50000 },
-                  { label: "₹1L", value: 100000 },
-                ]}
+            {/* Action Buttons */}
+            <div className="flex items-center gap-3 pt-1">
+              <SaveCalculationButton
+                calcType="SIP"
+                data={{
+                  inputs: debouncedInputs,
+                  results: results as unknown as Record<string, unknown>,
+                }}
+                onSaved={setShareId}
               />
-
-              <HybridInput
-                label="Expected Annual Return Rate"
-                value={inputs.annualRate}
-                onChange={setRate}
-                min={1}
-                max={40}
-                step={0.5}
-                suffix="% p.a."
-                hint="Benchmark equity mutual fund historical average: 12% - 15%"
-                quickChips={[
-                  { label: "10%", value: 10 },
-                  { label: "12%", value: 12 },
-                  { label: "14%", value: 14 },
-                  { label: "16%", value: 16 },
-                ]}
-              />
-
-              <HybridInput
-                label="Investment Horizon"
-                value={inputs.years}
-                onChange={setYears}
-                min={1}
-                max={40}
-                step={1}
-                suffix=" Years"
-                quickChips={[
-                  { label: "5Y", value: 5 },
-                  { label: "10Y", value: 10 },
-                  { label: "15Y", value: 15 },
-                  { label: "20Y", value: 20 },
-                  { label: "25Y", value: 25 },
-                ]}
-              />
+              <ShareButton shareId={shareId} />
             </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center gap-3 pt-1">
-            <SaveCalculationButton
-              calcType="SIP"
-              data={{
-                inputs: debouncedInputs,
-                results: results as unknown as Record<string, unknown>,
-              }}
-              onSaved={setShareId}
-            />
-            <ShareButton shareId={shareId} />
-          </div>
+          </AuthGate>
         </div>
 
         {/* ────── RESULTS PANEL (~58%) ────── */}

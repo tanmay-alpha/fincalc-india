@@ -1,56 +1,79 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  TrendingUp,
-  FileText,
-  LineChart,
-  Building2,
-  Scale,
-  Calculator,
-  Receipt,
-  PiggyBank,
-  Percent,
+  PiggyBank, TrendingUp, Banknote, Landmark, Shield, Flame,
+  Briefcase, BarChart3, CreditCard, ArrowLeftRight, AlertTriangle,
+  Car, RefreshCw, Receipt, SlidersHorizontal, ArrowUpRight, Home,
+  Store, Building, Globe, DollarSign, Wallet, Tag, Activity,
+  FlaskConical, Target, Gauge, ShieldAlert, Calculator, Percent,
+  Layers,
 } from "lucide-react";
-import { type CalculatorCategory, getCalculatorById } from "@/lib/registry";
+import type { CalculatorIconName } from "@/lib/registry";
+import {
+  type CalculatorCategory,
+  getCalculatorById,
+  CATEGORY_MAP,
+} from "@/lib/registry";
+
+// ─── Category fallback icons ─────────────────────────────────────────────────
+import { TrendingUp as TrendingUpCat, FileText, LineChart, Building2, Scale } from "lucide-react";
 
 const CATEGORY_ICON_MAP: Record<CalculatorCategory, LucideIcon> = {
-  investments: TrendingUp,
+  investments: TrendingUpCat,
   taxation: FileText,
   trading: LineChart,
   loans: Building2,
   corporate: Scale,
 };
 
-const SPECIFIC_CALCULATOR_ICONS: Record<string, LucideIcon> = {
-  sip: TrendingUp,
-  "step-up-sip": TrendingUp,
-  lumpsum: PiggyBank,
-  fd: Building2,
-  ppf: PiggyBank,
-  emi: Building2,
-  tax: Receipt,
-  "fno-brokerage": LineChart,
-  "option-payoff": LineChart,
-  "dcf-valuation": Scale,
-  "capital-gains-tax": FileText,
-  "loan-prepayment": Percent,
-  "no-cost-emi": Building2,
+// ─── Per-calculator icon map (mirrors registry iconName values) ──────────────
+const CALC_ICON_MAP: Record<CalculatorIconName, LucideIcon> = {
+  PiggyBank,
+  TrendingUp,
+  Banknote,
+  Landmark,
+  Shield,
+  Flame,
+  Briefcase,
+  BarChart3,
+  CreditCard,
+  ArrowLeftRight,
+  AlertTriangle,
+  Car,
+  RefreshCw,
+  Receipt,
+  SlidersHorizontal,
+  ArrowUpRight,
+  Home,
+  Store,
+  Building,
+  Globe,
+  DollarSign,
+  Wallet,
+  Tag,
+  Activity,
+  FlaskConical,
+  Target,
+  Gauge,
+  ShieldAlert,
+  Calculator,
+  Percent,
+  Layers,
 };
 
+/**
+ * Resolve a Lucide icon component for a calculator ID or category string.
+ * Priority: per-calculator registry icon → category fallback → Calculator.
+ */
 export function getCategoryIcon(idOrCategory: string): LucideIcon {
   const normalized = idOrCategory.toLowerCase();
 
-  // 1. Direct specific calculator match
-  if (SPECIFIC_CALCULATOR_ICONS[normalized]) {
-    return SPECIFIC_CALCULATOR_ICONS[normalized];
-  }
-
-  // 2. Calculator category lookup
+  // 1. Calculator-specific icon from registry
   const calc = getCalculatorById(normalized);
-  if (calc && CATEGORY_ICON_MAP[calc.category]) {
-    return CATEGORY_ICON_MAP[calc.category];
+  if (calc) {
+    return CALC_ICON_MAP[calc.iconName] ?? Calculator;
   }
 
-  // 3. Direct category match
+  // 2. Direct category match
   if (normalized in CATEGORY_ICON_MAP) {
     return CATEGORY_ICON_MAP[normalized as CalculatorCategory];
   }
