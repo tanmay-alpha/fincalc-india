@@ -113,7 +113,7 @@ export default function CalcPageHeader({
           </p>
 
           {updatedFor && (
-            <p className="mt-1 text-xs text-muted-foreground/70">
+            <p className="mt-1 text-xs text-muted-foreground">
               {updatedFor}
             </p>
           )}
