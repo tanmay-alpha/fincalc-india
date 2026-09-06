@@ -11,7 +11,6 @@ import type { CalculatorIconName } from "@/lib/registry";
 import {
   type CalculatorCategory,
   getCalculatorById,
-  CATEGORY_MAP,
 } from "@/lib/registry";
 
 // ─── Category fallback icons ─────────────────────────────────────────────────

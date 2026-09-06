@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { History, ArrowRight, X, Calculator } from "lucide-react";
+import { History, ArrowRight, X } from "lucide-react";
 import {
   getRecentCalculations,
   clearRecentCalculations,

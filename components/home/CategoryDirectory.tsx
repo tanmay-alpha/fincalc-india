@@ -71,7 +71,6 @@ const ALL_TAB = "all" as const;
 type TabId = CalculatorCategory | typeof ALL_TAB;
 
 function TabButton({
-  id,
   label,
   count,
   active,
