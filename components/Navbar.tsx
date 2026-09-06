@@ -171,7 +171,7 @@ export default function Navbar() {
             </button>
 
             {/* Theme Toggle Button */}
-            {mounted && (
+            {mounted ? (
               <button
                 type="button"
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
@@ -184,6 +184,8 @@ export default function Navbar() {
                   <Moon className="w-4 h-4 text-slate-600" />
                 )}
               </button>
+            ) : (
+              <div className="w-8 h-8 rounded-lg" aria-hidden="true" />
             )}
 
             {/* Account CTA / User Menu */}
@@ -236,7 +238,7 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => signIn("google", { callbackUrl: "/calculators" })}
-                className="inline-flex items-center justify-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition shadow-2xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="inline-flex items-center justify-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <GoogleIcon className="w-3.5 h-3.5" />
                 <span>Sign in</span>
@@ -287,7 +289,7 @@ export default function Navbar() {
           </div>
 
           {/* Quick Search Action */}
-          <div className="py-4 border-b border-border/80">
+          <div className="py-4 border-b border-border/80 space-y-2">
             <button
               type="button"
               onClick={() => {
@@ -299,6 +301,29 @@ export default function Navbar() {
               <Search className="w-3.5 h-3.5" />
               <span>Search 31 calculators...</span>
             </button>
+
+            {mounted && (
+              <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-muted/40">
+                <span className="text-xs font-medium text-foreground">Theme</span>
+                <button
+                  type="button"
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-card border border-border text-foreground hover:bg-muted transition-colors"
+                >
+                  {theme === "dark" ? (
+                    <>
+                      <Sun className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Light</span>
+                    </>
+                  ) : (
+                    <>
+                      <Moon className="w-3.5 h-3.5 text-slate-600" />
+                      <span>Dark</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Main Links */}

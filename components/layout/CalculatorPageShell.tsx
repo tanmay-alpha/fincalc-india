@@ -95,7 +95,7 @@ export default function CalculatorPageShell({
 
         {/* Optional Rich Educational Content — Always public & crawlable for SEO */}
         {educationalContent && (
-          <section className="mt-16 pt-12 border-t border-border/80 max-w-4xl mx-auto" aria-label="Educational Guide">
+          <section className="max-w-4xl mx-auto" aria-label="Educational Guide">
             {educationalContent}
           </section>
         )}

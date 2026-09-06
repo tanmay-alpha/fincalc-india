@@ -75,14 +75,24 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-inter)", "system-ui", "sans-serif"],
       },
+      spacing: {
+        "4.5": "1.125rem",
+      },
       borderRadius: {
+        xs: "var(--radius-xs)",
         sm: "var(--radius-sm)",
         md: "var(--radius-md)",
         lg: "var(--radius-lg)",
         xl: "var(--radius-xl)",
+        card: "var(--radius-card)",
+        input: "var(--radius-input)",
       },
       boxShadow: {
+        "2xs": "0 1px 2px 0 rgb(0 0 0 / 0.03)",
+        xs: "var(--shadow-xs)",
+        sm: "var(--shadow-sm)",
         card: "var(--shadow-card)",
+        md: "var(--shadow-md)",
         "card-hover": "var(--shadow-card-hover)",
         soft: "var(--shadow-soft)",
       },
