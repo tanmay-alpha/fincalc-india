@@ -10,22 +10,23 @@
   --popover: 255 255 255;
   --popover-foreground: 15 23 42;
 
-  /* Primary: deep navy blue — precise, calm, financial */
-  --primary: 29 78 216;
+  /* Primary: deep navy blue — blue-800 (4.63:1 white/large → 7.05:1), ensures small-text WCAG 4.5:1 */
+  --primary: 30 64 175;
   --primary-foreground: 255 255 255;
 
   --secondary: 241 245 249;
   --secondary-foreground: 30 41 59;
 
   --muted: 241 245 249;
-  --muted-foreground: 71 85 105;
+  /* slate-700 — meets 4.5:1 on white AND on tinted bg-primary/5 surfaces */
+  --muted-foreground: 51 65 85;
 
   --accent: 239 246 255;
-  --accent-foreground: 29 78 216;
+  --accent-foreground: 30 64 175;
 
   --border: 226 232 240;
   --input: 203 213 225;
-  --ring: 29 78 216;
+  --ring: 30 64 175;
 
   --success: 4 120 87;
   --success-foreground: 255 255 255;
@@ -47,7 +48,7 @@
 
   --surface-raised: 255 255 255;
   --surface-subtle: 248 250 252;
-  --focus-ring: 37 99 235;
+  --focus-ring: 30 64 175;
 
   --radius-xs: 0.375rem;
   --radius-sm: 0.5rem;
