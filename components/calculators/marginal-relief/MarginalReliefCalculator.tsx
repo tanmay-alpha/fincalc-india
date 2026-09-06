@@ -135,7 +135,7 @@ export default function MarginalReliefCalculator() {
             </div>
             <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
               <p className="text-[11px] text-muted-foreground">Marginal Relief</p>
-              <p className="text-base font-bold text-emerald-400 mt-0.5">
+              <p className="text-base font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">
                 {formatINR(result.marginalReliefAmount)}
               </p>
             </div>

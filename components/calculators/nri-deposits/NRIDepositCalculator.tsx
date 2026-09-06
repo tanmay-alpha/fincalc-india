@@ -172,7 +172,7 @@ export default function NRIDepositCalculator() {
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
               <p className="text-[11px] text-muted-foreground">NRE Post-Tax Yield</p>
-              <p className="text-base font-bold text-emerald-400 mt-0.5">
+              <p className="text-base font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">
                 {result.nreResult.effectivePostTaxAnnualYield}% p.a.
               </p>
             </div>
@@ -184,7 +184,7 @@ export default function NRIDepositCalculator() {
             </div>
             <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
               <p className="text-[11px] text-muted-foreground">NRO TDS Deducted</p>
-              <p className="text-base font-bold text-rose-400 mt-0.5">
+              <p className="text-base font-bold text-rose-700 dark:text-rose-400 mt-0.5">
                 {formatINR(result.nroResult.taxDeducted)}
               </p>
             </div>

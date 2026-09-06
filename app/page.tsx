@@ -135,7 +135,7 @@ function GuestHero() {
 
         <p className="mt-5 text-xs text-muted-foreground">
           Sign in to save results, access history, and share calculations.{" "}
-          <Link href="/calculators" className="text-primary hover:underline">
+          <Link href="/calculators" className="text-primary underline font-medium hover:opacity-80">
             Or browse without signing in →
           </Link>
         </p>

@@ -170,7 +170,7 @@ export default function NpsCalculator() {
                 </h3>
                 <span
                   className={`text-xs font-bold ${
-                    totalAllocation === 100 ? "text-emerald-400" : "text-rose-400"
+                    totalAllocation === 100 ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"
                   }`}
                 >
                   Total: {totalAllocation}% {totalAllocation !== 100 && "(Must equal 100%)"}

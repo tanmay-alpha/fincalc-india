@@ -108,7 +108,7 @@ export default function PortfolioRiskCalculator() {
                   Parsed {parsedBenchmarkReturns ? parsedBenchmarkReturns.length : 0} benchmark periods
                 </span>
                 {!isSeriesLengthMatched && parsedBenchmarkReturns && (
-                  <span className="text-rose-400 font-medium">
+                  <span className="text-rose-700 dark:text-rose-400 font-medium">
                     ⚠️ Mismatched: Needs {parsedReturns.length} points
                   </span>
                 )}
@@ -161,7 +161,7 @@ export default function PortfolioRiskCalculator() {
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
               <p className="text-[11px] text-muted-foreground">Sortino Ratio</p>
-              <p className="text-base font-bold text-emerald-400 mt-0.5">
+              <p className="text-base font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">
                 {result.isSortinoInfinite ? "∞ (Zero downside)" : (result.sortinoRatio !== undefined ? result.sortinoRatio.toFixed(2) : "N/A")}
               </p>
             </div>
@@ -179,7 +179,7 @@ export default function PortfolioRiskCalculator() {
             </div>
             <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
               <p className="text-[11px] text-muted-foreground">Max Drawdown</p>
-              <p className="text-base font-bold text-rose-400 mt-0.5">
+              <p className="text-base font-bold text-rose-700 dark:text-rose-400 mt-0.5">
                 -{result.maxDrawdown}%
               </p>
             </div>
@@ -191,7 +191,7 @@ export default function PortfolioRiskCalculator() {
             </div>
             <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-center">
               <p className="text-[11px] text-muted-foreground">Positive Periods</p>
-              <p className="text-base font-bold text-emerald-400 mt-0.5">
+              <p className="text-base font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">
                 {result.positivePeriodsPercent}%
               </p>
             </div>

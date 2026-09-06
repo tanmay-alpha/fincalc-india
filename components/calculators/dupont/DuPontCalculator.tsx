@@ -191,7 +191,7 @@ export default function DuPontCalculator() {
                 <h3 className="font-semibold text-xs uppercase tracking-wider text-card-foreground">
                   5-Step Extended Decomposition
                 </h3>
-                <span className="text-[11px] font-bold text-emerald-400">
+                <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
                   Decomposed ROE: {result.fiveStep.decomposedRoe}%
                 </span>
               </div>
