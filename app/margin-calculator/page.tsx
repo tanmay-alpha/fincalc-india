@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import MarginCalculator from "@/components/calculators/margin/MarginCalculator";
+import CalculatorPageShell from "@/components/layout/CalculatorPageShell";
 
 export const metadata: Metadata = {
   title: "F&O Margin Estimator — Futures, Options & MTF Leverage",
@@ -16,17 +17,21 @@ export const metadata: Metadata = {
 
 export default function MarginCalculatorPage() {
   return (
-    <main className="container max-w-6xl mx-auto px-4 py-8 space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-          F&O Margin Estimator
-        </h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          Illustrative SPAN/exposure assumptions. Actual exchange/broker margin varies with contract, volatility and current risk parameters.
-        </p>
-      </header>
-
+    <CalculatorPageShell
+      id="margin-calculator"
+      assumptions={[
+        "Margin calculations estimate SPAN and Exposure requirements based on illustrative risk parameters.",
+        "Actual exchange margins vary dynamically in real time depending on market volatility and price shocks.",
+        "SEBI peak margin regulations require 100% upfront margin collection prior to order execution.",
+      ]}
+      sources={[
+        {
+          label: "Securities and Exchange Board of India (SEBI) — Comprehensive Risk Management Framework",
+          url: "https://www.sebi.gov.in/",
+        },
+      ]}
+    >
       <MarginCalculator />
-    </main>
+    </CalculatorPageShell>
   );
 }

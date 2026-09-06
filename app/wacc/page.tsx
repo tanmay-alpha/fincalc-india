@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import WaccCalculator from "@/components/calculators/wacc/WaccCalculator";
+import CalculatorPageShell from "@/components/layout/CalculatorPageShell";
 
 export const metadata: Metadata = {
   title: "WACC Calculator India — Weighted Average Cost of Capital",
@@ -16,17 +17,21 @@ export const metadata: Metadata = {
 
 export default function WaccPage() {
   return (
-    <main className="container max-w-6xl mx-auto px-4 py-8 space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-          WACC Calculator
-        </h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          Calculate corporate Weighted Average Cost of Capital (WACC) with debt tax-shield advantages and capital structure weighting.
-        </p>
-      </header>
-
+    <CalculatorPageShell
+      id="wacc"
+      assumptions={[
+        "Cost of Equity (Ke) is estimated using the Capital Asset Pricing Model (CAPM): Ke = Rf + Beta × (Rm - Rf).",
+        "Cost of Debt (Kd) is adjusted for the corporate income tax shield: Kd_after_tax = Kd × (1 - Tax Rate).",
+        "Capital weights reflect relative proportions of equity and interest-bearing debt.",
+      ]}
+      sources={[
+        {
+          label: "Institute of Cost Accountants of India — Cost of Capital Principles",
+          url: "https://icmai.in/",
+        },
+      ]}
+    >
       <WaccCalculator />
-    </main>
+    </CalculatorPageShell>
   );
 }

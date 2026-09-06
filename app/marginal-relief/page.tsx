@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import MarginalReliefCalculator from "@/components/calculators/marginal-relief/MarginalReliefCalculator";
+import CalculatorPageShell from "@/components/layout/CalculatorPageShell";
 
 export const metadata: Metadata = {
   title: "Marginal Relief & High-Income Surcharge Calculator India — Tax Year 2026-27",
@@ -16,17 +17,21 @@ export const metadata: Metadata = {
 
 export default function MarginalReliefPage() {
   return (
-    <main className="container max-w-6xl mx-auto px-4 py-8 space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-          Marginal Relief & High-Income Surcharge
-        </h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          Determine exact marginal relief protection under the Income Tax Act so taxpayers right above ₹50L, ₹1Cr, ₹2Cr, or ₹5Cr thresholds never pay extra tax exceeding their extra earnings.
-        </p>
-      </header>
-
+    <CalculatorPageShell
+      id="marginal-relief"
+      assumptions={[
+        "Marginal relief caps total tax payable with surcharge so it does not exceed tax on threshold plus the incremental income above that threshold.",
+        "Calculations apply to statutory thresholds of ₹50 Lakh, ₹1 Crore, ₹2 Crore, and ₹5 Crore.",
+        "4% Health & Education Cess is levied on total tax after applying marginal relief.",
+      ]}
+      sources={[
+        {
+          label: "Income Tax Department — Surcharge & Marginal Relief Provisions",
+          url: "https://incometaxindia.gov.in/",
+        },
+      ]}
+    >
       <MarginalReliefCalculator />
-    </main>
+    </CalculatorPageShell>
   );
 }

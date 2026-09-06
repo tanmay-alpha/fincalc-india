@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import BalanceTransferCalculator from "@/components/calculators/balance-transfer/BalanceTransferCalculator";
+import CalculatorPageShell from "@/components/layout/CalculatorPageShell";
 
 export const metadata: Metadata = {
   title: "Home Loan Balance Transfer Calculator India — Refinancing Savings & Breakeven",
@@ -16,17 +17,21 @@ export const metadata: Metadata = {
 
 export default function BalanceTransferPage() {
   return (
-    <main className="container max-w-6xl mx-auto px-4 py-8 space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-          Home Loan Balance Transfer & Refinancing
-        </h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          Calculate pure net savings from switching your existing loan to a lower interest rate, accounting for processing fees, legal search costs, and MODT charges.
-        </p>
-      </header>
-
+    <CalculatorPageShell
+      id="balance-transfer"
+      assumptions={[
+        "New lender interest rate is assumed to remain constant throughout the remaining tenure.",
+        "Switching costs include processing fees, legal/technical valuation fees, and state MODT stamp duty.",
+        "Foreclosure charges on floating-rate home loans for individual borrowers are 0% per RBI regulations.",
+      ]}
+      sources={[
+        {
+          label: "Reserve Bank of India — Regulatory Guidelines on Foreclosure Charges",
+          url: "https://rbi.org.in/",
+        },
+      ]}
+    >
       <BalanceTransferCalculator />
-    </main>
+    </CalculatorPageShell>
   );
 }

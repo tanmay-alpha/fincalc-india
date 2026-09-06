@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import LrsTcsCalculator from "@/components/calculators/lrs-tcs/LrsTcsCalculator";
+import CalculatorPageShell from "@/components/layout/CalculatorPageShell";
 
 export const metadata: Metadata = {
   title: "LRS TCS Calculator India — Foreign Remittance Tax Collected at Source",
@@ -16,17 +17,26 @@ export const metadata: Metadata = {
 
 export default function LrsTcsPage() {
   return (
-    <main className="container max-w-6xl mx-auto px-4 py-8 space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-          LRS TCS & Foreign Remittance Calculator
-        </h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          Calculate Section 206C(1G) Tax Collected at Source (TCS) on foreign remittances across investments, overseas travel, education loans, and medical treatment.
-        </p>
-      </header>
-
+    <CalculatorPageShell
+      id="lrs-tcs"
+      badge="FA 2026"
+      assumptions={[
+        "Calculates Tax Collected at Source (TCS) under Section 206C(1G) of the Income Tax Act.",
+        "Statutory remittance threshold of ₹10 Lakh applies aggregated across all authorized dealer banks per fiscal year.",
+        "TCS collected is not an additional tax cost — it can be adjusted against advance tax or refunded via ITR.",
+      ]}
+      sources={[
+        {
+          label: "Income Tax Department — Section 206C(1G) LRS TCS Guidelines",
+          url: "https://incometaxindia.gov.in/",
+        },
+        {
+          label: "Reserve Bank of India — Liberalised Remittance Scheme (LRS)",
+          url: "https://rbi.org.in/",
+        },
+      ]}
+    >
       <LrsTcsCalculator />
-    </main>
+    </CalculatorPageShell>
   );
 }
