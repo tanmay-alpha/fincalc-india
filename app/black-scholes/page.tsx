@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import BlackScholesCalculator from "@/components/calculators/black-scholes/BlackScholesCalculator";
+import CalculatorPageShell from "@/components/layout/CalculatorPageShell";
 
 export const metadata: Metadata = {
   title: "Black-Scholes Option Pricing & Greeks Calculator India — Nifty & Bank Nifty",
@@ -16,17 +17,21 @@ export const metadata: Metadata = {
 
 export default function BlackScholesPage() {
   return (
-    <main className="container max-w-6xl mx-auto px-4 py-8 space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-          Black-Scholes Option Pricing & Greeks
-        </h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          Calculate European option theoretical fair value and first & second-order Greeks (Delta, Gamma, Theta, Vega) using the continuous Black-Scholes-Merton model.
-        </p>
-      </header>
-
+    <CalculatorPageShell
+      id="black-scholes"
+      assumptions={[
+        "European option pricing model assumes continuous trading, zero transaction frictions, and constant risk-free rate.",
+        "Underlying asset price is assumed to follow a geometric Brownian motion with lognormal distribution.",
+        "Implied volatility reflects annualized standard deviation of asset price returns.",
+      ]}
+      sources={[
+        {
+          label: "National Stock Exchange of India (NSE) — Equity Derivatives",
+          url: "https://www.nseindia.com/",
+        },
+      ]}
+    >
       <BlackScholesCalculator />
-    </main>
+    </CalculatorPageShell>
   );
 }

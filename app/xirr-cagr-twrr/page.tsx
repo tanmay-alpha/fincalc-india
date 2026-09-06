@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import XirrCalculator from "@/components/calculators/xirr/XirrCalculator";
+import CalculatorPageShell from "@/components/layout/CalculatorPageShell";
 
 export const metadata: Metadata = {
   title: "XIRR Calculator India — Irregular Cash Flow Return Analyzer",
@@ -16,17 +17,21 @@ export const metadata: Metadata = {
 
 export default function XirrPage() {
   return (
-    <main className="container max-w-6xl mx-auto px-4 py-8 space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-          XIRR Portfolio Return Calculator
-        </h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          Solve exact annualized returns (Extended Internal Rate of Return) across non-periodic investments, dividend payouts, and lump-sum redemptions.
-        </p>
-      </header>
-
+    <CalculatorPageShell
+      id="xirr-cagr-twrr"
+      assumptions={[
+        "XIRR uses the Newton-Raphson method to solve the internal rate of return for irregular cash flow dates.",
+        "CAGR measures point-to-point geometric growth assuming no intermediate inflows or withdrawals.",
+        "TWRR isolates portfolio manager performance by neutralizing the timing and magnitude of external cash flows.",
+      ]}
+      sources={[
+        {
+          label: "Association of Mutual Funds in India (AMFI) — Performance Measurement Guidelines",
+          url: "https://www.amfiindia.com/",
+        },
+      ]}
+    >
       <XirrCalculator />
-    </main>
+    </CalculatorPageShell>
   );
 }

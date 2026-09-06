@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import PortfolioRiskCalculator from "@/components/calculators/portfolio-risk/PortfolioRiskCalculator";
+import CalculatorPageShell from "@/components/layout/CalculatorPageShell";
 
 export const metadata: Metadata = {
   title: "Portfolio Risk & Return Calculator India — Sharpe, Sortino & Max Drawdown",
@@ -16,17 +17,21 @@ export const metadata: Metadata = {
 
 export default function PortfolioRiskPage() {
   return (
-    <main className="container max-w-6xl mx-auto px-4 py-8 space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-          Portfolio Risk & Return Analytics
-        </h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          Compute risk-adjusted investment metrics including Sharpe Ratio, Sortino Ratio, annualized volatility, and maximum peak-to-trough drawdown.
-        </p>
-      </header>
-
+    <CalculatorPageShell
+      id="portfolio-risk"
+      assumptions={[
+        "Risk-free rate benchmark defaults to current prevailing Government of India Treasury Bill yields.",
+        "Sortino ratio measures downside volatility exclusively below the target minimum acceptable return.",
+        "Maximum drawdown measures peak-to-trough drop before a new peak is achieved across the observation horizon.",
+      ]}
+      sources={[
+        {
+          label: "Reserve Bank of India — Financial Market Operations & Benchmarks",
+          url: "https://rbi.org.in/",
+        },
+      ]}
+    >
       <PortfolioRiskCalculator />
-    </main>
+    </CalculatorPageShell>
   );
 }

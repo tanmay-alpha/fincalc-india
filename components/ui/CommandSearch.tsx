@@ -5,13 +5,9 @@ import { useRouter } from "next/navigation";
 import {
   Search,
   X,
-  TrendingUp,
-  FileText,
-  LineChart,
-  Building2,
-  Scale,
   ArrowRight,
   Command,
+  Sparkles,
 } from "lucide-react";
 import {
   CATEGORIES,
@@ -21,19 +17,12 @@ import {
 } from "@/lib/registry";
 import { cn } from "@/lib/utils";
 import DialogPrimitive from "@/components/ui/DialogPrimitive";
+import CalculatorIcon from "@/components/ui/CalculatorIcon";
 
 interface CommandSearchProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-const CATEGORY_ICONS: Record<CalculatorCategory, typeof TrendingUp> = {
-  investments: TrendingUp,
-  taxation: FileText,
-  trading: LineChart,
-  loans: Building2,
-  corporate: Scale,
-};
 
 export default function CommandSearch({ isOpen, onClose }: CommandSearchProps) {
   const router = useRouter();
@@ -197,7 +186,6 @@ export default function CommandSearch({ isOpen, onClose }: CommandSearchProps) {
             </div>
           ) : (
             filteredCalculators.map((calc, idx) => {
-              const CategoryIcon = CATEGORY_ICONS[calc.category] || TrendingUp;
               const isSelected = idx === selectedIndex;
 
               return (
@@ -225,7 +213,7 @@ export default function CommandSearch({ isOpen, onClose }: CommandSearchProps) {
                         isSelected ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
                       )}
                     >
-                      <CategoryIcon className="w-4 h-4" />
+                      <CalculatorIcon id={calc.id} className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
@@ -236,7 +224,8 @@ export default function CommandSearch({ isOpen, onClose }: CommandSearchProps) {
                           </span>
                         )}
                         {calc.isPopular && !calc.badge && (
-                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-800 dark:text-amber-300 shrink-0">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-primary/10 text-primary shrink-0">
+                            <Sparkles className="w-2.5 h-2.5" />
                             Popular
                           </span>
                         )}

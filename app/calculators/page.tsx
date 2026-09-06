@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import CategoryDirectory from "@/components/home/CategoryDirectory";
 
@@ -20,7 +21,15 @@ export default function CalculatorsPage() {
   return (
     <main id="main-content" className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
-        <CategoryDirectory />
+        <Suspense
+          fallback={
+            <div className="py-16 text-center text-sm text-muted-foreground animate-pulse">
+              Loading calculators...
+            </div>
+          }
+        >
+          <CategoryDirectory />
+        </Suspense>
       </div>
     </main>
   );

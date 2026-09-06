@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import CarTcoCalculator from "@/components/calculators/car-tco/CarTcoCalculator";
+import CalculatorPageShell from "@/components/layout/CalculatorPageShell";
 
 export const metadata: Metadata = {
   title: "Car Loan Total Cost of Ownership (TCO) Calculator India — Real Cost Per Km",
@@ -16,17 +17,21 @@ export const metadata: Metadata = {
 
 export default function CarLoanTcoPage() {
   return (
-    <main className="container max-w-6xl mx-auto px-4 py-8 space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-          Car Loan Total Cost of Ownership (TCO)
-        </h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          Uncover the true all-inclusive financial commitment of buying a car — factoring in fuel inflation, yearly insurance, maintenance escalations, and residual resale depreciation.
-        </p>
-      </header>
-
+    <CalculatorPageShell
+      id="car-loan-tco"
+      assumptions={[
+        "Vehicle depreciation is modeled annually on the reducing market value of the vehicle.",
+        "Fuel efficiency, maintenance, and replacement tires escalate with running mileage and general inflation.",
+        "Insurance premiums reflect the reduction in Insured Declared Value (IDV) minus standard NCB accrual.",
+      ]}
+      sources={[
+        {
+          label: "Insurance Regulatory and Development Authority of India (IRDAI)",
+          url: "https://irdai.gov.in/",
+        },
+      ]}
+    >
       <CarTcoCalculator />
-    </main>
+    </CalculatorPageShell>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import NpsCalculator from "@/components/calculators/nps/NpsCalculator";
+import CalculatorPageShell from "@/components/layout/CalculatorPageShell";
 
 export const metadata: Metadata = {
   title: "NPS Calculator India — National Pension System Tier-1 Corpus & Pension Modeler",
@@ -16,17 +17,22 @@ export const metadata: Metadata = {
 
 export default function NpsPage() {
   return (
-    <main className="container max-w-6xl mx-auto px-4 py-8 space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-          NPS Pension & Corpus Calculator
-        </h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          Model retirement wealth accumulation in National Pension System (NPS Tier-1) across Equity (E), Corporate Debt (C), and Government Bonds (G) with exact monthly pension payouts.
-        </p>
-      </header>
-
+    <CalculatorPageShell
+      id="nps"
+      badge="PFRDA 2026"
+      assumptions={[
+        "At least 40% of the accumulated Tier-1 corpus must be used to purchase an annuity as per PFRDA regulations.",
+        "Up to 60% of the corpus can be withdrawn as a completely tax-free lump sum at age 60.",
+        "Section 80CCD(1B) provides an additional exclusive tax deduction up to ₹50,000 over and above the ₹1.5L Section 80C ceiling.",
+      ]}
+      sources={[
+        {
+          label: "Pension Fund Regulatory and Development Authority (PFRDA)",
+          url: "https://www.pfrda.org.in/",
+        },
+      ]}
+    >
       <NpsCalculator />
-    </main>
+    </CalculatorPageShell>
   );
 }

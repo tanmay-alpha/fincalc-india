@@ -4,8 +4,9 @@ import AssumptionsDrawer from "@/components/ui/AssumptionsDrawer";
 import CalculatorDisclaimer from "@/components/ui/CalculatorDisclaimer";
 import RelatedCalculators from "@/components/shared/RelatedCalculators";
 import { getCalculatorById, CATEGORY_MAP, CalculatorCategory } from "@/lib/registry";
-import { getCategoryIcon } from "@/components/ui/CategoryIcon";
+import CalculatorIcon from "@/components/ui/CalculatorIcon";
 import { RegulatoryMetadata } from "@/lib/calculator-contracts";
+import InteractiveCalculatorGate from "@/components/auth/InteractiveCalculatorGate";
 
 interface CalculatorPageShellProps {
   id: string;
@@ -38,7 +39,6 @@ export default function CalculatorPageShell({
   const displayDescription = description || meta?.description;
   const displayCategory = category || meta?.category || "investments";
   const categoryLabel = CATEGORY_MAP[displayCategory]?.label || "Calculators";
-  const Icon = getCategoryIcon(id);
 
   return (
     <main id="main-content" className="min-h-screen pb-24 lg:pb-16">
@@ -47,7 +47,7 @@ export default function CalculatorPageShell({
         <Breadcrumb
           items={[
             { label: "Home", href: "/" },
-            { label: categoryLabel, href: "/#calculators" },
+            { label: categoryLabel, href: "/calculators" },
             { label: displayTitle },
           ]}
         />
@@ -58,7 +58,7 @@ export default function CalculatorPageShell({
             <div className="space-y-1">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                  <Icon className="w-4.5 h-4.5" />
+                  <CalculatorIcon id={id} className="w-4.5 h-4.5" />
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
                   {displayTitle}
@@ -86,12 +86,14 @@ export default function CalculatorPageShell({
           </div>
         </div>
 
-        {/* Interactive Calculator Workspace */}
+        {/* Interactive Calculator Workspace with Login Gate */}
         <div className="calculator-workspace">
-          {children}
+          <InteractiveCalculatorGate calcName={displayTitle} category={displayCategory}>
+            {children}
+          </InteractiveCalculatorGate>
         </div>
 
-        {/* Optional Rich Educational Content */}
+        {/* Optional Rich Educational Content — Always public & crawlable for SEO */}
         {educationalContent && (
           <section className="mt-16 pt-12 border-t border-border/80 max-w-4xl mx-auto" aria-label="Educational Guide">
             {educationalContent}

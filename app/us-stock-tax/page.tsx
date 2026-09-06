@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import USStockTaxCalculator from "@/components/calculators/us-stock/USStockTaxCalculator";
+import CalculatorPageShell from "@/components/layout/CalculatorPageShell";
 
 export const metadata: Metadata = {
   title: "US Stock Investing Net Return Calculator India — DTAA Foreign Tax Credit & Currency Gain",
@@ -16,17 +17,21 @@ export const metadata: Metadata = {
 
 export default function USStockTaxPage() {
   return (
-    <main className="container max-w-6xl mx-auto px-4 py-8 space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-          US Stock Post-Tax Return & DTAA Analyzer
-        </h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          Model total realized INR returns on US equities — combining underlying stock appreciation, rupee depreciation tailwinds, 24-month LTCG tax, and Section 90 Foreign Tax Credit (FTC) for dividend withholding.
-        </p>
-      </header>
-
+    <CalculatorPageShell
+      id="us-stock-tax"
+      assumptions={[
+        "Unlisted/foreign equities held for more than 24 months qualify as Long-Term Capital Assets taxed at 12.5% without indexation.",
+        "US dividend withholding at 25% under India-US DTAA is eligible for Foreign Tax Credit (FTC) under Section 90 via Form 67.",
+        "Currency conversions follow Rule 115 using the SBI Telegraphic Transfer Buying Rate (TTBR).",
+      ]}
+      sources={[
+        {
+          label: "Income Tax Department — Section 90 & India-US Double Tax Avoidance Agreement",
+          url: "https://incometaxindia.gov.in/",
+        },
+      ]}
+    >
       <USStockTaxCalculator />
-    </main>
+    </CalculatorPageShell>
   );
 }
