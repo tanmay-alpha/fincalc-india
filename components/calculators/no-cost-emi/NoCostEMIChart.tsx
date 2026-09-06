@@ -45,9 +45,9 @@ export default function NoCostEMIChart({
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={chartData}
-          margin={{ top: 20, right: 15, left: 10, bottom: 0 }}
+          margin={{ top: 20, right: 15, left: 0, bottom: 0 }}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.15)" />
           <XAxis
             dataKey="name"
             stroke="#94a3b8"
@@ -55,6 +55,7 @@ export default function NoCostEMIChart({
             tickLine={false}
           />
           <YAxis
+            width={52}
             stroke="#94a3b8"
             fontSize={12}
             tickLine={false}

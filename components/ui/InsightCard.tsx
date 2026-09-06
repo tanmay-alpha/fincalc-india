@@ -1,7 +1,31 @@
+import React from "react";
 import { clsx } from "clsx";
+import {
+  TrendingUp,
+  TrendingDown,
+  Target,
+  Calendar,
+  IndianRupee,
+  ShieldCheck,
+  CheckCircle2,
+  AlertTriangle,
+  FileText,
+  CreditCard,
+  Scale,
+  Sparkles,
+  Info,
+  Lightbulb,
+  Zap,
+  Percent,
+  Clock,
+  Briefcase,
+  BarChart2,
+  Building,
+  DollarSign,
+} from "lucide-react";
 
 export interface InsightCardProps {
-  icon: string;
+  icon: React.ReactNode;
   title: string;
   subtitle?: string;
   type: "info" | "good" | "warning";
@@ -19,12 +43,50 @@ const borderAccentStyles = {
   warning: "border-l-amber-500/70",
 };
 
+const EMOJI_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  "🚀": TrendingUp,
+  "📈": TrendingUp,
+  "📉": TrendingDown,
+  "🎯": Target,
+  "🗓️": Calendar,
+  "📅": Calendar,
+  "💰": IndianRupee,
+  "💵": IndianRupee,
+  "₹": IndianRupee,
+  "⚠️": AlertTriangle,
+  "🛡️": ShieldCheck,
+  "✅": CheckCircle2,
+  "🧾": FileText,
+  "💳": CreditCard,
+  "⚖️": Scale,
+  "✨": Sparkles,
+  "💡": Lightbulb,
+  "⚡": Zap,
+  "ℹ️": Info,
+  "⏰": Clock,
+  "💼": Briefcase,
+  "📊": BarChart2,
+  "🏛️": Building,
+  "🏦": Building,
+  "$": DollarSign,
+  "%": Percent,
+};
+
 export default function InsightCard({
   icon,
   title,
   subtitle,
   type,
 }: InsightCardProps) {
+  let renderedIcon: React.ReactNode = icon;
+  if (typeof icon === "string") {
+    const trimmed = icon.trim();
+    const MappedIcon = EMOJI_ICON_MAP[trimmed];
+    if (MappedIcon) {
+      renderedIcon = <MappedIcon className="w-3.5 h-3.5" />;
+    }
+  }
+
   return (
     <div
       className={clsx(
@@ -36,12 +98,12 @@ export default function InsightCard({
       <div className="flex gap-3 items-start">
         <div
           className={clsx(
-            "w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 text-sm font-medium",
+            "w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 text-xs font-medium",
             indicatorStyles[type]
           )}
           aria-hidden="true"
         >
-          {icon}
+          {renderedIcon}
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-xs sm:text-sm font-semibold text-foreground leading-snug tracking-tight">

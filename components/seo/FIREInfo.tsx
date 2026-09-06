@@ -1,37 +1,46 @@
 export default function FIREInfo() {
   return (
-    <div className="mt-12 space-y-8 border-t border-slate-200 dark:border-slate-800 pt-8">
+    <div className="mt-12 space-y-8 border-t border-border/60 pt-8">
       <section>
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-3">
+        <h2 className="text-lg font-bold text-foreground mb-3">
           What is FIRE (Financial Independence, Retire Early)?
         </h2>
-        <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
-          The <strong>FIRE framework</strong> models portfolio accumulation designed to sustain living expenses over extended horizons. Achieving financial independence relies on disciplined savings, prudent asset allocation, conservative safe withdrawal rates, and managing sequence-of-returns risk across multi-decade retirement periods.
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          The <strong className="text-foreground">FIRE framework</strong> models portfolio accumulation designed to sustain living expenses over extended horizons. Achieving financial independence relies on disciplined savings, prudent asset allocation, conservative safe withdrawal rates, and managing sequence-of-returns risk across multi-decade retirement periods.
         </p>
       </section>
 
       <section>
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-3">
+        <h2 className="text-lg font-bold text-foreground mb-3">
           The 3 Primary FIRE Approaches
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 text-sm">
-            <p className="font-semibold text-slate-900 dark:text-white mb-1">🌱 Lean FIRE (0.75x)</p>
-            <p className="text-xs text-slate-500">Focuses on essential baseline living costs and moderate living expenditures in lower-cost geographies.</p>
+          <div className="bg-card rounded-xl p-4 border border-border/80 text-sm shadow-2xs">
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="font-semibold text-foreground">Lean FIRE</p>
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">0.75x Baseline</span>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">Focuses on essential baseline living costs and moderate living expenditures in lower-cost geographies.</p>
           </div>
-          <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 text-sm">
-            <p className="font-semibold text-slate-900 dark:text-white mb-1">🎯 Standard FIRE (1.0x)</p>
-            <p className="text-xs text-slate-500">Maintains current annual living standards and customary discretionary expenditure.</p>
+          <div className="bg-card rounded-xl p-4 border border-border/80 text-sm shadow-2xs">
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="font-semibold text-foreground">Standard FIRE</p>
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">1.0x Expenses</span>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">Maintains current annual living standards and customary discretionary expenditure.</p>
           </div>
-          <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 text-sm">
-            <p className="font-semibold text-slate-900 dark:text-white mb-1">👑 Fat FIRE (1.5x)</p>
-            <p className="text-xs text-slate-500">Includes an expansive buffer for travel, lifestyle flexibility, and unforeseen emergencies.</p>
+          <div className="bg-card rounded-xl p-4 border border-border/80 text-sm shadow-2xs">
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="font-semibold text-foreground">Fat FIRE</p>
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20">1.5x Multiplier</span>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">Includes an expansive buffer for travel, lifestyle flexibility, and unforeseen emergencies.</p>
           </div>
         </div>
       </section>
 
       <section>
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Frequently Asked Questions</h2>
+        <h2 className="text-lg font-bold text-foreground mb-4">Frequently Asked Questions</h2>
         <div className="space-y-4">
           {[
             {
@@ -47,9 +56,9 @@ export default function FIREInfo() {
               a: "Healthcare inflation in India historically outpaces baseline CPI. Early retirement plans should budget for independent health insurance policies with comprehensive super top-up coverage and a dedicated medical contingency reserve."
             },
           ].map((faq, i) => (
-            <div key={i} className="border-b border-slate-100 dark:border-slate-800 pb-4 last:border-0">
-              <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-200 mb-1">{faq.q}</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{faq.a}</p>
+            <div key={i} className="border-b border-border/60 pb-4 last:border-0">
+              <h3 className="font-semibold text-sm text-foreground mb-1">{faq.q}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{faq.a}</p>
             </div>
           ))}
         </div>
