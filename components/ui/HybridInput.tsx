@@ -30,9 +30,10 @@ type SliderStyle = CSSProperties & {
 /**
  * Parse a free-form string into a number.
  * Supports: 5L, 1.5Cr, 10k, plain digits, with optional ₹/commas/spaces.
- * Returns NaN for unparseable input.
+ * Returns NaN for malformed or unparseable input (e.g. "12abc").
  */
-function parseInput(raw: string): number {
+export function parseFinancialInput(raw: string): number {
+  if (typeof raw !== "string") return NaN;
   const cleaned = raw
     .trim()
     .replace(/₹/g, "")
@@ -42,17 +43,61 @@ function parseInput(raw: string): number {
 
   if (!cleaned) return NaN;
 
-  if (cleaned.endsWith("CR")) {
-    return parseFloat(cleaned) * 10000000;
+  const match = cleaned.match(/^([+-]?(?:\d+(?:\.\d*)?|\.\d+))(CR|L|K)?$/);
+  if (!match) return NaN;
+
+  const base = Number(match[1]);
+  if (!Number.isFinite(base)) return NaN;
+
+  const multiplier =
+    match[2] === "CR" ? 10_000_000 : match[2] === "L" ? 100_000 : match[2] === "K" ? 1_000 : 1;
+  const value = base * multiplier;
+  return Number.isFinite(value) ? value : NaN;
+}
+
+export { parseFinancialInput as parseInput };
+
+export const SLIDER_STEPS = 1000;
+
+export function valueToSliderPosition(
+  value: number,
+  min: number,
+  max: number,
+  isWideRange: boolean
+): number {
+  if (max <= min) return 0;
+  const clampedVal = clampSafe(value, min, max);
+  if (!isWideRange || min <= 0) {
+    return ((clampedVal - min) / (max - min)) * SLIDER_STEPS;
   }
-  if (cleaned.endsWith("L")) {
-    return parseFloat(cleaned) * 100000;
+  const fraction = Math.log(clampedVal / min) / Math.log(max / min);
+  return Math.max(0, Math.min(SLIDER_STEPS, fraction * SLIDER_STEPS));
+}
+
+export function sliderPositionToValue(
+  position: number,
+  min: number,
+  max: number,
+  step: number,
+  isWideRange: boolean
+): number {
+  if (max <= min) return min;
+  const fraction = Math.max(0, Math.min(1, position / SLIDER_STEPS));
+  if (!isWideRange || min <= 0) {
+    const raw = min + fraction * (max - min);
+    const stepped = Math.round((raw - min) / step) * step + min;
+    return clampSafe(stepped, min, max);
   }
-  if (cleaned.endsWith("K")) {
-    return parseFloat(cleaned) * 1000;
-  }
-  const n = parseFloat(cleaned);
-  return Number.isFinite(n) ? n : NaN;
+
+  const raw = min * Math.pow(max / min, fraction);
+  let effectiveStep = step;
+  if (raw >= 10_000_000) effectiveStep = Math.max(step, 100_000);
+  else if (raw >= 1_000_000) effectiveStep = Math.max(step, 25_000);
+  else if (raw >= 100_000) effectiveStep = Math.max(step, 5_000);
+  else if (raw >= 10_000) effectiveStep = Math.max(step, 500);
+
+  const stepped = Math.round((raw - min) / effectiveStep) * effectiveStep + min;
+  return clampSafe(stepped, min, max);
 }
 
 function formatDisplayValue(value: number, prefix?: string): string {
@@ -98,8 +143,10 @@ export default function HybridInput({
     }
   }, [value, isFocused, isDragging]);
 
-  const sliderValue =
-    max > min ? Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100)) : 0;
+  const isWideRange = Boolean(prefix === "₹" && min > 0 && max / min >= 50);
+  const currentPos = valueToSliderPosition(value, min, max, isWideRange);
+  const sliderFillPercent =
+    max > min ? Math.max(0, Math.min(100, (currentPos / SLIDER_STEPS) * 100)) : 0;
 
   const commitValue = useCallback(
     (nextValue: number): number => {
@@ -113,18 +160,20 @@ export default function HybridInput({
 
   const handleBlur = useCallback(() => {
     setIsFocused(false);
-    const parsed = parseInput(rawText);
+    const parsed = parseFinancialInput(rawText);
 
     if (Number.isNaN(parsed) || !Number.isFinite(parsed)) {
       const previous = latestValidRef.current;
       onChange(previous);
       setRawText(previous.toString());
-      setLocalError(null);
+      setLocalError("Please enter a valid number");
       return;
     }
 
     if (parsed < min || parsed > max) {
-      setLocalError(`Must be between ${min} and ${max}`);
+      setLocalError(
+        `Must be between ${prefix || ""}${formatDisplayValue(min, prefix)} and ${prefix || ""}${formatDisplayValue(max, prefix)}`
+      );
     } else {
       setLocalError(null);
     }
@@ -133,13 +182,13 @@ export default function HybridInput({
     latestValidRef.current = clamped;
     onChange(clamped);
     setRawText(clamped.toString());
-  }, [max, min, onChange, rawText]);
+  }, [max, min, onChange, prefix, rawText]);
 
   const chips = quickChips ?? [];
   const displayError = error ?? localError ?? undefined;
   const effectiveAriaLabel = ariaLabel || label || (suffix ? `Value in ${suffix.trim()}` : "Numeric value");
 
-  const liveParsed = parseInput(rawText);
+  const liveParsed = parseFinancialInput(rawText);
   const liveFormatted =
     !Number.isNaN(liveParsed) && Number.isFinite(liveParsed)
       ? formatDisplayValue(liveParsed, prefix)
@@ -176,24 +225,51 @@ export default function HybridInput({
           <input
             id={sliderId}
             type="range"
-            min={min}
-            max={max}
-            step={step || 1}
-            value={value}
+            min={0}
+            max={SLIDER_STEPS}
+            step={1}
+            value={currentPos}
             disabled={disabled}
             aria-label={`${effectiveAriaLabel} slider`}
+            aria-valuemin={min}
+            aria-valuemax={max}
+            aria-valuenow={value}
+            aria-valuetext={prefix ? `${prefix}${formatDisplayValue(value, prefix)}` : value.toString()}
             onPointerDown={() => setIsDragging(true)}
             onPointerUp={() => setIsDragging(false)}
             onPointerCancel={() => setIsDragging(false)}
             onBlur={() => setIsDragging(false)}
+            onKeyDown={(e) => {
+              const stepAmount = step || 1;
+              if (e.key === "ArrowRight" || e.key === "ArrowUp") {
+                e.preventDefault();
+                const next = clampSafe(value + stepAmount, min, max);
+                commitValue(next);
+                setRawText(next.toString());
+              } else if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
+                e.preventDefault();
+                const next = clampSafe(value - stepAmount, min, max);
+                commitValue(next);
+                setRawText(next.toString());
+              } else if (e.key === "Home") {
+                e.preventDefault();
+                commitValue(min);
+                setRawText(min.toString());
+              } else if (e.key === "End") {
+                e.preventDefault();
+                commitValue(max);
+                setRawText(max.toString());
+              }
+            }}
             onChange={(e) => {
-              const v = Number(e.target.value);
-              const clamped = commitValue(v);
+              const pos = Number(e.target.value);
+              const nextVal = sliderPositionToValue(pos, min, max, step || 1, isWideRange);
+              const clamped = commitValue(nextVal);
               setRawText(clamped.toString());
             }}
             style={
               {
-                "--slider-value": `${sliderValue}%`,
+                "--slider-value": `${sliderFillPercent}%`,
                 background:
                   "linear-gradient(to right, rgb(var(--primary)) 0%, rgb(var(--primary)) var(--slider-value), rgb(var(--input)) var(--slider-value), rgb(var(--input)) 100%)",
               } as SliderStyle
@@ -264,7 +340,7 @@ export default function HybridInput({
           onChange={(e) => {
             const nextText = e.target.value;
             setRawText(nextText);
-            const parsed = parseInput(nextText);
+            const parsed = parseFinancialInput(nextText);
             // Only update parent live if valid and within bounds; do not prematurely clamp partial typing
             if (!Number.isNaN(parsed) && Number.isFinite(parsed)) {
               if (parsed >= min && parsed <= max) {
