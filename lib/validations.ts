@@ -9,23 +9,24 @@
 
 import { z } from "zod";
 import { MAX_INPUT_LIMITS } from "@/lib/constants/tax-year-2026-27";
+import { CALCULATOR_INPUT_LIMITS } from "@/lib/constants/calculator-input-limits";
 
 // ─── SIP ──────────────────────────────────────────────────────
 
 export const sipSchema = z.object({
   monthlyAmount: z
     .number({ message: "Monthly investment is required" })
-    .min(100, "Minimum monthly investment is ₹100")
-    .max(10_00_000, "Maximum monthly investment is ₹10,00,000"),
+    .min(CALCULATOR_INPUT_LIMITS.sip.monthlyAmount.supported.min, "Minimum monthly investment is ₹100")
+    .max(CALCULATOR_INPUT_LIMITS.sip.monthlyAmount.supported.max, "Maximum monthly investment is ₹1 Crore"),
   annualRate: z
     .number({ message: "Expected return rate is required" })
-    .min(0.1, "Minimum rate is 0.1%")
-    .max(50, "Maximum rate is 50%"),
+    .min(CALCULATOR_INPUT_LIMITS.sip.annualRate.supported.min, "Minimum rate is 0.1%")
+    .max(CALCULATOR_INPUT_LIMITS.sip.annualRate.supported.max, "Maximum rate is 50%"),
   years: z
     .number({ message: "Time period is required" })
     .int("Time period must be a whole number")
-    .min(1, "Minimum period is 1 year")
-    .max(50, "Maximum period is 50 years"),
+    .min(CALCULATOR_INPUT_LIMITS.sip.years.supported.min, "Minimum period is 1 year")
+    .max(CALCULATOR_INPUT_LIMITS.sip.years.supported.max, "Maximum period is 50 years"),
 });
 
 export type SipFormValues = z.infer<typeof sipSchema>;
@@ -35,17 +36,17 @@ export type SipFormValues = z.infer<typeof sipSchema>;
 export const emiSchema = z.object({
   principal: z
     .number({ message: "Loan amount is required" })
-    .min(1000, "Minimum loan amount is ₹1,000")
-    .max(100_00_00_000, "Maximum loan amount is ₹100 Crore"),
+    .min(CALCULATOR_INPUT_LIMITS.emi.principal.supported.min, "Minimum loan amount is ₹1,000")
+    .max(CALCULATOR_INPUT_LIMITS.emi.principal.supported.max, "Maximum loan amount is ₹100 Crore"),
   annualRate: z
     .number({ message: "Interest rate is required" })
-    .min(0.1, "Minimum rate is 0.1%")
-    .max(50, "Maximum rate is 50%"),
+    .min(CALCULATOR_INPUT_LIMITS.emi.annualRate.supported.min, "Minimum rate is 0.1%")
+    .max(CALCULATOR_INPUT_LIMITS.emi.annualRate.supported.max, "Maximum rate is 50%"),
   tenureMonths: z
     .number({ message: "Loan tenure is required" })
     .int("Tenure must be a whole number of months")
-    .min(1, "Minimum tenure is 1 month")
-    .max(600, "Maximum tenure is 600 months (50 years)"),
+    .min(CALCULATOR_INPUT_LIMITS.emi.tenureMonths.supported.min, "Minimum tenure is 1 month")
+    .max(CALCULATOR_INPUT_LIMITS.emi.tenureMonths.supported.max, "Maximum tenure is 600 months (50 years)"),
 });
 
 export type EmiFormValues = z.infer<typeof emiSchema>;
@@ -55,16 +56,16 @@ export type EmiFormValues = z.infer<typeof emiSchema>;
 export const fdSchema = z.object({
   principal: z
     .number({ message: "Deposit amount is required" })
-    .min(1000, "Minimum deposit is ₹1,000")
-    .max(100_00_00_000, "Maximum deposit is ₹100 Crore"),
+    .min(CALCULATOR_INPUT_LIMITS.fd.principal.supported.min, "Minimum deposit is ₹1,000")
+    .max(CALCULATOR_INPUT_LIMITS.fd.principal.supported.max, "Maximum deposit is ₹100 Crore"),
   annualRate: z
     .number({ message: "Interest rate is required" })
-    .min(0.1, "Minimum rate is 0.1%")
-    .max(20, "Maximum rate is 20%"),
+    .min(CALCULATOR_INPUT_LIMITS.fd.annualRate.supported.min, "Minimum rate is 0.1%")
+    .max(CALCULATOR_INPUT_LIMITS.fd.annualRate.supported.max, "Maximum rate is 20%"),
   tenureYears: z
     .number({ message: "Tenure is required" })
-    .min(0.25, "Minimum tenure is 3 months")
-    .max(30, "Maximum tenure is 30 years"),
+    .min(CALCULATOR_INPUT_LIMITS.fd.tenureYears.supported.min, "Minimum tenure is 3 months")
+    .max(CALCULATOR_INPUT_LIMITS.fd.tenureYears.supported.max, "Maximum tenure is 30 years"),
   compoundingFrequency: z
     .union(
       [z.literal(1), z.literal(2), z.literal(4), z.literal(12)],
@@ -79,17 +80,17 @@ export type FdFormValues = z.infer<typeof fdSchema>;
 export const ppfSchema = z.object({
   yearlyInvestment: z
     .number({ message: "Yearly investment is required" })
-    .min(500, "Minimum yearly investment is ₹500")
-    .max(150000, "Maximum yearly investment is ₹1,50,000 (Section 80C limit)"),
+    .min(CALCULATOR_INPUT_LIMITS.ppf.yearlyInvestment.supported.min, "Minimum yearly investment is ₹500")
+    .max(CALCULATOR_INPUT_LIMITS.ppf.yearlyInvestment.supported.max, "Maximum yearly investment is ₹1,50,000 (Section 80C limit)"),
   years: z
     .number({ message: "Time period is required" })
     .int("Time period must be a whole number")
-    .min(15, "PPF has a minimum lock-in of 15 years")
-    .max(50, "Maximum period is 50 years"),
+    .min(CALCULATOR_INPUT_LIMITS.ppf.years.supported.min, "PPF has a minimum lock-in of 15 years")
+    .max(CALCULATOR_INPUT_LIMITS.ppf.years.supported.max, "Maximum period is 50 years"),
   rate: z
     .number({ message: "PPF rate is required" })
-    .min(1, "Minimum rate is 1%")
-    .max(15, "Maximum rate is 15%"),
+    .min(CALCULATOR_INPUT_LIMITS.ppf.rate.supported.min, "Minimum rate is 1%")
+    .max(CALCULATOR_INPUT_LIMITS.ppf.rate.supported.max, "Maximum rate is 15%"),
 });
 
 export type PpfFormValues = z.infer<typeof ppfSchema>;
@@ -99,17 +100,17 @@ export type PpfFormValues = z.infer<typeof ppfSchema>;
 export const lumpsumSchema = z.object({
   principal: z
     .number({ message: "Investment amount is required" })
-    .min(100, "Minimum investment is ₹100")
-    .max(100_00_00_000, "Maximum investment is ₹100 Crore"),
+    .min(CALCULATOR_INPUT_LIMITS.lumpsum.principal.supported.min, "Minimum investment is ₹100")
+    .max(CALCULATOR_INPUT_LIMITS.lumpsum.principal.supported.max, "Maximum investment is ₹100 Crore"),
   annualRate: z
     .number({ message: "Expected return rate is required" })
-    .min(0.1, "Minimum rate is 0.1%")
-    .max(50, "Maximum rate is 50%"),
+    .min(CALCULATOR_INPUT_LIMITS.lumpsum.annualRate.supported.min, "Minimum rate is 0.1%")
+    .max(CALCULATOR_INPUT_LIMITS.lumpsum.annualRate.supported.max, "Maximum rate is 50%"),
   years: z
     .number({ message: "Time period is required" })
     .int("Time period must be a whole number")
-    .min(1, "Minimum period is 1 year")
-    .max(50, "Maximum period is 50 years"),
+    .min(CALCULATOR_INPUT_LIMITS.lumpsum.years.supported.min, "Minimum period is 1 year")
+    .max(CALCULATOR_INPUT_LIMITS.lumpsum.years.supported.max, "Maximum period is 50 years"),
 });
 
 export type LumpsumFormValues = z.infer<typeof lumpsumSchema>;

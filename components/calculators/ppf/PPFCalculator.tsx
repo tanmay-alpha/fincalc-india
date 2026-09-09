@@ -12,6 +12,9 @@ import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcPPF } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { generatePPFInsights } from "@/lib/insights";
+import { CALCULATOR_INPUT_LIMITS } from "@/lib/constants/calculator-input-limits";
+
+const PPF_LIMITS = CALCULATOR_INPUT_LIMITS.ppf;
 
 const PPFChart = dynamic(
   () => import("@/components/calculators/ppf/PPFChart"),
@@ -55,7 +58,7 @@ export default function PPFCalculator() {
             </div>
 
             <HybridInput label="Yearly Investment" value={inputs.yearlyInvestment} onChange={onInvestment}
-              min={500} max={150000} step={500} prefix="₹"
+              min={PPF_LIMITS.yearlyInvestment.ui.min} max={PPF_LIMITS.yearlyInvestment.ui.max} step={PPF_LIMITS.yearlyInvestment.ui.step} prefix="₹"
               quickChips={[
                 { label: "₹50K", value: 50000 },
                 { label: "₹1L", value: 100000 },
@@ -64,7 +67,7 @@ export default function PPFCalculator() {
               hint="Max ₹1,50,000/year under Section 80C"
             />
             <HybridInput label="Duration" value={inputs.years} onChange={onYears}
-              min={15} max={50} step={1} suffix=" Yrs"
+              min={PPF_LIMITS.years.ui.min} max={PPF_LIMITS.years.ui.max} step={PPF_LIMITS.years.ui.step} suffix=" Yrs"
               quickChips={[
                 { label: "15 Yr", value: 15 }, { label: "20 Yr", value: 20 },
                 { label: "25 Yr", value: 25 }, { label: "30 Yr", value: 30 },
@@ -72,7 +75,7 @@ export default function PPFCalculator() {
               hint="PPF minimum lock-in: 15 years"
             />
             <HybridInput label="PPF Rate" value={inputs.rate} onChange={onRate}
-              min={1} max={15} step={0.1} suffix="%"
+              min={PPF_LIMITS.rate.ui.min} max={PPF_LIMITS.rate.ui.max} step={PPF_LIMITS.rate.ui.step} suffix="%"
               hint="Current PPF rate: 7.1% (set by Govt. quarterly)"
             />
           </div>

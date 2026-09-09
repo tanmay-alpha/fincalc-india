@@ -12,6 +12,9 @@ import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcLumpsum, calcSIP } from "@/lib/math";
 import { formatINR, formatCompact } from "@/lib/format";
 import { generateLumpsumInsights } from "@/lib/insights";
+import { CALCULATOR_INPUT_LIMITS } from "@/lib/constants/calculator-input-limits";
+
+const LUMPSUM_LIMITS = CALCULATOR_INPUT_LIMITS.lumpsum;
 
 const LumpsumChart = dynamic(
   () => import("@/components/calculators/lumpsum/LumpsumChart"),
@@ -63,7 +66,7 @@ export default function LumpsumCalculator() {
           {/* ────── INPUT PANEL ────── */}
           <div className="surface-card h-fit space-y-4 p-6 lg:sticky lg:top-6">
             <HybridInput label="Investment Amount" value={inputs.principal} onChange={onPrincipal}
-              min={1000} max={1000000000} step={10000} prefix="₹"
+              min={LUMPSUM_LIMITS.principal.ui.min} max={LUMPSUM_LIMITS.principal.ui.max} step={LUMPSUM_LIMITS.principal.ui.step} prefix="₹"
               quickChips={[
                 { label: "₹1L", value: 100000 }, { label: "₹5L", value: 500000 },
                 { label: "₹10L", value: 1000000 }, { label: "₹50L", value: 5000000 },
@@ -71,7 +74,7 @@ export default function LumpsumCalculator() {
               ]}
             />
             <HybridInput label="Expected Return" value={inputs.annualRate} onChange={onRate}
-              min={1} max={50} step={0.5} suffix="%"
+              min={LUMPSUM_LIMITS.annualRate.ui.min} max={LUMPSUM_LIMITS.annualRate.ui.max} step={LUMPSUM_LIMITS.annualRate.ui.step} suffix="%"
               quickChips={[
                 { label: "8%", value: 8 }, { label: "10%", value: 10 },
                 { label: "12%", value: 12 }, { label: "15%", value: 15 },
@@ -79,7 +82,7 @@ export default function LumpsumCalculator() {
               ]}
             />
             <HybridInput label="Time Period" value={inputs.years} onChange={onYears}
-              min={1} max={50} step={1} suffix=" Yrs"
+              min={LUMPSUM_LIMITS.years.ui.min} max={LUMPSUM_LIMITS.years.ui.max} step={LUMPSUM_LIMITS.years.ui.step} suffix=" Yrs"
               quickChips={[
                 { label: "5Y", value: 5 }, { label: "10Y", value: 10 },
                 { label: "15Y", value: 15 }, { label: "20Y", value: 20 },

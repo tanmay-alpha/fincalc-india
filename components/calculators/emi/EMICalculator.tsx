@@ -15,6 +15,9 @@ import { generateEMIInsights } from "@/lib/insights";
 import EMIScenarioCompare from "@/components/calculators/emi/EMIScenarioCompare";
 import { getRestoredInputs, recordRecentCalculation } from "@/lib/storage-workflow";
 import { clsx } from "clsx";
+import { CALCULATOR_INPUT_LIMITS } from "@/lib/constants/calculator-input-limits";
+
+const EMI_LIMITS = CALCULATOR_INPUT_LIMITS.emi;
 
 const EMIPieChart = dynamic(
   () => import("@/components/calculators/emi/EMIChart").then((m) => ({ default: m.EMIPieChart })),
@@ -80,7 +83,7 @@ export default function EMICalculator() {
           {/* ────── INPUT PANEL ────── */}
           <div className="surface-card h-fit space-y-4 p-6 lg:sticky lg:top-6">
             <HybridInput label="Loan Amount" value={inputs.principal} onChange={onPrincipal}
-              min={10000} max={1000000000} step={10000} prefix="₹"
+              min={EMI_LIMITS.principal.ui.min} max={EMI_LIMITS.principal.ui.max} step={EMI_LIMITS.principal.ui.step} prefix="₹"
               quickChips={[
                 { label: "₹5L", value: 500000 }, { label: "₹10L", value: 1000000 },
                 { label: "₹25L", value: 2500000 }, { label: "₹50L", value: 5000000 },
@@ -89,7 +92,7 @@ export default function EMICalculator() {
             />
 
             <HybridInput label="Interest Rate" value={inputs.annualRate} onChange={onRate}
-              min={1} max={36} step={0.1} suffix="%"
+              min={EMI_LIMITS.annualRate.ui.min} max={EMI_LIMITS.annualRate.ui.max} step={EMI_LIMITS.annualRate.ui.step} suffix="%"
               quickChips={[
                 { label: "7%", value: 7 }, { label: "8.5%", value: 8.5 },
                 { label: "10%", value: 10 }, { label: "12%", value: 12 },
@@ -123,7 +126,7 @@ export default function EMICalculator() {
               </div>
               {tenureUnit === "years" ? (
                 <HybridInput label="" ariaLabel="Loan Tenure in Years" value={Math.round(inputs.tenureMonths / 12)} onChange={onTenureYears}
-                  min={1} max={30} step={1} suffix=" Yrs"
+                  min={EMI_LIMITS.tenureMonths.ui.min / 12} max={EMI_LIMITS.tenureMonths.ui.max / 12} step={1} suffix=" Yrs"
                   quickChips={[
                     { label: "5 Yr", value: 5 }, { label: "10 Yr", value: 10 },
                     { label: "15 Yr", value: 15 }, { label: "20 Yr", value: 20 },
@@ -132,7 +135,7 @@ export default function EMICalculator() {
                 />
               ) : (
                 <HybridInput label="" ariaLabel="Loan Tenure in Months" value={inputs.tenureMonths} onChange={onTenureMonths}
-                  min={12} max={360} step={1} suffix=" Mo"
+                  min={EMI_LIMITS.tenureMonths.ui.min} max={EMI_LIMITS.tenureMonths.ui.max} step={EMI_LIMITS.tenureMonths.ui.step} suffix=" Mo"
                   quickChips={[
                     { label: "60", value: 60 }, { label: "120", value: 120 },
                     { label: "180", value: 180 }, { label: "240", value: 240 },

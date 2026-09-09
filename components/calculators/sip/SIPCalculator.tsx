@@ -15,9 +15,12 @@ import { generateSIPInsights } from "@/lib/insights";
 import { useDebounce } from "@/hooks/useDebounce";
 import { SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CALCULATOR_INPUT_LIMITS } from "@/lib/constants/calculator-input-limits";
 import SIPScenarioMilestones from "@/components/calculators/sip/SIPScenarioMilestones";
 
 import { getRestoredInputs, recordRecentCalculation } from "@/lib/storage-workflow";
+
+const SIP_LIMITS = CALCULATOR_INPUT_LIMITS.sip;
 
 const SIPChart = dynamic(
   () => import("@/components/calculators/sip/SIPChart"),
@@ -99,9 +102,9 @@ export default function SIPCalculator() {
                 label="Monthly Investment"
                 value={inputs.monthlyAmount}
                 onChange={setMonthly}
-                min={500}
-                max={10000000}
-                step={500}
+                min={SIP_LIMITS.monthlyAmount.ui.min}
+                max={SIP_LIMITS.monthlyAmount.ui.max}
+                step={SIP_LIMITS.monthlyAmount.ui.step}
                 prefix="₹"
                 quickChips={[
                   { label: "₹5K", value: 5000 },
@@ -116,9 +119,9 @@ export default function SIPCalculator() {
                 label="Expected Annual Return Rate"
                 value={inputs.annualRate}
                 onChange={setRate}
-                min={1}
-                max={40}
-                step={0.5}
+                min={SIP_LIMITS.annualRate.ui.min}
+                max={SIP_LIMITS.annualRate.ui.max}
+                step={SIP_LIMITS.annualRate.ui.step}
                 suffix="% p.a."
                 hint="Benchmark equity mutual fund historical average: 12% - 15%"
                 quickChips={[
@@ -133,9 +136,9 @@ export default function SIPCalculator() {
                 label="Investment Horizon"
                 value={inputs.years}
                 onChange={setYears}
-                min={1}
-                max={40}
-                step={1}
+                min={SIP_LIMITS.years.ui.min}
+                max={SIP_LIMITS.years.ui.max}
+                step={SIP_LIMITS.years.ui.step}
                 suffix=" Years"
                 quickChips={[
                   { label: "5Y", value: 5 },

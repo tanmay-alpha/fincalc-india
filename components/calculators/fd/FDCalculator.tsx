@@ -14,6 +14,9 @@ import type { CompoundingFrequency } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { generateFDInsights } from "@/lib/insights";
 import { clsx } from "clsx";
+import { CALCULATOR_INPUT_LIMITS } from "@/lib/constants/calculator-input-limits";
+
+const FD_LIMITS = CALCULATOR_INPUT_LIMITS.fd;
 
 const FDChart = dynamic(
   () => import("@/components/calculators/fd/FDChart"),
@@ -57,7 +60,7 @@ export default function FDCalculator() {
           {/* ────── INPUT PANEL ────── */}
           <div className="surface-card h-fit space-y-4 p-6 lg:sticky lg:top-6">
             <HybridInput label="Principal Amount" value={inputs.principal} onChange={onPrincipal}
-              min={1000} max={1000000000} step={5000} prefix="₹"
+              min={FD_LIMITS.principal.ui.min} max={FD_LIMITS.principal.ui.max} step={FD_LIMITS.principal.ui.step} prefix="₹"
               quickChips={[
                 { label: "₹10K", value: 10000 }, { label: "₹50K", value: 50000 },
                 { label: "₹1L", value: 100000 }, { label: "₹5L", value: 500000 },
@@ -65,7 +68,7 @@ export default function FDCalculator() {
               ]}
             />
             <HybridInput label="Interest Rate" value={inputs.annualRate} onChange={onRate}
-              min={1} max={20} step={0.1} suffix="%"
+              min={FD_LIMITS.annualRate.ui.min} max={FD_LIMITS.annualRate.ui.max} step={FD_LIMITS.annualRate.ui.step} suffix="%"
               quickChips={[
                 { label: "5.5%", value: 5.5 }, { label: "6.5%", value: 6.5 },
                 { label: "7%", value: 7 }, { label: "7.5%", value: 7.5 },
@@ -74,7 +77,7 @@ export default function FDCalculator() {
               hint="Current best FD rates: 7-8%"
             />
             <HybridInput label="Tenure" value={inputs.tenureYears} onChange={onTenure}
-              min={1} max={30} step={1} suffix=" Yrs"
+              min={FD_LIMITS.tenureYears.ui.min} max={FD_LIMITS.tenureYears.ui.max} step={FD_LIMITS.tenureYears.ui.step} suffix=" Yrs"
               quickChips={[
                 { label: "1 Yr", value: 1 }, { label: "2 Yr", value: 2 },
                 { label: "3 Yr", value: 3 }, { label: "5 Yr", value: 5 },
