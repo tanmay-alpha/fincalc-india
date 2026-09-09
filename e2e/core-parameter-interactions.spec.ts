@@ -18,10 +18,10 @@ test.describe("Core calculator parameter interactions for public guests", () => 
       page.on("pageerror", (error) => pageErrors.push(error));
 
       await page.goto(scenario.route, { waitUntil: "domcontentloaded" });
-      const surface = page.locator('[data-testid="interactive-calculator-surface"]');
+      const surface = page.locator('[data-testid="interactive-calculator-surface"]:visible').first();
       await expect(surface).toBeVisible();
 
-      const input = page.getByLabel(scenario.label, { exact: true });
+      const input = page.getByRole("textbox", { name: scenario.label }).first();
       await expect(input).toBeVisible();
       await input.fill(scenario.value);
       await input.press("Enter");
