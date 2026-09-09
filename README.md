@@ -7,7 +7,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=flat&logo=tailwind-css)](https://tailwindcss.com/)
 [![Prisma ORM](https://img.shields.io/badge/Prisma-5.22-2D3748?style=flat&logo=prisma)](https://www.prisma.io/)
 [![NextAuth.js](https://img.shields.io/badge/Auth.js-v5_Beta-purple?style=flat&logo=auth0)](https://authjs.dev/)
-[![Vitest](https://img.shields.io/badge/Vitest-37_Suites_|_633_Tests-6E9F18?style=flat&logo=vitest)](https://vitest.dev/)
+[![Vitest](https://img.shields.io/badge/Vitest-42_Suites_|_659_Tests-6E9F18?style=flat&logo=vitest)](https://vitest.dev/)
 [![Playwright](https://img.shields.io/badge/Playwright-222_Smoke_|_70_A11y-2EAD33?style=flat&logo=playwright)](https://playwright.dev/)
 [![WCAG 2.1 AA](https://img.shields.io/badge/A11y-WCAG_2.1_AA_Compliant-success?style=flat)](https://www.w3.org/WAI/WCAG21/quickref/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -39,7 +39,7 @@ FinCalc India is engineered with modern full-stack TypeScript tooling for uncomp
 | **Authentication** | **NextAuth.js v5 (Beta 31)** | Edge-compatible server session resolution, Google OAuth 2.0 provider, JWT session strategies, and protected workspace history. |
 | **Database & ORM** | **Prisma 5.22 + PostgreSQL** | Relational schema modeling `User`, `Account`, `Session`, and `Calculation` history with JSON input/result payloads and foreign key cascades. |
 | **Export & Reporting** | **jsPDF 4.2** | Client-side generation of high-resolution, formatted PDF calculation summaries and amortization schedules. |
-| **Unit & Fuzz Testing** | **Vitest 3.2 + Fast-Check** | 37 test suites, 633 unit/statutory tests, property-based fuzz testing, and mathematical regression gates with strict coverage thresholds. |
+| **Unit & Fuzz Testing** | **Vitest 3.2 + Fast-Check** | 42 test suites, 659 unit/statutory tests, property-based fuzz testing, and mathematical regression gates with strict coverage thresholds. |
 | **E2E & Accessibility Testing** | **Playwright 1.62 + Axe-Core** | 111 Desktop Chromium tests, 111 Mobile Chrome tests, and 70 Axe Core automated WCAG 2.1 AA audits across all 31 routes. |
 | **CI/CD Automation** | **GitHub Actions + Vercel** | Multi-stage pull request quality gates enforcing type checking, linting, test suites, browser smoke runs, and Vercel preview deployments. |
 
@@ -49,24 +49,24 @@ FinCalc India is engineered with modern full-stack TypeScript tooling for uncomp
 
 FinCalc India provides 31 specialized financial instruments structured across 5 institutional domains:
 
-### 1. 💰 Investments & Wealth Creation
+### 1. 💰 Investments & Wealth Creation (8)
 1. **SIP (Systematic Investment Plan)**: Monthly compounding with annualized growth, inflation adjustment, and year-by-year corpus progression.
-2. **Step-Up SIP (Top-Up SIP)**: Annual percentage and fixed-amount top-up modeling combating inflation and tracking salary increments.
-3. **Target / Goal SIP**: Reverse financial engineering solver calculating the exact monthly SIP required today to accumulate any inflation-adjusted future goal corpus.
-4. **Lumpsum Investment**: Compound annual growth rate (CAGR) and wealth multiplier modeling for one-time capital deployment.
-5. **Fixed Deposit (FD)**: Monthly, quarterly, and annual compounding with cumulative and non-cumulative payout options.
-6. **Public Provident Fund (PPF)**: Section 80C Exempt-Exempt-Exempt (EEE) status modeling with 15-year statutory maturity, deposit limits (₹500 to ₹1.5 Lakh/year), and partial withdrawal rules.
-7. **FIRE (Financial Independence, Retire Early)**: Fat/Lean/Coast FIRE corpus solver, Safe Withdrawal Rates (SWR: 2.75%–3.5%), and post-retirement runway simulations.
-8. **NPS (National Pension System)**: Tier-1 asset allocation (Equity Scheme E up to 75%, Corporate Bonds C, Govt Securities G), PFRDA 2026 exit rules (up to 80% lump sum permitted, small corpus $\le$ ₹8 Lakh full exit), Section 10(12A) 60% tax-free lump sum cap, and Section 80CCD(1B) / 80CCD(2) tax deductions.
+2. **Step-Up SIP (Top-Up SIP & Goal SIP)**: Annual percentage and fixed-amount top-up modeling combating inflation and reverse goal solver calculating required monthly SIP.
+3. **Lumpsum Investment**: Compound annual growth rate (CAGR) and wealth multiplier modeling for one-time capital deployment.
+4. **Fixed Deposit (FD)**: Monthly, quarterly, and annual compounding with cumulative and non-cumulative payout options.
+5. **Public Provident Fund (PPF)**: Section 80C Exempt-Exempt-Exempt (EEE) status modeling with 15-year statutory maturity, deposit limits (₹500 to ₹1.5 Lakh/year), and partial withdrawal rules.
+6. **FIRE (Financial Independence, Retire Early)**: Fat/Lean/Coast FIRE corpus solver, Safe Withdrawal Rates (SWR: 2.75%–3.5%), and post-retirement runway simulations.
+7. **NPS (National Pension System)**: Tier-1 asset allocation (Equity Scheme E up to 75%, Corporate Bonds C, Govt Securities G), PFRDA 2026 exit rules (up to 80% lump sum permitted, small corpus ≤ ₹8 Lakh full exit), Section 10(12A) 60% tax-free lump sum cap, and Section 80CCD(1B) / 80CCD(2) tax deductions.
+8. **Returns Suite (XIRR / CAGR / TWRR)**: Money-weighted XIRR, point-to-point CAGR, and time-weighted TWRR returns.
 
-### 2. 🏠 Loans, Credit & Refinancing
+### 2. 🏠 Loans, Credit & Refinancing (5)
 9. **EMI Calculator**: Exact reducing-balance EMI calculation with comprehensive monthly amortization schedules.
 10. **Loan Prepayment vs. Invest**: Opportunity-cost simulation comparing accelerated debt repayment against equity index SIP investing.
 11. **No-Cost EMI Reality Checker**: Dissects hidden merchant discounts, upfront processing fees, and 18% GST on interest components.
 12. **Car Loan Total Cost of Ownership (TCO)**: Comprehensive vehicle ownership model factoring loan interest, depreciation, maintenance escalation, insurance, and fuel inflation.
 13. **Home Loan Balance Transfer & Refinance Modeler**: Real net benefit analyzer accounting for switching costs (processing fees, MODT stamp duty, legal search), negative outcome alerts, and harmful tenure extension warnings.
 
-### 3. ⚖️ Taxation & Statutory Planning (Tax Year 2026-27)
+### 3. ⚖️ Taxation & Statutory Planning (Tax Year 2026-27) (9)
 14. **Income Tax Calculator (Finance Act 2026 / Income-tax Act 2025)**:
     - **New Tax Regime Slabs**: ₹0–₹4L (Nil), ₹4L–₹8L (5%), ₹8L–₹12L (10%), ₹12L–₹16L (15%), ₹16L–₹20L (20%), ₹20L–₹24L (25%), >₹24L (30%).
     - **Standard Deduction**: ₹75,000 under New Regime (exclusively on salary/pension income); ₹50,000 under Old Regime.
@@ -80,7 +80,7 @@ FinCalc India provides 31 specialized financial instruments structured across 5 
     - **Section 82 (formerly 54)**: Residential house rollover (₹10 Cr statutory cap, 1y before to 2y after buy, 3y build).
     - **Section 85 (formerly 54EC)**: REC / NHAI / PFC / IRFC specified bonds (₹50 Lakh statutory cap across transfer & subsequent year, 6-month window).
     - **Section 86 (formerly 54F)**: Long-term asset other than residential house into residential house with proportionate formula $\text{LTCG} \times (\text{Investment} / \text{Net Consideration})$, ₹10 Cr cap, and ownership restrictions ($\le$ 1 existing house).
-20. **LRS TCS & Remittance (Section 206C(1G) / Finance Act 2026)**:
+20. **LRS TCS & Remittance (Section 394 / Finance Act 2026)**:
     - Overseas Tour Packages: Flat 2% on entire remittance amount.
     - Education via Loan u/s 80E: 0% Nil TCS.
     - Self-Funded Education & Medical Treatment: 0% $\le$ ₹10 Lakh, 2% on excess $>$ ₹10 Lakh.
@@ -88,22 +88,18 @@ FinCalc India provides 31 specialized financial instruments structured across 5 
 21. **US Stock Investing Net Return (DTAA Adjusted)**: Rule 115 INR currency conversion, 24-month long-term holding period, and Section 90 Foreign Tax Credit (FTC) on 25% US dividend withholding.
 22. **NRI NRE vs NRO vs FCNR Deposit Comparator**: Triple-option yield comparator modeling 31.2% NRO TDS, 100% tax-free NRE repatriation, and USD FCNR exchange rate normalization.
 
-### 4. 📈 Trading, Derivatives & Quantitative Risk
+### 4. 📈 Trading, Derivatives & Quantitative Risk (6)
 23. **F&O Brokerage & STT Calculator**: Finance Act 2026 statutory rates (0.05% on futures sell turnover, 0.15% on options premium sell turnover, 0.15% on options exercise settlement value), exchange transaction charges, SEBI turnover fees, stamp duty, and 18% GST with breakeven tick analytics.
 24. **Option Strategy Payoff Visualizer**: Multi-leg Option Greeks & PnL payoff curves across underlying spot prices for Bull Call Spreads, Bear Put Spreads, Straddles, Strangles, and Iron Condors.
 25. **Black-Scholes Option Pricing & Greeks**: Exact European Call/Put pricing model with Delta, Gamma, Theta, Vega, and Rho analytical Greeks.
 26. **Position Size & Risk Calculator**: Fixed fractional risk management ($R\%$), stop-loss distance sizing, buying power allocation, and long/short trade risk inversion.
 27. **Futures & Options Margin Estimator**: SPAN margin + Exposure margin requirements across Nifty, BankNifty, FinNifty, and Equity derivatives with Margin Trading Facility (MTF) leverage costs.
 28. **Portfolio Risk & Performance Suite**: Sharpe Ratio, Sortino Ratio (with $\infty$ handling for zero downside), Downside Deviation ($\sigma_d$), empirical Beta ($\beta$), Treynor Ratio, and Maximum Drawdown.
-29. **Returns Suite (XIRR / CAGR / TWRR)**:
-    - **XIRR**: Money-weighted return for irregular cashflows using multi-root scanning and Newton-Raphson solver.
-    - **CAGR**: Point-to-point compound annual growth rate.
-    - **TWRR**: Time-weighted rate of return isolating investment management alpha from cashflow timing.
 
-### 5. 🏢 Corporate Finance & Valuation
-30. **DCF Valuation (Discounted Cash Flow)**: Multi-stage Free Cash Flow to Firm (FCFF) discounting, Gordon Growth terminal value, net debt bridge, and 2D WACC vs Terminal Growth sensitivity matrix.
-31. **WACC (Weighted Average Cost of Capital)**: Capital structure weighting, CAPM Cost of Equity ($R_f + \beta(R_m - R_f)$), and post-tax cost of debt tax shield ($K_d(1 - t)$).
-32. **DuPont 5-Step Model**: Return on Equity (ROE) decomposition into Operating Margin, Asset Turnover, Financial Leverage, Interest Burden, and Tax Burden.
+### 5. 🏢 Corporate Finance & Valuation (3)
+29. **DCF Valuation (Discounted Cash Flow)**: Multi-stage Free Cash Flow to Firm (FCFF) discounting, Gordon Growth terminal value, net debt bridge, and 2D WACC vs Terminal Growth sensitivity matrix.
+30. **WACC (Weighted Average Cost of Capital)**: Capital structure weighting, CAPM Cost of Equity ($R_f + \beta(R_m - R_f)$), and post-tax cost of debt tax shield ($K_d(1 - t)$).
+31. **DuPont 5-Step Model**: Return on Equity (ROE) decomposition into Operating Margin, Asset Turnover, Financial Leverage, Interest Burden, and Tax Burden.
 
 ---
 
@@ -111,11 +107,11 @@ FinCalc India provides 31 specialized financial instruments structured across 5 
 
 ### 1. Universal Calculator Shell (`CalculatorPageShell.tsx`)
 - **What it is**: A shared wrapper that encapsulates every calculator page with consistent breadcrumb navigation, category iconography, statutory version badges, a legal assumptions drawer, and crawlable SEO educational guides.
-- **How it was implemented**: Built as a React Server/Client hybrid component in `components/layout/CalculatorPageShell.tsx`. It reads calculator metadata from `lib/constants/calculators.ts`, renders an accessible heading with a 32×32px icon badge, embeds an `AssumptionsDrawer` for statutory transparency, and wraps the interactive workspace inside the `InteractiveCalculatorGate`.
+- **How it was implemented**: Built as a React Server/Client hybrid component in `components/layout/CalculatorPageShell.tsx`. It reads calculator metadata from `lib/registry.ts`, renders an accessible heading with a 32×32px icon badge, embeds an `AssumptionsDrawer` for statutory transparency, and wraps the interactive workspace inside `InteractiveCalculatorGate`.
 
-### 2. Progressive Disclosure Auth Gate (`InteractiveCalculatorGate.tsx`)
-- **What it is**: An authentication architecture that balances public search engine discoverability and frictionless calculation with user account retention.
-- **How it was implemented**: Unauthenticated guests can view and manipulate inputs, adjust sliders, and see instant output totals. Secondary actions (PDF export, scenario saving, calculation history) feature a non-blocking frosted-glass overlay with a single-click Google Sign-In button. Authenticated users (resolved via `useSession()` / `auth()`) get direct access with zero overlays.
+### 2. Public Guest Interactivity Architecture (`InteractiveCalculatorGate.tsx`)
+- **What it is**: A frictionless computation model ensuring all 31 calculators remain 100% functional and interactive for unauthenticated guests without requiring account creation.
+- **How it was implemented**: Unauthenticated guests can freely adjust inputs, move sliders, click presets, inspect charts, and see real-time calculated results. Google Sign-In is exclusively reserved for personal cloud storage, calculation history persistence, and authenticated share-link publishing.
 
 ### 3. Dynamic Two-State Homepage (`app/page.tsx`)
 - **What it is**: An adaptive homepage that dynamically renders different interfaces depending on authentication state.
@@ -325,7 +321,7 @@ FinCalc India uses a multi-tier automated test pyramid to ensure zero calculatio
             / Component \ React Testing Library (UI State & Gate Tests)
            /-------------\
           /  Statutory &  \ Golden Fixtures, Property-Based Fuzzing,
-         / Pure Math Units \ Vitest (37 Suites, 633 Tests, >91% Coverage)
+          / Pure Math Units \ Vitest (42 Suites, 659 Tests, >91% Coverage)
         ─────────────────────
 ```
 
