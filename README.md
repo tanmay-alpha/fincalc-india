@@ -66,11 +66,11 @@ FinCalc India provides 31 specialized financial instruments structured across 5 
 12. **Car Loan Total Cost of Ownership (TCO)**: Comprehensive vehicle ownership model factoring loan interest, depreciation, maintenance escalation, insurance, and fuel inflation.
 13. **Home Loan Balance Transfer & Refinance Modeler**: Real net benefit analyzer accounting for switching costs (processing fees, MODT stamp duty, legal search), negative outcome alerts, and harmful tenure extension warnings.
 
-### 3. ⚖️ Taxation & Statutory Planning (Tax Year 2026-27 / AY 2027-28)
+### 3. ⚖️ Taxation & Statutory Planning (Tax Year 2026-27)
 14. **Income Tax Calculator (Finance Act 2026 / Income-tax Act 2025)**:
     - **New Tax Regime Slabs**: ₹0–₹4L (Nil), ₹4L–₹8L (5%), ₹8L–₹12L (10%), ₹12L–₹16L (15%), ₹16L–₹20L (20%), ₹20L–₹24L (25%), >₹24L (30%).
     - **Standard Deduction**: ₹75,000 under New Regime (exclusively on salary/pension income); ₹50,000 under Old Regime.
-    - **Section 157 Tax Rebate & Marginal Relief**: Full tax rebate up to ₹12,00,000 taxable ordinary income for Resident Individuals, with smooth marginal relief tapering up to ₹12,70,588.
+    - **Section 156 Tax Rebate & Marginal Relief**: Full tax rebate up to ₹12,00,000 taxable ordinary income for Resident Individuals, with smooth marginal relief tapering up to ₹12,70,588.
     - **Multiple Income Streams**: Decomposes Salary, Business/PGBP, Interest/Other, Equity LTCG (12.5% > ₹1.25L), Equity STCG (20%), and Other LTCG (12.5%).
 15. **Marginal Relief & High-Income Surcharge**: High-income surcharge tiers (10% > ₹50L, 15% > ₹1Cr, 25% > ₹2Cr max under New Regime) with statutory boundary marginal relief.
 16. **Capital Gains Tax**: Unified post-July 23, 2024 regime with Equity LTCG @ 12.5% (> ₹1.25L exemption), Equity STCG @ 20%, unlisted assets @ 12.5%, official Cost Inflation Index series (FY 2024-25 = 363, FY 2025-26 = 376, FY 2026-27 = 384), and dual-calculation grandfathering for pre-July 23, 2024 real estate.
@@ -363,7 +363,7 @@ npm run test:e2e
 
 All mathematical formulas and statutory provisions are directly grounded in official regulatory publications:
 
-1. **Central Board of Direct Taxes (CBDT)**: Income-tax Act, 2025; Finance Act, 2026; Master Circulars on Section 115BAC, 87A/157 rebate, and Capital Gains taxation.
+1. **Central Board of Direct Taxes (CBDT)**: Income-tax Act, 2025; Finance Act, 2026; Master Circulars on Section 115BAC/202, Section 156 (formerly 87A) rebate, and Capital Gains taxation.
 2. **Reserve Bank of India (RBI)**: Master Directions on the Liberalised Remittance Scheme (LRS), Non-Resident Deposits, and Floating-Rate Loan Prepayment circulars.
 3. **Securities and Exchange Board of India (SEBI)**: F&O Securities Transaction Tax revisions, Peak Margin framework, and turnover charges.
 4. **Pension Fund Regulatory and Development Authority (PFRDA)**: National Pension System (NPS) Exit and Withdrawal Regulations, 2026.

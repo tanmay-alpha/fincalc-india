@@ -8,19 +8,19 @@ export default function TaxInfo() {
           Old vs New Tax Regime — Which Is Better?
         </h2>
         <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">
-          Under the Income-tax Act, 2025 (effective 1 April 2026 for Tax Year 2026–27), the New Tax Regime remains the statutory default in India. With the ₹75,000 standard deduction and Section 157 rebate up to ₹60,000, taxable income up to ₹12,00,000 pays zero tax under the New Regime. However, the Old Regime remains advantageous for taxpayers with substantial itemized deductions (Section 80C, Section 80D, HRA, and Section 24 home loan interest).
+          Under the Income-tax Act, 2025 (effective 1 April 2026 for Tax Year 2026–27), the New Tax Regime remains the statutory default in India. With the ₹75,000 standard deduction and Section 156 rebate up to ₹60,000, taxable income up to ₹12,00,000 pays zero tax under the New Regime. However, the Old Regime remains advantageous for taxpayers with substantial itemized deductions (Section 80C, Section 80D, HRA, and Section 24 home loan interest).
         </p>
       </section>
 
       <section>
         <h2 className="text-base sm:text-lg font-bold text-foreground mb-3">
-          Statutory Tax Slabs — AY 2026-27 (Finance Act, 2026)
+          Statutory Tax Slabs — Tax Year 2026-27 (Finance Act, 2026)
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="bg-card rounded-xl p-4 border border-primary/20 shadow-sm">
             <div className="flex items-center gap-1.5 font-bold text-xs sm:text-sm text-primary mb-3">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>New Regime (Section 115BAC Default)</span>
+              <span>New Regime (Section 202; formerly Section 115BAC)</span>
             </div>
             <div className="space-y-1.5 text-xs text-muted-foreground">
               <div className="flex justify-between py-0.5 border-b border-border/30">
@@ -52,7 +52,7 @@ export default function TaxInfo() {
                 <span className="font-semibold text-foreground">30%</span>
               </div>
               <div className="mt-2.5 pt-2 border-t border-border text-[11px] font-medium text-primary">
-                Standard deduction: ₹75,000 · Section 157 full rebate ≤ ₹12L taxable
+                Standard deduction: ₹75,000 · Section 156 full rebate ≤ ₹12L taxable
               </div>
             </div>
           </div>
@@ -98,8 +98,8 @@ export default function TaxInfo() {
               a: "New Regime is typically superior for taxpayers whose total itemized deductions are less than ₹3.75 lakh. If you have substantial HRA exemption, home loan interest deductions under Section 24, and full 80C/80D investments, Old Regime can yield higher savings. Use this calculator to compare both regimes with your exact salary breakdown.",
             },
             {
-              q: "What is Rebate under Section 157 (formerly 87A)?",
-              a: "Under the New Regime for Tax Year 2026-27 (Income-tax Act, 2025 as amended by Finance Act, 2026), resident individuals with total taxable income up to ₹12 lakh pay zero net slab tax due to the statutory Section 157 tax rebate (up to ₹60,000). Combined with the ₹75,000 standard deduction, gross salary up to ₹12.75 lakh is effectively tax-free, with Section 157(2)(b) marginal relief tapering smoothly above ₹12L.",
+              q: "What is Rebate under Section 156 (formerly 87A)?",
+              a: "Under the New Regime for Tax Year 2026-27 (Income-tax Act, 2025 as amended by Finance Act, 2026), resident individuals with total taxable income up to ₹12 lakh pay zero net slab tax due to the statutory Section 156 tax rebate (up to ₹60,000). Combined with the ₹75,000 standard deduction, gross salary up to ₹12.75 lakh is effectively tax-free, with Section 156(2)(b) marginal relief tapering smoothly above ₹12L.",
             },
             {
               q: "Can I switch between Old and New regime every year?",

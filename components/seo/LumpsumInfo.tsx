@@ -4,7 +4,7 @@ export default function LumpsumInfo() {
     { q: 'What is CAGR?', a: 'CAGR (Compound Annual Growth Rate) shows annualized return assuming reinvestment. Doubling in 6 years = 100% absolute return = 12.25% CAGR.' },
     { q: 'When should I invest lumpsum?', a: 'Consider lumpsum when you have a large amount (bonus, inheritance), when markets have corrected, or when you have a 7+ year horizon.' },
     { q: 'What is a wealth multiplier?', a: 'It shows how many times your money grows. A 3x multiplier means ₹1L becomes ₹3L. Higher CAGR and longer tenure produce higher multipliers.' },
-    { q: 'Are lumpsum investments taxed?', a: 'Under Finance Act rules (AY 2026-27): Equity MF LTCG above ₹1,25,000 is taxed at 12.5% (holding > 12 months). STCG is taxed at 20%. Debt mutual funds are taxed at your applicable slab rate.' },
+    { q: 'Are lumpsum investments taxed?', a: 'Under Finance Act rules (Tax Year 2026-27): Equity MF LTCG above ₹1,25,000 is taxed at 12.5% (holding > 12 months). STCG is taxed at 20%. Debt mutual funds are taxed at your applicable slab rate.' },
   ];
   return (
     <div className="mt-12 space-y-8 border-t border-border/60 pt-8">

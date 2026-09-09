@@ -43,26 +43,26 @@ describe("TaxCalculator Component UI", () => {
     expect(screen.getByText(/Taxpayer Residential Status/i)).toBeDefined();
   });
 
-  it("explicitly asserts statutory Section 157 rebate labeling and absence of Section 156", () => {
+  it("explicitly asserts statutory Section 156 rebate labeling and absence of Section 157", () => {
     render(<TaxCalculator />);
 
     // Click '3. Profile' tab to reveal residency selector
     const profileTab = screen.getByText(/3\. Profile/i);
     fireEvent.click(profileTab);
 
-    // Must display Section 157 in residency dropdown option
+    // Must display Section 156 in residency dropdown option
     expect(
-      screen.getByText(/Resident Individual \(Section 157 Rebate Eligible\)/i)
+      screen.getByText(/Resident Individual \(Section 156 Rebate Eligible\)/i)
     ).toBeDefined();
 
     // Click "Why?" explanation button
     const whyButton = screen.getByText(/Why\?/i);
     fireEvent.click(whyButton);
 
-    // Must explain Section 157 in comparison details
-    expect(screen.getByText(/Section 157 full tax rebate/i)).toBeDefined();
+    // Must explain Section 156 in comparison details
+    expect(screen.getByText(/Section 156 full tax rebate/i)).toBeDefined();
 
-    // Must NOT contain any obsolete Section 156 reference anywhere in document body
-    expect(document.body.textContent).not.toContain("Section 156");
+    // Must NOT contain any incorrect Section 157 rebate reference anywhere in document body
+    expect(document.body.textContent).not.toContain("Section 157");
   });
 });

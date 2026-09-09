@@ -54,7 +54,7 @@ describe("AssumptionsDrawer Regulatory Metadata & Accessibility", () => {
         calcName="Income Tax"
         metadata={{
           taxYear: "2026-27",
-          currentSections: ["157"],
+          currentSections: ["156"],
           legacySections: ["87A"],
         }}
       />
@@ -66,7 +66,7 @@ describe("AssumptionsDrawer Regulatory Metadata & Accessibility", () => {
     fireEvent.click(trigger);
 
     expect(screen.getByText("Governing Provisions:")).toBeDefined();
-    expect(screen.getByText("157")).toBeDefined();
+    expect(screen.getByText("156")).toBeDefined();
     expect(screen.getByText("Legacy Reference Provisions:")).toBeDefined();
     expect(screen.getByText("87A")).toBeDefined();
   });

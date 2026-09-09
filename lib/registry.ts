@@ -275,14 +275,14 @@ export const CALCULATOR_REGISTRY: CalculatorMeta[] = [
   // ─── 3. Taxation & Statutory Planning (9) ────────────────────────────────
   {
     id: "tax",
-    name: "Income Tax Calculator (AY 2026-27)",
+    name: "Income Tax Calculator (Tax Year 2026-27)",
     shortName: "Income Tax",
     route: "/tax",
     category: "taxation",
-    description: "Compare New vs Old Regime with Section 157 rebate (₹12L), ₹75k standard deduction & capital gains.",
+    description: "Compare New vs Old Regime with Section 156 rebate (₹12L), ₹75k standard deduction & capital gains.",
     badge: "Finance Act 2026",
     isPopular: true,
-    searchAliases: ["income tax", "tax calculator", "new regime", "old regime", "budget 2026", "section 157", "rebate 12l", "slab", "salary tax"],
+    searchAliases: ["income tax", "tax calculator", "new regime", "old regime", "budget 2026", "section 156", "rebate 12l", "slab", "salary tax"],
     relatedIds: ["marginal-relief", "capital-gains-tax", "hra-exemption", "presumptive-tax"],
     iconName: "Receipt",
   },
