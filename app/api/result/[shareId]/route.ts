@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -13,23 +12,6 @@ export async function GET(
   { params }: { params: Promise<{ shareId: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Unauthorized. Please sign in to view this shared calculation.",
-        },
-        {
-          status: 401,
-          headers: {
-            "Cache-Control": "no-store, no-cache, must-revalidate",
-            "X-Robots-Tag": "noindex, nofollow, noarchive",
-          },
-        }
-      );
-    }
-
     const { shareId } = await params;
 
     if (!SHARE_ID_PATTERN.test(shareId)) {

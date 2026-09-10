@@ -55,15 +55,14 @@ test.describe("Centralized Server-Side Route Protection (All 31 Canonical Routes
     expect(urlObj.searchParams.get("callbackUrl")).toBe("/history");
   });
 
-  test("Unauthenticated shared result link redirects to /login preserving share token", async ({
+  test("Unauthenticated shared result link is accessible without forced login", async ({
     page,
   }) => {
     const fakeToken = "12345678-1234-4234-a234-1234567890ab";
     await page.goto(`/result/${fakeToken}`, { waitUntil: "domcontentloaded" });
-    expect(page.url()).toContain("/login");
-    const urlObj = new URL(page.url());
-    expect(urlObj.pathname).toBe("/login");
-    expect(urlObj.searchParams.get("callbackUrl")).toBe(`/result/${fakeToken}`);
+    expect(page.url()).toContain(`/result/${fakeToken}`);
+    const heading = page.locator("h1").first();
+    await expect(heading).toBeVisible();
   });
 
   test("Public legal page /privacy loads without authentication", async ({

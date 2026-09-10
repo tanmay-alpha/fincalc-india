@@ -35,23 +35,7 @@ describe("saved-calculation sharing", () => {
     mocks.updateMany.mockReset();
   });
 
-  it("returns 401 unauthorized when unauthenticated", async () => {
-    mocks.auth.mockResolvedValue(null);
-
-    const response = await getPublicResult(
-      new Request(`http://localhost/result/${PUBLIC_TOKEN}`),
-      { params: Promise.resolve({ shareId: PUBLIC_TOKEN }) }
-    );
-
-    expect(response.status).toBe(401);
-    await expect(response.json()).resolves.toMatchObject({
-      success: false,
-      error: expect.stringContaining("Unauthorized"),
-    });
-  });
-
   it("does not expose a private calculation through the public result route", async () => {
-    mocks.auth.mockResolvedValue({ user: { id: "viewer-user" } });
     mocks.findFirst.mockResolvedValue(null);
 
     const response = await getPublicResult(
@@ -69,8 +53,7 @@ describe("saved-calculation sharing", () => {
     );
   });
 
-  it("reads an explicitly shared calculation through a UUID public token for authenticated user", async () => {
-    mocks.auth.mockResolvedValue({ user: { id: "viewer-user" } });
+  it("reads an explicitly shared calculation through a UUID public token without authentication", async () => {
     mocks.findFirst.mockResolvedValue({
       inputs: { monthlyAmount: 10_000 },
       outputs: { totalCorpus: 2_323_391 },

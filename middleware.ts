@@ -5,8 +5,8 @@ import { getSafeCallbackUrl } from "@/lib/url";
 /**
  * Public routes that do not require an authenticated session.
  */
-const PUBLIC_PAGE_PREFIXES = ["/login", "/privacy", "/terms"];
-const PUBLIC_API_PREFIXES = ["/api/auth", "/api/health"];
+const PUBLIC_PAGE_PREFIXES = ["/login", "/privacy", "/terms", "/result"];
+const PUBLIC_API_PREFIXES = ["/api/auth", "/api/health", "/api/result"];
 
 function isPublicAsset(pathname: string): boolean {
   return (

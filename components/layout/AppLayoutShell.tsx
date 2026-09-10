@@ -22,7 +22,10 @@ export default function AppLayoutShell({ children }: AppLayoutShellProps) {
   }, []);
 
   const isPublicPage =
-    pathname === "/login" || pathname === "/privacy" || pathname === "/terms";
+    pathname === "/login" ||
+    pathname === "/privacy" ||
+    pathname === "/terms" ||
+    pathname.startsWith("/result");
 
   if (isPublicPage) {
     return (
