@@ -56,7 +56,7 @@ const config: NextAuthConfig = {
   secret:
     process.env.NEXTAUTH_SECRET ??
     process.env.AUTH_SECRET ??
-    (process.env.NODE_ENV !== "production"
+    (process.env.ENABLE_TEST_AUTH === "true" || process.env.NODE_ENV !== "production"
       ? "dev_secret_only_for_local_development_testing_min_32_chars"
       : undefined),
   trustHost: true,
@@ -66,19 +66,16 @@ const config: NextAuthConfig = {
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID ?? "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
-      // Always re-prompt consent so the refresh token is issued reliably.
       authorization: {
         params: {
-          prompt: "consent",
-          access_type: "offline",
           response_type: "code",
         },
       },
     }),
   ],
   pages: {
-    signIn: "/api/auth/signin",
-    error: "/api/auth/error",
+    signIn: "/login",
+    error: "/login",
   },
   callbacks: {
     // Add user id and a stable identifier into the session for server routes.

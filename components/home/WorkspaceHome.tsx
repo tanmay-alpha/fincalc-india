@@ -37,10 +37,10 @@ export default function WorkspaceHome({ user }: WorkspaceHomeProps) {
       <section className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border/60">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-            Welcome back, {firstName}.
+            Welcome, {firstName}.
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            Statutory logic current for FY 2026–27 · 31 calculators available
+            Statutory logic current for Tax Year 2026–27 · 31 calculators available
           </p>
         </div>
 

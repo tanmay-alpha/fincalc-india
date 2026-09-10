@@ -1,16 +1,35 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 // Legacy CUIDs and newly-issued UUIDv4 public tokens are accepted.
-const SHARE_ID_PATTERN = /^(?:[a-z0-9]{20,32}|[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i;
+const SHARE_ID_PATTERN =
+  /^(?:[a-z0-9]{20,32}|[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i;
 
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ shareId: string }> }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unauthorized. Please sign in to view this shared calculation.",
+        },
+        {
+          status: 401,
+          headers: {
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+            "X-Robots-Tag": "noindex, nofollow, noarchive",
+          },
+        }
+      );
+    }
+
     const { shareId } = await params;
 
     if (!SHARE_ID_PATTERN.test(shareId)) {

@@ -20,7 +20,6 @@ import {
 import CommandSearch from "@/components/ui/CommandSearch";
 import { cn } from "@/lib/utils";
 import DialogPrimitive from "@/components/ui/DialogPrimitive";
-import GoogleSignInButton from "@/components/ui/GoogleSignInButton";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -238,7 +237,7 @@ export default function Navbar() {
                       </Link>
                       <button
                         type="button"
-                        onClick={() => signOut()}
+                        onClick={() => signOut({ callbackUrl: "/login" })}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-destructive hover:bg-destructive/10 rounded-lg transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         <LogOut className="w-3.5 h-3.5" />
@@ -250,11 +249,12 @@ export default function Navbar() {
               </div>
             ) : (
               <div className="hidden sm:inline-flex">
-                <GoogleSignInButton
-                  text="Sign in with Google"
-                  callbackUrl="/calculators"
-                  size="sm"
-                />
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
+                >
+                  Sign In
+                </Link>
               </div>
             )}
 
@@ -403,7 +403,7 @@ export default function Navbar() {
               </div>
               <button
                 type="button"
-                onClick={() => signOut()}
+                onClick={() => signOut({ callbackUrl: "/login" })}
                 className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs text-destructive hover:bg-destructive/10 rounded-lg transition-colors font-medium border border-destructive/20"
               >
                 <LogOut className="w-3.5 h-3.5" />
@@ -411,12 +411,13 @@ export default function Navbar() {
               </button>
             </div>
           ) : (
-            <GoogleSignInButton
-              text="Sign in with Google"
-              callbackUrl="/calculators"
-              size="md"
-              className="w-full"
-            />
+            <Link
+              href="/login"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="w-full flex items-center justify-center px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
+            >
+              Sign In to FinCalc India
+            </Link>
           )}
         </div>
       </DialogPrimitive>

@@ -35,22 +35,42 @@ describe("saved-calculation sharing", () => {
     mocks.updateMany.mockReset();
   });
 
+  it("returns 401 unauthorized when unauthenticated", async () => {
+    mocks.auth.mockResolvedValue(null);
+
+    const response = await getPublicResult(
+      new Request(`http://localhost/result/${PUBLIC_TOKEN}`),
+      { params: Promise.resolve({ shareId: PUBLIC_TOKEN }) }
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toMatchObject({
+      success: false,
+      error: expect.stringContaining("Unauthorized"),
+    });
+  });
+
   it("does not expose a private calculation through the public result route", async () => {
+    mocks.auth.mockResolvedValue({ user: { id: "viewer-user" } });
     mocks.findFirst.mockResolvedValue(null);
 
-    const response = await getPublicResult(new Request("http://localhost/result/private-token"), {
-      params: Promise.resolve({ shareId: CALCULATION_ID }),
-    });
+    const response = await getPublicResult(
+      new Request("http://localhost/result/private-token"),
+      { params: Promise.resolve({ shareId: CALCULATION_ID }) }
+    );
 
     expect(response.status).toBe(404);
     expect(response.headers.get("Cache-Control")).toContain("no-store");
     expect(response.headers.get("X-Robots-Tag")).toContain("noindex");
     expect(mocks.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { shareId: CALCULATION_ID, isShared: true } })
+      expect.objectContaining({
+        where: { shareId: CALCULATION_ID, isShared: true },
+      })
     );
   });
 
-  it("reads an explicitly shared calculation through a UUID public token", async () => {
+  it("reads an explicitly shared calculation through a UUID public token for authenticated user", async () => {
+    mocks.auth.mockResolvedValue({ user: { id: "viewer-user" } });
     mocks.findFirst.mockResolvedValue({
       inputs: { monthlyAmount: 10_000 },
       outputs: { totalCorpus: 2_323_391 },
@@ -58,9 +78,10 @@ describe("saved-calculation sharing", () => {
       createdAt: new Date("2026-09-03T00:00:00.000Z"),
     });
 
-    const response = await getPublicResult(new Request(`http://localhost/result/${PUBLIC_TOKEN}`), {
-      params: Promise.resolve({ shareId: PUBLIC_TOKEN }),
-    });
+    const response = await getPublicResult(
+      new Request(`http://localhost/result/${PUBLIC_TOKEN}`),
+      { params: Promise.resolve({ shareId: PUBLIC_TOKEN }) }
+    );
 
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toContain("no-store");
@@ -73,11 +94,17 @@ describe("saved-calculation sharing", () => {
 
   it("publishes an owned private calculation with a new public token", async () => {
     mocks.auth.mockResolvedValue({ user: { id: "user-a" } });
-    mocks.findFirst.mockResolvedValue({ id: CALCULATION_ID, isShared: false, shareId: null });
+    mocks.findFirst.mockResolvedValue({
+      id: CALCULATION_ID,
+      isShared: false,
+      shareId: null,
+    });
     mocks.update.mockResolvedValue({ shareId: "shared-token", isShared: true });
 
     const response = await publish(
-      new Request(`http://localhost/api/history/${CALCULATION_ID}/share`, { method: "POST" }),
+      new Request(`http://localhost/api/history/${CALCULATION_ID}/share`, {
+        method: "POST",
+      }),
       { params: Promise.resolve({ id: CALCULATION_ID }) }
     );
 
@@ -99,7 +126,9 @@ describe("saved-calculation sharing", () => {
     mocks.updateMany.mockResolvedValue({ count: 1 });
 
     const response = await unshare(
-      new Request(`http://localhost/api/history/${CALCULATION_ID}/share`, { method: "DELETE" }),
+      new Request(`http://localhost/api/history/${CALCULATION_ID}/share`, {
+        method: "DELETE",
+      }),
       { params: Promise.resolve({ id: CALCULATION_ID }) }
     );
 
@@ -112,8 +141,15 @@ describe("saved-calculation sharing", () => {
 
   it("rotates an active public token only when the owner requests rotation", async () => {
     mocks.auth.mockResolvedValue({ user: { id: "user-a" } });
-    mocks.findFirst.mockResolvedValue({ id: CALCULATION_ID, isShared: true, shareId: "old-public-token" });
-    mocks.update.mockResolvedValue({ shareId: "new-public-token", isShared: true });
+    mocks.findFirst.mockResolvedValue({
+      id: CALCULATION_ID,
+      isShared: true,
+      shareId: "old-public-token",
+    });
+    mocks.update.mockResolvedValue({
+      shareId: "new-public-token",
+      isShared: true,
+    });
 
     const response = await publish(
       new Request(`http://localhost/api/history/${CALCULATION_ID}/share`, {

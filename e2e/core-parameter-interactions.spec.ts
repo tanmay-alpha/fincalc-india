@@ -9,16 +9,34 @@ const cases = [
   { route: "/tax", label: "Salary / Pension Income", value: "1800000" },
 ] as const;
 
-test.describe("Core calculator parameter interactions for public guests", () => {
+test.describe("Core calculator parameter interactions in authenticated workspace", () => {
+  test.beforeEach(async ({ context, baseURL }) => {
+    const targetUrl = baseURL || "http://localhost:3000";
+    await context.addCookies([
+      {
+        name: "authjs.session-token",
+        value: "test-e2e-session-token",
+        url: targetUrl,
+      },
+      {
+        name: "next-auth.session-token",
+        value: "test-e2e-session-token",
+        url: targetUrl,
+      },
+    ]);
+  });
+
   for (const scenario of cases) {
-    test(`${scenario.route} accepts direct numeric input and recalculates without authentication`, async ({
+    test(`${scenario.route} accepts direct numeric input and recalculates properly`, async ({
       page,
     }) => {
       const pageErrors: Error[] = [];
       page.on("pageerror", (error) => pageErrors.push(error));
 
       await page.goto(scenario.route, { waitUntil: "domcontentloaded" });
-      const surface = page.locator('[data-testid="interactive-calculator-surface"]:visible').first();
+      const surface = page
+        .locator('[data-testid="interactive-calculator-surface"]:visible')
+        .first();
       await expect(surface).toBeVisible();
 
       const input = page.getByRole("textbox", { name: scenario.label }).first();

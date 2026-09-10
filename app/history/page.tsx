@@ -27,27 +27,45 @@ export default async function HistoryPage() {
             Your saved calculations will appear here. Sign in with Google to securely save, share, and access your calculation history across devices.
           </p>
           <Link
-            href="/api/auth/signin"
+            href="/login"
             className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-sm"
           >
-            Sign in with Google
+            Sign in to FinCalc India
           </Link>
           <Link
-            href="/"
+            href="/login"
             className="block mt-3 text-xs text-muted-foreground hover:text-foreground transition"
           >
-            ← Back to calculators
+            ← Back to sign in
           </Link>
         </div>
       </div>
     );
   }
 
-  const calculations = await prisma.calculation.findMany({
-    where: { userId: session.user.id },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-  });
+  let calculations: Array<{
+    id: string;
+    type: string;
+    inputs: unknown;
+    outputs: unknown;
+    isShared: boolean;
+    shareId: string | null;
+    label: string | null;
+    createdAt: Date;
+  }> = [];
+
+  try {
+    if (session.user.id) {
+      calculations = await prisma.calculation.findMany({
+        where: { userId: session.user.id },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      });
+    }
+  } catch (error) {
+    console.warn("Unable to fetch calculation history (database unavailable):", error);
+    calculations = [];
+  }
 
   const serialized = calculations.map((c) => ({
     id: c.id,

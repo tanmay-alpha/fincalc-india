@@ -93,7 +93,7 @@ export default function CalculatorPageShell({
           </InteractiveCalculatorGate>
         </div>
 
-        {/* Optional Rich Educational Content — Always public & crawlable for SEO */}
+        {/* Educational Reference Content */}
         {educationalContent && (
           <section className="max-w-4xl mx-auto" aria-label="Educational Guide">
             {educationalContent}

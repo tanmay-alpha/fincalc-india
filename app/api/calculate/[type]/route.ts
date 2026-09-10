@@ -103,7 +103,7 @@ export async function POST(
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized. Please sign in to save calculations." },
+        { success: false, error: "Unauthorized. Please sign in to use FinCalc India." },
         { status: 401 }
       );
     }

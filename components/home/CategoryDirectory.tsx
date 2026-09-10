@@ -141,7 +141,7 @@ export default function CategoryDirectory() {
             All calculators
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            31 tools · statutory logic current for FY 2026–27
+            31 tools · statutory logic current for Tax Year 2026–27
           </p>
         </div>
 

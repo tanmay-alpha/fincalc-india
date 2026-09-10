@@ -109,13 +109,13 @@ FinCalc India provides 31 specialized financial instruments structured across 5 
 - **What it is**: A shared wrapper that encapsulates every calculator page with consistent breadcrumb navigation, category iconography, statutory version badges, a legal assumptions drawer, and crawlable SEO educational guides.
 - **How it was implemented**: Built as a React Server/Client hybrid component in `components/layout/CalculatorPageShell.tsx`. It reads calculator metadata from `lib/registry.ts`, renders an accessible heading with a 32×32px icon badge, embeds an `AssumptionsDrawer` for statutory transparency, and wraps the interactive workspace inside `InteractiveCalculatorGate`.
 
-### 2. Public Guest Interactivity Architecture (`InteractiveCalculatorGate.tsx`)
-- **What it is**: A frictionless computation model ensuring all 31 calculators remain 100% functional and interactive for unauthenticated guests without requiring account creation.
-- **How it was implemented**: Unauthenticated guests can freely adjust inputs, move sliders, click presets, inspect charts, and see real-time calculated results. Google Sign-In is exclusively reserved for personal cloud storage, calculation history persistence, and authenticated share-link publishing.
+### 2. Authentication-First Financial Workspace Architecture (`middleware.ts` & `auth.ts`)
+- **What it is**: A clean, security-first model ensuring all 31 financial calculators, private models, and user history are accessible exclusively within an authenticated financial workspace.
+- **How it was implemented**: Server-side Next.js middleware guards all protected application routes (`/`, `/sip`, `/emi`, `/tax`, `/calculators`, `/history`, `/result/[shareId]`) and calculation APIs. Unauthenticated visitors are automatically redirected to a custom branded `/login` experience, while preserving their target destination in a sanitized `callbackUrl`. Google OAuth authenticates identity with single-click sign-in (consent prompt friction eliminated).
 
-### 3. Dynamic Two-State Homepage (`app/page.tsx`)
-- **What it is**: An adaptive homepage that dynamically renders different interfaces depending on authentication state.
-- **How it was implemented**: The server-side page component resolves `await auth()`. If unauthenticated, it renders `GuestLanding.tsx` featuring a high-impact hero banner, a 6-tool core preview grid (SIP, Tax, EMI, FIRE, Capital Gains, Prepayment), and a category discovery strip. If authenticated, it renders `Workspace.tsx` displaying the user's recent calculations, saved plans, and customized shortcuts.
+### 3. Authenticated Workspace Command Center (`app/page.tsx` & `WorkspaceHome.tsx`)
+- **What it is**: An intentional workspace dashboard that immediately answers "What do I want to calculate?"
+- **How it was implemented**: The server-side root page resolves `await auth()` and renders `WorkspaceHome.tsx`. Returning investors see recent calculations and continue-calculating shortcuts, while first-time users receive a clean starting strip with popular financial tools (SIP, EMI, Tax, FD, FIRE) and global Cmd+K calculator search.
 
 ### 4. Centralized Directory (`/calculators` & `CategoryDirectory.tsx`)
 - **What it is**: A single catalog where users can search, filter, and discover all 31 financial tools.
@@ -156,7 +156,7 @@ fincalc-india/
 │   │   └── ...                          # 31 dedicated calculator folders
 │   ├── directory/                       # CategoryDirectory component
 │   ├── layout/                          # Navbar, Footer, CalculatorPageShell
-│   ├── landing/                         # GuestLanding (hero, 6-card grid, categories)
+│   ├── home/                            # WorkspaceHome & RecentCalculationsCard
 │   ├── workspace/                       # Authenticated workspace & calculation history
 │   ├── seo/                             # 18 rich educational guides (FIREInfo, TaxInfo, etc.)
 │   └── ui/                              # Shared primitives (HybridInput, ResultHero, InsightCard)

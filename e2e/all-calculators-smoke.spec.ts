@@ -2,6 +2,22 @@ import { test, expect } from "@playwright/test";
 import { ALL_CALCULATOR_ROUTES } from "../lib/calculators";
 
 test.describe("Production Calculator Smoke Suite (All 31 Canonical Routes)", () => {
+  test.beforeEach(async ({ context, baseURL }) => {
+    const targetUrl = baseURL || "http://localhost:3000";
+    await context.addCookies([
+      {
+        name: "authjs.session-token",
+        value: "test-e2e-session-token",
+        url: targetUrl,
+      },
+      {
+        name: "next-auth.session-token",
+        value: "test-e2e-session-token",
+        url: targetUrl,
+      },
+    ]);
+  });
+
   for (const route of ALL_CALCULATOR_ROUTES) {
     test(`Smoke test route: ${route}`, async ({ page }) => {
       const pageErrors: Error[] = [];

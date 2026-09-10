@@ -174,7 +174,7 @@ export default async function ResultPage({
             Want to calculate your own?
           </p>
           <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-            Free, instant — sign in to save and share.
+            Model your own scenario in your private financial workspace.
           </p>
           <Link
             href={`/${calc.type.toLowerCase()}`}
@@ -246,7 +246,7 @@ export async function generateMetadata({
     },
     openGraph: {
       title: `Shared ${name} Calculation`,
-      description: `View this shared ${name} calculation on FinCalc India — free financial calculators for Indian investors.`,
+      description: `View this shared ${name} calculation on FinCalc India — financial calculation workspace for Indian investors.`,
       type: "article",
     },
     twitter: {

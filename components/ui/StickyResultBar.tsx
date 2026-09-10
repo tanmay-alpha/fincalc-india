@@ -151,7 +151,9 @@ export default function StickyResultBar({
           <button
             type="button"
             onClick={() => setIsDismissed(true)}
-            className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            disabled={isHidden}
+            tabIndex={isHidden ? -1 : 0}
+            className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none"
             aria-label="Dismiss sticky result bar"
             title="Dismiss bar"
           >
