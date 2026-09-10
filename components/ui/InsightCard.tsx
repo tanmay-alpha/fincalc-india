@@ -89,8 +89,9 @@ export default function InsightCard({
 
   return (
     <div
+      data-insight-type={type}
       className={clsx(
-        "rounded-xl border border-border/70 bg-card p-3.5 sm:p-4 text-foreground shadow-2xs",
+        "rounded-xl border border-border/70 bg-card p-3 sm:p-3.5 text-foreground shadow-2xs",
         "border-l-[3px] transition-all duration-150 hover:border-border-strong hover:bg-muted/20",
         borderAccentStyles[type]
       )}

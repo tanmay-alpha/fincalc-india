@@ -56,15 +56,15 @@ export default function CalculatorPageShell({
         <div className="mt-3 mb-6 pb-4 border-b border-border/60">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="space-y-1">
-              <div className="flex items-center gap-2.5">
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
                   <CalculatorIcon id={id} className="w-4.5 h-4.5" />
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground min-w-0">
                   {displayTitle}
                 </h1>
                 {displayBadge && (
-                  <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                  <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shrink-0 self-center whitespace-nowrap">
                     {displayBadge}
                   </span>
                 )}

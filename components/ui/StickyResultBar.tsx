@@ -10,6 +10,7 @@ interface Props {
   value: number;
   prefix?: string;
   color?: "blue" | "green" | "red";
+  formatValue?: (val: number) => string;
 }
 
 /**
@@ -32,6 +33,7 @@ export default function StickyResultBar({
   value,
   prefix,
   color = "blue",
+  formatValue,
 }: Props) {
   const animatedValue = useCountUp(value);
   const [inputFocused, setInputFocused] = useState(false);
@@ -105,10 +107,17 @@ export default function StickyResultBar({
         <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
           {label}
         </p>
-        <p className={cn("text-lg font-extrabold tabular-nums", COLOR_TEXT[color] || "text-foreground")}>
-          {prefix && !formatCompact(animatedValue).startsWith(prefix) ? prefix : ""}
-          {formatCompact(animatedValue)}
-        </p>
+        {(() => {
+          const rawDisplayValue = formatValue
+            ? formatValue(animatedValue)
+            : formatCompact(animatedValue);
+          const cleanPrefix = prefix && !rawDisplayValue.startsWith(prefix) ? prefix : "";
+          return (
+            <p className={cn("text-lg font-extrabold tabular-nums", COLOR_TEXT[color] || "text-foreground")}>
+              {cleanPrefix}{rawDisplayValue}
+            </p>
+          );
+        })()}
       </div>
 
       <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted/60 text-[11px] font-medium text-muted-foreground">

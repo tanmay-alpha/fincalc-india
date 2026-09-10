@@ -81,12 +81,13 @@ export default function ResultHero({
 
   return (
     <div
+      data-result-hero
       className={cn(
         "rounded-2xl border border-border/80 bg-card p-6 sm:p-7 shadow-sm transition-all relative overflow-hidden",
-        tone === "negative" && "border-rose-300/50 dark:border-rose-900/40",
-        tone === "positive" && "border-emerald-300/50 dark:border-emerald-900/40",
-        tone === "warning" && "border-amber-300/50 dark:border-amber-900/40",
-        tone === "informational" && "border-blue-300/50 dark:border-blue-900/40",
+        tone === "negative" && "border-rose-300/50 dark:border-rose-900/40 bg-gradient-to-br from-card via-card to-rose-500/[0.04]",
+        tone === "positive" && "border-emerald-300/50 dark:border-emerald-900/40 bg-gradient-to-br from-card via-card to-emerald-500/[0.04]",
+        tone === "warning" && "border-amber-300/50 dark:border-amber-900/40 bg-gradient-to-br from-card via-card to-amber-500/[0.04]",
+        tone === "informational" && "border-blue-300/50 dark:border-blue-900/40 bg-gradient-to-br from-card via-card to-blue-500/[0.04]",
         className
       )}
     >
@@ -140,19 +141,24 @@ export default function ResultHero({
 
       {/* Optional Secondary Metrics Grid */}
       {secondaryMetrics && secondaryMetrics.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-border/60 grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div
+          className={cn(
+            "mt-4 pt-4 border-t border-border/60 grid gap-2 sm:gap-3",
+            secondaryMetrics.length === 1 && "grid-cols-1",
+            secondaryMetrics.length === 2 && "grid-cols-2",
+            secondaryMetrics.length === 3 && "grid-cols-3",
+            secondaryMetrics.length >= 4 && "grid-cols-2 sm:grid-cols-4"
+          )}
+        >
           {secondaryMetrics.map((metric, idx) => (
             <div
               key={idx}
-              className={cn(
-                "min-w-0",
-                secondaryMetrics.length === 3 && idx === 2 && "col-span-2 sm:col-span-1"
-              )}
+              className="min-w-0 p-2 sm:p-2.5 rounded-lg bg-muted/40 border border-border/40"
             >
-              <span className="block text-[11px] text-muted-foreground font-medium truncate">
+              <span className="block text-[10px] sm:text-[11px] text-muted-foreground font-medium truncate">
                 {metric.label}
               </span>
-              <span className="block text-sm font-bold text-foreground tabular-nums truncate">
+              <span className="block text-xs sm:text-sm font-bold text-foreground tabular-nums truncate mt-0.5">
                 {metric.value}
               </span>
             </div>

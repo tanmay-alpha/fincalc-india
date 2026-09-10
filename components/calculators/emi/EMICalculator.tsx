@@ -8,6 +8,7 @@ import InsightCard from "@/components/ui/InsightCard";
 import ShareButton from "@/components/ui/ShareButton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import StickyResultBar from "@/components/ui/StickyResultBar";
+import TableScrollContainer from "@/components/ui/TableScrollContainer";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcEMI } from "@/lib/math";
 import { formatINR } from "@/lib/format";
@@ -77,7 +78,12 @@ export default function EMICalculator() {
 
   return (
     <>
-      <StickyResultBar label="Monthly EMI" value={results.emi} />
+      <StickyResultBar
+        label="Monthly EMI"
+        value={results.emi}
+        prefix="₹"
+        formatValue={(val) => formatINR(val)}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6 mt-6">
           {/* ────── INPUT PANEL ────── */}
@@ -188,12 +194,7 @@ export default function EMICalculator() {
               <div className="px-6 py-4 border-b border-border">
                 <h3 className="font-semibold text-card-foreground">Amortization Schedule</h3>
               </div>
-              <div
-                className="overflow-x-auto"
-                tabIndex={0}
-                role="region"
-                aria-label="Amortization Schedule Table"
-              >
+              <TableScrollContainer ariaLabel="Amortization Schedule Table">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="table-head">
@@ -217,7 +218,7 @@ export default function EMICalculator() {
 
                   </tbody>
                 </table>
-              </div>
+              </TableScrollContainer>
 
               {/* Pagination */}
               {totalPages > 1 && (

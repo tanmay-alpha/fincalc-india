@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { X, Search } from "lucide-react";
+import { X, Search, ArrowRight } from "lucide-react";
 import {
   CATEGORIES,
   CALCULATOR_REGISTRY,
@@ -21,25 +21,31 @@ function CalculatorCard({ calc }: { calc: CalculatorMeta }) {
   return (
     <Link
       href={calc.route}
-      className="group p-3.5 rounded-lg border border-border/70 bg-card hover:border-border-strong hover:bg-muted/30 transition-colors flex flex-col justify-between gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      className="group min-h-[108px] sm:min-h-[116px] p-4 rounded-xl border border-border/70 bg-card hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
       <div>
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center text-foreground shrink-0 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-              <CalculatorIcon id={calc.id} className="w-3.5 h-3.5" aria-hidden="true" />
+            <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-foreground shrink-0 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+              <CalculatorIcon id={calc.id} className="w-4 h-4" aria-hidden="true" />
             </div>
-            <h3 className="text-[14px] font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+            <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
               {calc.shortName || calc.name}
             </h3>
           </div>
-          {calc.badge && (
-            <span className="text-xs text-muted-foreground shrink-0">
-              {calc.badge}
-            </span>
-          )}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {calc.badge && (
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                {calc.badge}
+              </span>
+            )}
+            <ArrowRight
+              className="w-3.5 h-3.5 text-muted-foreground/60 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 group-hover:text-primary transition-all duration-150"
+              aria-hidden="true"
+            />
+          </div>
         </div>
-        <p className="mt-2 text-[13px] text-muted-foreground line-clamp-2 leading-relaxed">
+        <p className="mt-2 text-xs sm:text-[13px] text-muted-foreground line-clamp-2 leading-relaxed">
           {calc.description}
         </p>
       </div>

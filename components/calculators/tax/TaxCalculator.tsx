@@ -8,6 +8,7 @@ import InsightCard from "@/components/ui/InsightCard";
 import ShareButton from "@/components/ui/ShareButton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import StickyResultBar from "@/components/ui/StickyResultBar";
+import TableScrollContainer from "@/components/ui/TableScrollContainer";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcTax } from "@/lib/math";
 import type {
@@ -749,12 +750,7 @@ export default function TaxCalculator() {
                 Detailed Statutory Tax Computation
               </h3>
             </div>
-            <div
-              className="overflow-x-auto"
-              tabIndex={0}
-              role="region"
-              aria-label="Detailed Statutory Breakdown Table"
-            >
+            <TableScrollContainer ariaLabel="Detailed Statutory Breakdown Table">
               <table className="w-full text-xs sm:text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/40 text-muted-foreground">
@@ -827,7 +823,7 @@ export default function TaxCalculator() {
                   </tr>
                 </tbody>
               </table>
-            </div>
+            </TableScrollContainer>
           </div>
         </div>
       </div>

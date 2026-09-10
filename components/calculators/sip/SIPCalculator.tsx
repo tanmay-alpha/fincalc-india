@@ -8,6 +8,7 @@ import InsightCard from "@/components/ui/InsightCard";
 import ShareButton from "@/components/ui/ShareButton";
 import SaveCalculationButton from "@/components/SaveCalculationButton";
 import StickyResultBar from "@/components/ui/StickyResultBar";
+import TableScrollContainer from "@/components/ui/TableScrollContainer";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcSIP } from "@/lib/math";
 import { formatINR } from "@/lib/format";
@@ -84,6 +85,7 @@ export default function SIPCalculator() {
         value={results.totalCorpus}
         prefix="₹"
         color="green"
+        formatValue={(val) => formatINR(val)}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
@@ -251,12 +253,7 @@ export default function SIPCalculator() {
                 {results.yearlyBreakdown.length} Years
               </span>
             </div>
-            <div
-              className="overflow-x-auto"
-              tabIndex={0}
-              role="region"
-              aria-label="Year-by-Year Breakdown Table"
-            >
+            <TableScrollContainer ariaLabel="Year-by-Year Breakdown Table">
               <table className="w-full text-xs sm:text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/40 text-muted-foreground">
@@ -300,7 +297,7 @@ export default function SIPCalculator() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TableScrollContainer>
           </div>
         </div>
       </div>

@@ -49,13 +49,14 @@ export default function FIREChart({ timeline }: FIREChartProps) {
             stroke="#94a3b8"
             fontSize={11}
             tickLine={false}
-            interval={Math.max(1, Math.floor(timeline.length / 8))}
+            tickFormatter={(val: string) => `${val.replace("Age ", "")}y`}
+            interval={Math.max(2, Math.floor(timeline.length / 6))}
           />
           <YAxis
             stroke="#94a3b8"
-            fontSize={12}
+            fontSize={11}
             tickLine={false}
-            tickFormatter={(val: number) => formatCompact(val).replace("₹", "")}
+            tickFormatter={(val: number) => formatCompact(val)}
           />
           <Tooltip
             contentStyle={{
