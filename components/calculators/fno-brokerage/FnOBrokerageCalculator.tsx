@@ -234,7 +234,7 @@ export default function FnOBrokerageCalculator() {
         </div>
 
         {/* ────── RESULTS & ITEMIZED CHARGES COLUMN (~55%) ────── */}
-        <div className="lg:col-span-7 space-y-6" data-result-hero>
+        <div className="lg:col-span-7 space-y-6" data-results-panel>
           {/* Net P&L Hero Card */}
           <ResultHero
             label="Net Profit / Loss (After All Charges)"

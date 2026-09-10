@@ -246,7 +246,7 @@ export default function DcfCalculator() {
         </div>
 
         {/* ────── VALUATION RESULTS & SENSITIVITY (~55%) ────── */}
-        <div className="lg:col-span-7 space-y-6" data-result-hero>
+        <div className="lg:col-span-7 space-y-6" data-results-panel>
           {result.isValid ? (
             <>
               {/* Intrinsic Value Hero */}

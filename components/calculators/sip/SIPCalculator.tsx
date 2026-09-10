@@ -90,7 +90,7 @@ export default function SIPCalculator() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
         {/* ────── INPUT PANEL (~42%) ────── */}
-        <div className="lg:col-span-5 space-y-6">
+        <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-20">
           <div className="bg-card rounded-2xl border border-border/80 p-5 sm:p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-5 pb-3 border-b border-border/60">
               <SlidersHorizontal className="w-4 h-4 text-primary" />
@@ -168,7 +168,7 @@ export default function SIPCalculator() {
         </div>
 
         {/* ────── RESULTS PANEL (~58%) ────── */}
-        <div className="lg:col-span-7 space-y-6" data-result-hero>
+        <div className="lg:col-span-7 space-y-6" data-results-panel>
           <ResultHero
             label="Estimated Total Corpus"
             value={results.totalCorpus}

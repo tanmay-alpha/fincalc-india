@@ -552,7 +552,7 @@ export default function TaxCalculator() {
         </div>
 
         {/* ────── RESULTS PANEL (~58%) ────── */}
-        <div className="lg:col-span-7 space-y-6" data-result-hero>
+        <div className="lg:col-span-7 space-y-6" data-results-panel>
           {/* Primary Result Hero */}
           <ResultHero
             label={`Net Tax Payable (${inputs.regime === "new" ? "New" : "Old"} Regime)`}

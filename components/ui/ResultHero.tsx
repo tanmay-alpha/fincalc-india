@@ -82,6 +82,7 @@ export default function ResultHero({
   return (
     <div
       data-result-hero
+      data-result-hero-card="true"
       className={cn(
         "rounded-2xl border border-border/80 bg-card p-6 sm:p-7 shadow-sm transition-all relative overflow-hidden",
         tone === "negative" && "border-rose-300/50 dark:border-rose-900/40 bg-gradient-to-br from-card via-card to-rose-500/[0.04]",

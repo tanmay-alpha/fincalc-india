@@ -31,11 +31,18 @@ export default function Navbar() {
   const [isCommandSearchOpen, setIsCommandSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 8);
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Close menus on route change
@@ -90,7 +97,14 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <header
+        className={cn(
+          "sticky top-0 z-40 w-full transition-all duration-200",
+          isScrolled
+            ? "border-b border-border bg-card/95 dark:bg-slate-900/95 backdrop-blur-md shadow-xs"
+            : "border-b border-border/60 bg-background"
+        )}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           {/* Brand Logo */}
           <div className="flex items-center gap-8">
