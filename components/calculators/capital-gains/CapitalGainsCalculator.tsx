@@ -17,6 +17,8 @@ import type {
 import { formatINR } from "@/lib/format";
 import { clsx } from "clsx";
 import { ShieldCheck, Scale, CheckCircle2, AlertCircle } from "lucide-react";
+import SaveCalculationButton from "@/components/SaveCalculationButton";
+import ShareButton from "@/components/ui/ShareButton";
 
 const CapitalGainsChart = dynamic(
   () => import("@/components/calculators/capital-gains/CapitalGainsChart"),
@@ -69,6 +71,7 @@ const ASSET_CLASSES: Array<{ id: AssetClass; label: string; icon: string }> = [
 
 export default function CapitalGainsCalculator() {
   const [inputs, setInputs] = useState<CapitalGainsInputsState>(DEFAULT_INPUTS);
+  const [shareId, setShareId] = useState<string | null>(null);
 
   const result = useMemo(() => {
     return calcCapitalGains(inputs);
@@ -469,6 +472,19 @@ export default function CapitalGainsCalculator() {
             />
           </div>
         </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex flex-wrap items-center gap-3 pt-4">
+        <SaveCalculationButton
+          calcType="capital-gains-tax"
+          data={{
+            inputs: inputs as unknown as Record<string, unknown>,
+            results: result as unknown as Record<string, unknown>,
+          }}
+          onSaved={(id) => setShareId(id)}
+        />
+        <ShareButton shareId={shareId} />
       </div>
     </>
   );

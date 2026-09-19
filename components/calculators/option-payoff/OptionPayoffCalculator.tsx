@@ -12,6 +12,8 @@ import type { OptionLeg, OptionStrategyPreset } from "@/lib/math";
 import { formatINR } from "@/lib/format";
 import { clsx } from "clsx";
 import { Plus, Trash2 } from "lucide-react";
+import SaveCalculationButton from "@/components/SaveCalculationButton";
+import ShareButton from "@/components/ui/ShareButton";
 
 const OptionPayoffChart = dynamic(
   () => import("@/components/calculators/option-payoff/OptionPayoffChart"),
@@ -31,6 +33,7 @@ export default function OptionPayoffCalculator() {
   const [underlyingPrice, setUnderlyingPrice] = useState(24000);
   const [lotSize, setLotSize] = useState(50); // Nifty lot size
   const [selectedPreset, setSelectedPreset] = useState<OptionStrategyPreset>("bull_call_spread");
+  const [shareId, setShareId] = useState<string | null>(null);
   const [legs, setLegs] = useState<OptionLeg[]>(() =>
     getOptionPresetLegs("bull_call_spread", 24000)
   );
@@ -391,6 +394,23 @@ export default function OptionPayoffCalculator() {
             />
           </div>
         </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex flex-wrap items-center gap-3 pt-4">
+        <SaveCalculationButton
+          calcType="option-payoff"
+          data={{
+            inputs: {
+              lotSize,
+              underlyingPrice,
+              legs,
+            },
+            results: result as unknown as Record<string, unknown>,
+          }}
+          onSaved={(id) => setShareId(id)}
+        />
+        <ShareButton shareId={shareId} />
       </div>
     </>
   );

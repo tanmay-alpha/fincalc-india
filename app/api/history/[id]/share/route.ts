@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-const ID_PATTERN = /^[a-z0-9]{20,32}$/i;
+const ID_PATTERN = /^[a-z0-9_-]{10,64}$/i;
 
 async function getOwnedCalculation(id: string, userId: string) {
   return prisma.calculation.findFirst({
@@ -29,9 +29,20 @@ export async function POST(
       return NextResponse.json({ success: false, error: "Invalid id" }, { status: 400 });
     }
 
-    const requestBody = await req.json().catch(() => ({}));
-    const rotate = typeof requestBody === "object" && requestBody !== null && !Array.isArray(requestBody)
-      && requestBody.rotate === true;
+    let requestBody: Record<string, unknown> = {};
+    const text = await req.text();
+    if (text.trim().length > 0) {
+      try {
+        const parsed = JSON.parse(text);
+        if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+          return NextResponse.json({ success: false, error: "Invalid JSON body" }, { status: 400 });
+        }
+        requestBody = parsed as Record<string, unknown>;
+      } catch {
+        return NextResponse.json({ success: false, error: "Invalid JSON body" }, { status: 400 });
+      }
+    }
+    const rotate = requestBody.rotate === true;
 
     const calculation = await getOwnedCalculation(id, session.user.id);
     if (!calculation) {

@@ -7,6 +7,9 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
+    env: {
+      DATABASE_URL: process.env.DATABASE_URL || 'postgresql://postgres:tanmay@127.0.0.1:5432/fincalc_test',
+    },
     include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
     exclude: ['**/node_modules/**', '**/.worktrees/**', '**/.next/**'],
     coverage: {

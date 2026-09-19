@@ -9,6 +9,8 @@ import StickyResultBar from "@/components/ui/StickyResultBar";
 import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { calcFIRE } from "@/lib/math";
 import { formatINR, formatCompact } from "@/lib/format";
+import SaveCalculationButton from "@/components/SaveCalculationButton";
+import ShareButton from "@/components/ui/ShareButton";
 
 const FIREChart = dynamic(
   () => import("@/components/calculators/fire/FIREChart"),
@@ -16,6 +18,7 @@ const FIREChart = dynamic(
 );
 
 export default function FIRECalculator() {
+  const [shareId, setShareId] = useState<string | null>(null);
   const [inputs, setInputs] = useState({
     currentAge: 28,
     retirementAge: 45,
@@ -296,6 +299,19 @@ export default function FIRECalculator() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex flex-wrap items-center gap-3 pt-4">
+        <SaveCalculationButton
+          calcType="fire"
+          data={{
+            inputs: inputs as unknown as Record<string, unknown>,
+            results: result as unknown as Record<string, unknown>,
+          }}
+          onSaved={(id) => setShareId(id)}
+        />
+        <ShareButton shareId={shareId} />
       </div>
     </>
   );

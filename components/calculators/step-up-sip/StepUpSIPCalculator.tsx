@@ -12,6 +12,8 @@ import type { StepUpType } from "@/lib/math";
 import { formatINR, formatCompact } from "@/lib/format";
 import { clsx } from "clsx";
 import { Target, TrendingUp, Sparkles } from "lucide-react";
+import SaveCalculationButton from "@/components/SaveCalculationButton";
+import ShareButton from "@/components/ui/ShareButton";
 
 const StepUpSIPChart = dynamic(
   () => import("@/components/calculators/step-up-sip/StepUpSIPChart"),
@@ -21,6 +23,7 @@ const StepUpSIPChart = dynamic(
 export default function StepUpSIPCalculator() {
   const [isGoalMode, setIsGoalMode] = useState(false);
   const [stepUpType, setStepUpType] = useState<StepUpType>("percentage");
+  const [shareId, setShareId] = useState<string | null>(null);
 
   const [inputs, setInputs] = useState({
     monthlyAmount: 10000,
@@ -386,6 +389,27 @@ export default function StepUpSIPCalculator() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex flex-wrap items-center gap-3 pt-4">
+        <SaveCalculationButton
+          calcType="step-up-sip"
+          data={{
+            inputs: {
+              monthlyAmount: inputs.monthlyAmount,
+              targetCorpus: inputs.targetCorpus,
+              annualRate: inputs.annualRate,
+              years: inputs.years,
+              stepUpType,
+              stepUpValue: inputs.stepUpValue,
+            },
+            mode: isGoalMode ? "goal" : "growth",
+            results: { stepUpResult, goalResult } as unknown as Record<string, unknown>,
+          }}
+          onSaved={(id) => setShareId(id)}
+        />
+        <ShareButton shareId={shareId} />
       </div>
     </>
   );

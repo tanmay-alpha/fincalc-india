@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createHash } from "crypto";
 import type { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -197,6 +198,9 @@ export async function POST(
 
     // ─── Persist ────────────────────────────────────────────────
     let calculationId: string | null = null;
+    const inputsHash = createHash("sha256")
+      .update(JSON.stringify(validation.data))
+      .digest("hex");
 
     try {
       const calculation = await prisma.calculation.create({
@@ -205,6 +209,12 @@ export async function POST(
           inputs: validation.data as Prisma.InputJsonValue,
           outputs,
           userId: session.user.id,
+          mode: typeof body.mode === "string" ? body.mode : null,
+          engineVersion: "1.0.0",
+          schemaVersion: 1,
+          rulesetId: contract.regulatoryMetadata?.taxYear ?? "tax-year-2026-27",
+          inputsHash,
+          computedAt: new Date(),
         },
         select: { id: true },
       });

@@ -46,12 +46,14 @@ export function middleware(request: NextRequest) {
 
   // 2. Handle /login specifically
   if (pathname === "/login") {
-    if (isAuthenticated) {
+    const hasError = request.nextUrl.searchParams.has("error");
+    const isForce = request.nextUrl.searchParams.has("force") || request.nextUrl.searchParams.has("reauth");
+    if (isAuthenticated && !hasError && !isForce) {
       const rawCallback = request.nextUrl.searchParams.get("callbackUrl");
       const destination = getSafeCallbackUrl(rawCallback, null, "/");
       return NextResponse.redirect(new URL(destination, request.url));
     }
-    // Set pathname header and allow unauthenticated visitor to see login
+    // Set pathname header and allow unauthenticated or re-authenticating visitor to see login
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set("x-pathname", pathname);
     return NextResponse.next({ request: { headers: requestHeaders } });

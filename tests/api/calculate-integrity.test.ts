@@ -30,7 +30,7 @@ describe("POST /api/calculate/[type] persistence integrity", () => {
   it("recomputes SIP output instead of persisting a forged client result", async () => {
     const inputs = { monthlyAmount: 10_000, annualRate: 12, years: 10 };
     mocks.auth.mockResolvedValue({ user: { id: "user-1" } });
-    mocks.create.mockResolvedValue({ shareId: "clh012345678901234567890" });
+    mocks.create.mockResolvedValue({ id: "clh012345678901234567890" });
 
     const response = await POST(
       new Request("http://localhost:3000/api/calculate/sip", {
@@ -45,7 +45,13 @@ describe("POST /api/calculate/[type] persistence integrity", () => {
     );
 
     expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body).toEqual({
+      success: true,
+      data: { calculationId: "clh012345678901234567890" },
+    });
     expect(mocks.create.mock.calls[0][0].data.outputs).toEqual(calcSIP(inputs));
+    expect(mocks.create.mock.calls[0][0].data.inputsHash).toBeDefined();
   });
 
   it("accepts current tax inputs without requiring a legacy grossIncome field", async () => {
@@ -67,7 +73,7 @@ describe("POST /api/calculate/[type] persistence integrity", () => {
       otherDeductions: 0,
     } as const;
     mocks.auth.mockResolvedValue({ user: { id: "user-1" } });
-    mocks.create.mockResolvedValue({ shareId: "clh012345678901234567891" });
+    mocks.create.mockResolvedValue({ id: "clh012345678901234567891" });
 
     const response = await POST(
       new Request("http://localhost:3000/api/calculate/tax", {
@@ -79,12 +85,17 @@ describe("POST /api/calculate/[type] persistence integrity", () => {
     );
 
     expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body).toEqual({
+      success: true,
+      data: { calculationId: "clh012345678901234567891" },
+    });
     expect(mocks.create.mock.calls[0][0].data.outputs).toEqual(calcTax(inputs));
   });
 
   it("accepts inputs without any client result payload", async () => {
     mocks.auth.mockResolvedValue({ user: { id: "user-1" } });
-    mocks.create.mockResolvedValue({ shareId: "clh012345678901234567892" });
+    mocks.create.mockResolvedValue({ id: "clh012345678901234567892" });
 
     const response = await POST(
       new Request("http://localhost:3000/api/calculate/sip", {
@@ -98,6 +109,11 @@ describe("POST /api/calculate/[type] persistence integrity", () => {
     );
 
     expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body).toEqual({
+      success: true,
+      data: { calculationId: "clh012345678901234567892" },
+    });
     expect(mocks.create.mock.calls[0][0].data.outputs).toEqual(
       calcSIP({ monthlyAmount: 10_000, annualRate: 12, years: 10 })
     );

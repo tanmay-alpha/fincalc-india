@@ -39,8 +39,16 @@ export function prepareOpenAgain(type: string, inputs: Record<string, unknown>):
 
   const params = new URLSearchParams();
   for (const [k, v] of Object.entries(inputs)) {
-    if (v !== undefined && v !== null && typeof v !== "object") {
-      params.set(k, String(v));
+    if (v !== undefined && v !== null) {
+      if (typeof v === "object") {
+        try {
+          params.set(k, JSON.stringify(v));
+        } catch {
+          // Ignored if non-serializable
+        }
+      } else {
+        params.set(k, String(v));
+      }
     }
   }
   return params.toString();
@@ -97,6 +105,21 @@ export function validateAndRestoreInputs<T extends object>(
       const coerced: Record<string, unknown> = {};
       for (const [key, val] of Object.entries(candidateObj)) {
         const defaultVal = defObj[key];
+        if (typeof val === "string") {
+          const trimmed = val.trim();
+          if (
+            (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+            (trimmed.startsWith("[") && trimmed.endsWith("]"))
+          ) {
+            try {
+              coerced[key] = JSON.parse(trimmed);
+              continue;
+            } catch {
+              // fallback to primitive parsing
+            }
+          }
+        }
+
         if (typeof val === "string" && typeof defaultVal === "number") {
           const n = Number(val);
           if (!Number.isFinite(n) || Number.isNaN(n)) return defaults;
@@ -188,17 +211,15 @@ export function getRestoredInputs<T extends object>(
       ) {
         return validateAndRestoreInputs(calcType, parsed.inputs, defaults);
       }
-      // If type mismatched or malformed structure, reject and fall back to defaults
-      return defaults;
+      // If type mismatched or malformed structure, fall through to query params
     }
   } catch {
-    // Malformed JSON in sessionStorage -> safely return defaults
+    // Malformed JSON in sessionStorage -> safely fall through to query params
     try {
       sessionStorage.removeItem(RESTORE_KEY);
     } catch {
       // Ignored
     }
-    return defaults;
   }
 
   // 2. Check query params if available

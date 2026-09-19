@@ -57,18 +57,25 @@ model VerificationToken {
 }
 
 model Calculation {
-  id        String   @id @default(cuid())
-  userId    String?
-  type      String   // canonical calculator id
-  inputs    Json
-  outputs   Json
-  isShared  Boolean  @default(false)
-  shareId   String?  @unique
-  label     String?
-  createdAt DateTime @default(now())
-  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  userId        String?
+  type          String   // canonical calculator id
+  mode          String?  // discriminated mode (e.g. "percentage", "goal", etc.)
+  engineVersion String   @default("1.0.0")
+  schemaVersion Int      @default(1)
+  rulesetId     String?  // e.g. "finance-act-2026", "rbi-lrs-2026"
+  inputs        Json
+  outputs       Json
+  inputsHash    String?  // SHA-256 hash for idempotency and change tracking
+  isShared      Boolean  @default(false)
+  shareId       String?  @unique
+  label         String?
+  createdAt     DateTime @default(now())
+  computedAt    DateTime @default(now())
+  user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   @@index([userId])
   @@index([shareId])
   @@index([createdAt])
+  @@index([inputsHash])
 }

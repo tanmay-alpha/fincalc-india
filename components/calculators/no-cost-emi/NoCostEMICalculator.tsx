@@ -11,6 +11,8 @@ import { calcNoCostEMITruth } from "@/lib/math";
 import { formatINR, formatCompact } from "@/lib/format";
 import { clsx } from "clsx";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import SaveCalculationButton from "@/components/SaveCalculationButton";
+import ShareButton from "@/components/ui/ShareButton";
 
 const NoCostEMIChart = dynamic(
   () => import("@/components/calculators/no-cost-emi/NoCostEMIChart"),
@@ -18,6 +20,7 @@ const NoCostEMIChart = dynamic(
 );
 
 export default function NoCostEMICalculator() {
+  const [shareId, setShareId] = useState<string | null>(null);
   const [inputs, setInputs] = useState({
     productPrice: 79999, // e.g. iPhone 15 / Galaxy S24
     tenureMonths: 6,
@@ -287,6 +290,19 @@ export default function NoCostEMICalculator() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex flex-wrap items-center gap-3 pt-4">
+        <SaveCalculationButton
+          calcType="no-cost-emi"
+          data={{
+            inputs: inputs as unknown as Record<string, unknown>,
+            results: result as unknown as Record<string, unknown>,
+          }}
+          onSaved={(id) => setShareId(id)}
+        />
+        <ShareButton shareId={shareId} />
       </div>
     </>
   );

@@ -10,6 +10,8 @@ import { calcFnOBreakeven } from "@/lib/math";
 import type { FnOInstrument, FnOTaxYear } from "@/lib/math";
 import { Target, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
+import SaveCalculationButton from "@/components/SaveCalculationButton";
+import ShareButton from "@/components/ui/ShareButton";
 
 const FnOBrokerageChart = dynamic(
   () => import("@/components/calculators/fno-brokerage/FnOBrokerageChart"),
@@ -36,6 +38,7 @@ const DEFAULT_INPUTS: FnOInputsState = {
 
 export default function FnOBrokerageCalculator() {
   const [inputs, setInputs] = useState<FnOInputsState>(DEFAULT_INPUTS);
+  const [shareId, setShareId] = useState<string | null>(null);
 
   const result = useMemo(() => {
     return calcFnOBreakeven(inputs);
@@ -424,6 +427,19 @@ export default function FnOBrokerageCalculator() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex flex-wrap items-center gap-3 pt-4">
+        <SaveCalculationButton
+          calcType="fno-brokerage"
+          data={{
+            inputs: inputs as unknown as Record<string, unknown>,
+            results: result as unknown as Record<string, unknown>,
+          }}
+          onSaved={(id) => setShareId(id)}
+        />
+        <ShareButton shareId={shareId} />
       </div>
     </>
   );

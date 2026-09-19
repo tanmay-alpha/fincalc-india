@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bookmark, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useSession, signIn } from "next-auth/react";
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 interface SaveCalculationPayload {
   inputs: Record<string, unknown>;
+  mode?: string;
   /**
    * Legacy UI callers may still supply a preview result, but it is never
    * sent to the server or used for persistence.
@@ -40,8 +41,12 @@ export default function SaveCalculationButton({
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const { data: session, status } = useSession();
-  const contract = getCalculatorContract(calcType.toLowerCase());
+  const contract = getCalculatorContract(calcType);
   const saveSupported = Boolean(contract && isSaveSupportedContract(contract));
+
+  useEffect(() => {
+    setSaved(false);
+  }, [data.inputs]);
 
   if (!saveSupported) {
     return null;
@@ -63,10 +68,11 @@ export default function SaveCalculationButton({
 
     setLoading(true);
     try {
-      const res = await fetch(`/api/calculate/${calcType.toLowerCase()}`, {
+      const endpoint = contract?.id ?? calcType.toLowerCase();
+      const res = await fetch(`/api/calculate/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inputs: data.inputs }),
+        body: JSON.stringify({ inputs: data.inputs, mode: data.mode }),
       });
 
       if (!res.ok) {
