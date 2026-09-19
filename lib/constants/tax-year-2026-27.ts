@@ -11,7 +11,7 @@
 
 // ─── 1. TAX YEAR & LEGISLATIVE METADATA ─────────────────────────
 export const CURRENT_TAX_YEAR = "Tax Year 2026-27";
-export const PREVIOUS_FY_LABEL = "FY 2026-27 (formerly AY 2027-28 / FY 2025-26)";
+export const PREVIOUS_FY_LABEL = "Assessment Year 2027-28 (Financial Year 2026-27)";
 export const TAX_YEAR_NOTE = "Under the Income-tax Act, 2025 (effective 1 April 2026 as amended by Finance Act, 2026), the terminology has been modernized to a single 'Tax Year'.";
 export const PENDING_SECTIONS_NOTE = "Section numbers under the Income-tax Act, 2025 are noted alongside legacy 1961 Act references for clarity.";
 
@@ -172,14 +172,15 @@ export const CII_TABLE: Record<string | number, number> = {
   "2026-27": 384, 2026: 384, // CBDT Official Series (Tax Year 2026-27)
 };
 
-export function getCiiValue(year: string | number): number {
-  if (typeof year === "number") {
-    return CII_TABLE[year] ?? (year >= 2026 ? 384 : 363);
+export function getCiiValue(year: string | number | undefined | null): number | null {
+  if (year === undefined || year === null) return null;
+  const str = String(year).trim();
+  if (CII_TABLE[str] !== undefined) return CII_TABLE[str];
+  const num = typeof year === "number" ? year : Number(str);
+  if (!isNaN(num) && Number.isInteger(num) && CII_TABLE[num] !== undefined) {
+    return CII_TABLE[num];
   }
-  if (CII_TABLE[year]) return CII_TABLE[year];
-  const numYear = parseInt(year, 10);
-  if (!isNaN(numYear) && CII_TABLE[numYear]) return CII_TABLE[numYear];
-  return 384;
+  return null;
 }
 
 export const CURRENT_CII_YEAR = "2026-27";

@@ -157,6 +157,7 @@ import {
   CII_TABLE,
   CURRENT_CII_YEAR,
   CURRENT_CII_VALUE,
+  getCiiValue,
   LRS_TCS_CONSTANTS,
   STT_RATES_F_AND_O,
   TRANSACTION_CHARGES,
@@ -191,6 +192,7 @@ export {
   CII_TABLE,
   CURRENT_CII_YEAR,
   CURRENT_CII_VALUE,
+  getCiiValue,
   LRS_TCS_CONSTANTS,
   STT_RATES_F_AND_O,
   TRANSACTION_CHARGES,
@@ -1233,52 +1235,79 @@ export function calcEMI(input: EmiInput): EmiOutput {
   const tenureMonths = Math.max(1, Math.round(safePositive(input.tenureMonths, 1)));
   const r = annualRate / 12 / 100;
 
-  let emi = 0;
   if (principal === 0) {
-    emi = 0;
-  } else if (r === 0) {
-    emi = principal / tenureMonths;
-  } else {
-    const factor = Math.pow(1 + r, tenureMonths);
-    emi = (principal * r * factor) / (factor - 1);
+    return {
+      emi: 0,
+      totalPayment: 0,
+      totalInterest: 0,
+      principalAmount: 0,
+      interestPercentage: 0,
+      amortizationSchedule: [],
+    };
   }
 
-  const totalPayment = emi * tenureMonths;
-  const totalInterest = Math.max(0, totalPayment - principal);
-  const interestPercentage = totalPayment > 0
-    ? (totalInterest / totalPayment) * 100
-    : 0;
+  let exactEmi = 0;
+  if (r === 0) {
+    exactEmi = principal / tenureMonths;
+  } else {
+    const factor = Math.pow(1 + r, tenureMonths);
+    exactEmi = (principal * r * factor) / (factor - 1);
+  }
 
-  // Amortization schedule
+  const roundedEmi = Math.round(exactEmi);
+  const totalPayment = Math.round(exactEmi * tenureMonths);
+  const totalInterest = Math.max(0, totalPayment - Math.round(principal));
+
+  // Amortization schedule with terminal balance and row reconciliation
   const amortizationSchedule: EmiAmortizationRow[] = [];
   let balance = principal;
   let cumPrincipal = 0;
   let cumInterest = 0;
 
   for (let m = 1; m <= tenureMonths; m++) {
-    const interestPart = balance * r;
-    const principalPart = emi - interestPart;
+    const isLastMonth = m === tenureMonths;
+    let interestPart: number;
+    let principalPart: number;
+
+    if (isLastMonth) {
+      principalPart = Math.round(principal - cumPrincipal);
+      interestPart = Math.max(0, totalInterest - cumInterest);
+    } else {
+      interestPart = r === 0 ? 0 : Math.round(balance * r);
+      interestPart = Math.min(interestPart, Math.max(0, totalInterest - cumInterest));
+      principalPart = Math.min(
+        Math.round(balance),
+        Math.max(0, roundedEmi - interestPart)
+      );
+    }
+
+    const monthEmi = principalPart + interestPart;
+
     balance = Math.max(0, balance - principalPart);
     cumPrincipal += principalPart;
     cumInterest += interestPart;
 
     amortizationSchedule.push({
       month: m,
-      emi: Math.round(emi),
-      principal: Math.round(principalPart),
-      interest: Math.round(interestPart),
+      emi: monthEmi,
+      principal: principalPart,
+      interest: interestPart,
       balance: Math.round(balance),
-      cumulativePrincipal: Math.round(cumPrincipal),
-      cumulativeInterest: Math.round(cumInterest),
+      cumulativePrincipal: cumPrincipal,
+      cumulativeInterest: cumInterest,
     });
   }
 
+  const interestPercentage = totalPayment > 0
+    ? Math.round((totalInterest / totalPayment) * 10000) / 100
+    : 0;
+
   return {
-    emi: Math.round(emi),
-    totalPayment: Math.round(totalPayment),
-    totalInterest: Math.round(totalInterest),
+    emi: roundedEmi,
+    totalPayment,
+    totalInterest,
     principalAmount: Math.round(principal),
-    interestPercentage: Math.round(interestPercentage * 100) / 100,
+    interestPercentage,
     amortizationSchedule,
   };
 }
@@ -2501,11 +2530,11 @@ export function calcFIRE(input: FireInput): FireOutput {
 
   // Required monthly savings calculation
   let requiredMonthlySavings = 0;
+  const mRate = preRateDec / 12;
   if (yearsToRetirement > 0 && roundedStandard > 0) {
     const fvExisting = safeSavings * Math.pow(1 + preRateDec, yearsToRetirement);
     const shortfall = Math.max(0, roundedStandard - fvExisting);
 
-    const mRate = preRateDec / 12;
     const totalMonths = yearsToRetirement * 12;
 
     if (mRate === 0) {
@@ -2533,7 +2562,15 @@ export function calcFIRE(input: FireInput): FireOutput {
 
     if (isAccumulation) {
       contribution = annualContribution;
-      currentCorpus = (currentCorpus + contribution) * (1 + preRateDec);
+      if (mRate === 0) {
+        currentCorpus = currentCorpus + contribution;
+      } else {
+        const annualContributionGrowthFactor =
+          ((Math.pow(1 + mRate, 12) - 1) / mRate) * (1 + mRate);
+        currentCorpus =
+          currentCorpus * (1 + preRateDec) +
+          requiredMonthlySavings * annualContributionGrowthFactor;
+      }
     } else {
       const retirementYearIndex = currentSimAge - safeRetireAge;
       withdrawal =
@@ -2569,7 +2606,10 @@ export function calcFIRE(input: FireInput): FireOutput {
     });
   }
 
-  const isPerpetual = rReal > 0 && rReal >= safeSwr / 100;
+  const isPerpetual =
+    (yearsToRetirement > 0 || safeSavings >= roundedStandard) &&
+    rReal > 0 &&
+    rReal >= safeSwr / 100;
 
   return {
     yearsToRetirement,
@@ -2670,14 +2710,6 @@ export interface CapitalGainsOutput {
   explanation: string;
 }
 
-export function getCiiValue(year: number | string | undefined): number {
-  if (year === undefined) return CURRENT_CII_VALUE;
-  const num = typeof year === "number" ? year : parseInt(String(year), 10);
-  if (!isNaN(num) && CII_TABLE[num]) {
-    return CII_TABLE[num];
-  }
-  return CURRENT_CII_VALUE;
-}
 
 export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
   const {
@@ -2843,39 +2875,47 @@ export function calcCapitalGains(input: CapitalGainsInput): CapitalGainsOutput {
       if (isGrandfatheringEligible) {
         const buyCii = getCiiValue(purchaseCiiYear);
         const sellCii = getCiiValue(saleCiiYear);
-        const impCii = getCiiValue(improvementCiiYear);
+        const impCii = safeImp > 0 ? getCiiValue(improvementCiiYear) : null;
 
-        const indexedCoa = safeBuy * (sellCii / buyCii);
-        const indexedCoi = safeImp > 0 ? safeImp * (sellCii / impCii) : 0;
-        const totalIndexedCost = indexedCoa + indexedCoi;
+        if (buyCii !== null && sellCii !== null && buyCii > 0) {
+          const indexedCoa = safeBuy * (sellCii / buyCii);
+          const indexedCoi = safeImp > 0 && impCii !== null && impCii > 0 ? safeImp * (sellCii / impCii) : safeImp;
+          const totalIndexedCost = indexedCoa + indexedCoi;
 
-        const indexedGain = Math.max(0, netSaleValue - totalIndexedCost);
-        const indexedTax = (indexedGain * 20) / 100;
+          const indexedGain = Math.max(0, netSaleValue - totalIndexedCost);
+          const indexedTax = (indexedGain * 20) / 100;
 
-        const isUnindexedBetter = unindexedTax <= indexedTax;
-        const recommendedOption = isUnindexedBetter ? "unindexed_12_5" : "indexed_20";
-        totalTaxPayable = Math.min(unindexedTax, indexedTax);
-        taxRatePercent = isUnindexedBetter ? 12.5 : 20;
-        const taxSaved = Math.abs(unindexedTax - indexedTax);
+          const isUnindexedBetter = unindexedTax <= indexedTax;
+          const recommendedOption = isUnindexedBetter ? "unindexed_12_5" : "indexed_20";
+          totalTaxPayable = Math.min(unindexedTax, indexedTax);
+          taxRatePercent = isUnindexedBetter ? 12.5 : 20;
+          const taxSaved = Math.abs(unindexedTax - indexedTax);
 
-        realEstateComparison = {
-          unindexedGain: Math.round(taxableGain),
-          unindexedTax: Math.round(unindexedTax),
-          indexedCost: Math.round(totalIndexedCost),
-          indexedGain: Math.round(indexedGain),
-          indexedTax: Math.round(indexedTax),
-          recommendedOption,
-          taxSavedByBestOption: Math.round(taxSaved),
-          isGrandfatheringEligible: true,
-        };
+          realEstateComparison = {
+            unindexedGain: Math.round(taxableGain),
+            unindexedTax: Math.round(unindexedTax),
+            indexedCost: Math.round(totalIndexedCost),
+            indexedGain: Math.round(indexedGain),
+            indexedTax: Math.round(indexedTax),
+            recommendedOption,
+            taxSavedByBestOption: Math.round(taxSaved),
+            isGrandfatheringEligible: true,
+          };
 
-        specialRateChargeableGain = taxableGain;
-        capitalGainIncludedInTotalIncome = 0;
-        explanation = `Grandfathered property (acquired before 23 July 2024 by ${taxpayerCategory === "resident_huf" ? "Resident HUF" : "Resident Individual"}): ${
-          isUnindexedBetter
-            ? `12.5% without indexation saves you ₹${Math.round(taxSaved).toLocaleString("en-IN")} compared to 20% with indexation.`
-            : `20% with indexation saves you ₹${Math.round(taxSaved).toLocaleString("en-IN")} compared to 12.5% without indexation.`
-        }`;
+          specialRateChargeableGain = taxableGain;
+          capitalGainIncludedInTotalIncome = 0;
+          explanation = `Grandfathered property (acquired before 23 July 2024 by ${taxpayerCategory === "resident_huf" ? "Resident HUF" : "Resident Individual"}): ${
+            isUnindexedBetter
+              ? `12.5% without indexation saves you ₹${Math.round(taxSaved).toLocaleString("en-IN")} compared to 20% with indexation.`
+              : `20% with indexation saves you ₹${Math.round(taxSaved).toLocaleString("en-IN")} compared to 12.5% without indexation.`
+          }`;
+        } else {
+          taxRatePercent = 12.5;
+          totalTaxPayable = unindexedTax;
+          specialRateChargeableGain = taxableGain;
+          capitalGainIncludedInTotalIncome = 0;
+          explanation = `Grandfathered property (acquired before 23 July 2024 by ${taxpayerCategory === "resident_huf" ? "Resident HUF" : "Resident Individual"}): Valid Cost Inflation Index (CII) not found for purchase or sale year; indexation comparison unavailable. Taxed at flat 12.5% without indexation.`;
+        }
       } else {
         taxRatePercent = 12.5;
         totalTaxPayable = unindexedTax;
@@ -3246,7 +3286,112 @@ export function calcOptionPayoff(input: OptionPayoffInput): OptionPayoffOutput {
     };
   }
 
-  // Determine spot price range for evaluation
+  // Pure analytical payoff function at any spot price S >= 0
+  const evalPayoffAt = (s: number): number => {
+    let sum = 0;
+    for (const leg of legs) {
+      const qty = leg.lots * safeLotSize;
+      const pos = leg.position ?? (leg as any).action;
+      const isLong = pos === "long" || pos === "buy";
+      let intrinsic = 0;
+      if (leg.type === "call") {
+        intrinsic = Math.max(0, s - leg.strike);
+      } else {
+        intrinsic = Math.max(0, leg.strike - s);
+      }
+      const legPnl = isLong ? (intrinsic - leg.premium) * qty : (leg.premium - intrinsic) * qty;
+      sum += legPnl;
+    }
+    return sum;
+  };
+
+  // Asymptotic tail slope for S > max(K_i): calls only (puts expire worthless)
+  let tailSlope = 0;
+  for (const leg of legs) {
+    const qty = leg.lots * safeLotSize;
+    const pos = leg.position ?? (leg as any).action;
+    const isLong = pos === "long" || pos === "buy";
+    if (leg.type === "call") {
+      tailSlope += isLong ? qty : -qty;
+    }
+  }
+
+  // Critical strike breakpoints on S >= 0
+  const criticalPoints = Array.from(
+    new Set([0, ...legs.map((l) => Math.max(0, l.strike)).filter((k) => Number.isFinite(k))])
+  ).sort((a, b) => a - b);
+
+  let analyticalMinPnl = Infinity;
+  let analyticalMaxPnl = -Infinity;
+  const analyticalBreakevens: number[] = [];
+
+  for (let i = 0; i < criticalPoints.length; i++) {
+    const cp = criticalPoints[i];
+    const pnl = evalPayoffAt(cp);
+    if (pnl < analyticalMinPnl) analyticalMinPnl = pnl;
+    if (pnl > analyticalMaxPnl) analyticalMaxPnl = pnl;
+
+    if (Math.abs(pnl) < 1e-4) {
+      if (!analyticalBreakevens.some((b) => Math.abs(b - cp) < 0.01)) {
+        analyticalBreakevens.push(round2(cp));
+      }
+    }
+
+    if (i < criticalPoints.length - 1) {
+      const nextCp = criticalPoints[i + 1];
+      const nextPnl = evalPayoffAt(nextCp);
+      if ((pnl < 0 && nextPnl > 0) || (pnl > 0 && nextPnl < 0)) {
+        const root = cp - (pnl * (nextCp - cp)) / (nextPnl - pnl);
+        if (!analyticalBreakevens.some((b) => Math.abs(b - root) < 0.01)) {
+          analyticalBreakevens.push(round2(root));
+        }
+      }
+    }
+  }
+
+  // Tail evaluation above highest strike
+  const lastCp = criticalPoints[criticalPoints.length - 1];
+  const lastPnl = evalPayoffAt(lastCp);
+
+  let maxProfitResult: number | "Unlimited" = round2(analyticalMaxPnl);
+  let maxLossResult: number | "Unlimited" = round2(analyticalMinPnl);
+
+  if (tailSlope > 0) {
+    maxProfitResult = "Unlimited";
+    if (lastPnl < 0) {
+      const tailRoot = lastCp - lastPnl / tailSlope;
+      if (tailRoot >= lastCp && !analyticalBreakevens.some((b) => Math.abs(b - tailRoot) < 0.01)) {
+        analyticalBreakevens.push(round2(tailRoot));
+      }
+    }
+  } else if (tailSlope < 0) {
+    maxLossResult = "Unlimited";
+    if (lastPnl > 0) {
+      const tailRoot = lastCp - lastPnl / tailSlope;
+      if (tailRoot >= lastCp && !analyticalBreakevens.some((b) => Math.abs(b - tailRoot) < 0.01)) {
+        analyticalBreakevens.push(round2(tailRoot));
+      }
+    }
+  } else {
+    if (lastPnl > analyticalMaxPnl) maxProfitResult = round2(lastPnl);
+    if (lastPnl < analyticalMinPnl) maxLossResult = round2(lastPnl);
+  }
+
+  analyticalBreakevens.sort((a, b) => a - b);
+
+  // Compute Net Premium (Debit vs Credit)
+  let netPremium = 0;
+  for (const leg of legs) {
+    const qty = leg.lots * safeLotSize;
+    const isLong = leg.position === "long" || leg.position === "buy";
+    if (isLong) {
+      netPremium += leg.premium * qty;
+    } else {
+      netPremium -= leg.premium * qty;
+    }
+  }
+
+  // Determine spot price range for chart visualization
   const strikes = legs.map((l) => l.strike).filter((s) => s > 0);
   const minStrike = strikes.length > 0 ? Math.min(...strikes) : safeUnderlying;
   const maxStrike = strikes.length > 0 ? Math.max(...strikes) : safeUnderlying;
@@ -3255,41 +3400,34 @@ export function calcOptionPayoff(input: OptionPayoffInput): OptionPayoffOutput {
   const minSpot = Math.max(0, input.minSpot ?? Math.floor((minStrike - baseRange * 1.5) / 100) * 100);
   const maxSpot = input.maxSpot ?? Math.ceil((maxStrike + baseRange * 1.5) / 100) * 100;
   const numSteps = 80;
-  const step = input.step ?? Math.max(10, Math.round((maxSpot - minSpot) / numSteps));
 
-  // Compute Net Premium (Debit vs Credit)
-  let netPremium = 0;
-  for (const leg of legs) {
-    const qty = leg.lots * safeLotSize;
-    const isLong = leg.position === "long" || leg.position === "buy";
-    if (isLong) {
-      netPremium += leg.premium * qty; // Debit (paid)
-    } else {
-      netPremium -= leg.premium * qty; // Credit (received)
-    }
+  // Strict positive finite step guard (prevents infinite loop or zero step)
+  const rawStep = input.step;
+  let step =
+    typeof rawStep === "number" && Number.isFinite(rawStep) && rawStep > 0
+      ? rawStep
+      : Math.max(1, Math.round((maxSpot - minSpot) / numSteps));
+
+  // Bound sample count to prevent hangs
+  const totalRange = Math.max(1, maxSpot - minSpot);
+  if (totalRange / step > 1000) {
+    step = Math.max(1, Math.round(totalRange / 1000));
   }
 
-  // Generate comprehensive sample spot prices including exact critical points
+  // Generate chart data
   const spotSet = new Set<number>();
   for (let s = minSpot; s <= maxSpot; s += step) {
     spotSet.add(s);
   }
-  for (const leg of legs) {
-    if (leg.strike >= minSpot && leg.strike <= maxSpot) spotSet.add(leg.strike);
-    if (leg.strike - leg.premium >= minSpot) spotSet.add(round2(leg.strike - leg.premium));
-    if (leg.strike + leg.premium <= maxSpot) spotSet.add(round2(leg.strike + leg.premium));
-    // For net debit/credit offsets across all legs
-    const totalNetPrem = Math.abs(netPremium / safeLotSize);
-    if (leg.strike - totalNetPrem >= minSpot) spotSet.add(round2(leg.strike - totalNetPrem));
-    if (leg.strike + totalNetPrem <= maxSpot) spotSet.add(round2(leg.strike + totalNetPrem));
+  for (const cp of criticalPoints) {
+    if (cp >= minSpot && cp <= maxSpot) spotSet.add(cp);
+  }
+  for (const be of analyticalBreakevens) {
+    if (be >= minSpot && be <= maxSpot) spotSet.add(be);
   }
   const sortedSpots = Array.from(spotSet).sort((a, b) => a - b);
 
-  // Calculate Payoff Curve across Spot Range
   const chartData: PayoffDataPoint[] = [];
-  let minPnl = Infinity;
-  let maxPnl = -Infinity;
-
   for (const s of sortedSpots) {
     let combinedPnl = 0;
     const point: PayoffDataPoint = { spot: s, pnl: 0 };
@@ -3298,61 +3436,19 @@ export function calcOptionPayoff(input: OptionPayoffInput): OptionPayoffOutput {
       const leg = legs[i];
       const qty = leg.lots * safeLotSize;
       const isLong = leg.position === "long" || leg.position === "buy";
-      let legPnl = 0;
-
+      let intrinsic = 0;
       if (leg.type === "call") {
-        const intrinsic = Math.max(0, s - leg.strike);
-        legPnl = isLong ? (intrinsic - leg.premium) * qty : (leg.premium - intrinsic) * qty;
+        intrinsic = Math.max(0, s - leg.strike);
       } else {
-        const intrinsic = Math.max(0, leg.strike - s);
-        legPnl = isLong ? (intrinsic - leg.premium) * qty : (leg.premium - intrinsic) * qty;
+        intrinsic = Math.max(0, leg.strike - s);
       }
-
+      const legPnl = isLong ? (intrinsic - leg.premium) * qty : (leg.premium - intrinsic) * qty;
       point[`leg_${i}`] = round2(legPnl);
       combinedPnl += legPnl;
     }
 
     point.pnl = round2(combinedPnl);
-    if (combinedPnl < minPnl) minPnl = combinedPnl;
-    if (combinedPnl > maxPnl) maxPnl = combinedPnl;
     chartData.push(point);
-  }
-
-  // Breakeven Detection (Zero-crossings via exact checks & linear interpolation)
-  const breakevens: number[] = [];
-  for (let i = 0; i < chartData.length; i++) {
-    const p1 = chartData[i];
-    if (Math.abs(p1.pnl) < 0.01) {
-      if (!breakevens.some((b) => Math.abs(b - p1.spot) < 1)) {
-        breakevens.push(p1.spot);
-      }
-    } else if (i < chartData.length - 1) {
-      const p2 = chartData[i + 1];
-      if ((p1.pnl < 0 && p2.pnl > 0) || (p1.pnl > 0 && p2.pnl < 0)) {
-        const zeroSpot = round2(p1.spot + (-p1.pnl * (p2.spot - p1.spot)) / (p2.pnl - p1.pnl));
-        if (!breakevens.some((b) => Math.abs(b - zeroSpot) < 5)) {
-          breakevens.push(zeroSpot);
-        }
-      }
-    }
-  }
-
-  // Detect Uncapped / Unlimited Upside or Downside
-  // Check slopes at extremes
-  const leftSlope = chartData.length > 2 ? chartData[1].pnl - chartData[0].pnl : 0;
-  const rightSlope = chartData.length > 2 ? chartData[chartData.length - 1].pnl - chartData[chartData.length - 2].pnl : 0;
-
-  let maxProfitResult: number | "Unlimited" = round2(maxPnl);
-  let maxLossResult: number | "Unlimited" = round2(minPnl);
-
-  if (rightSlope > 5) {
-    maxProfitResult = "Unlimited";
-  } else if (rightSlope < -5) {
-    maxLossResult = "Unlimited";
-  }
-
-  if (leftSlope < -5 && minSpot === 0) {
-    // Put downside capped at spot = 0
   }
 
   let riskRewardRatio = "1 : 1";
@@ -3371,7 +3467,7 @@ export function calcOptionPayoff(input: OptionPayoffInput): OptionPayoffOutput {
     maxProfit: maxProfitResult,
     maxLoss: maxLossResult,
     riskRewardRatio,
-    breakevens,
+    breakevens: analyticalBreakevens,
     netPremiumPaidOrReceived: round2(netPremium),
     isNetCredit: netPremium < 0,
   };
@@ -4911,16 +5007,122 @@ export function calcXIRR(cashflows: CashFlowPoint[]): XirrOutput {
     };
   }
 
+  // Strict row validation: NEVER silently drop invalid rows or dates
+  for (let i = 0; i < cashflows.length; i++) {
+    const cf = cashflows[i];
+    if (!cf || typeof cf !== "object") {
+      return {
+        cashflows,
+        xirr: 0,
+        totalInvested: 0,
+        totalWithdrawn: 0,
+        netGain: 0,
+        absoluteGainPercent: 0,
+        firstDate: "",
+        lastDate: "",
+        durationYears: 0,
+        isValid: false,
+        errorMessage: `Malformed cash flow data at row ${i + 1}.`,
+        summary: "Malformed cash flow row.",
+      };
+    }
+
+    if (typeof cf.amount !== "number" || !Number.isFinite(cf.amount)) {
+      return {
+        cashflows,
+        xirr: 0,
+        totalInvested: 0,
+        totalWithdrawn: 0,
+        netGain: 0,
+        absoluteGainPercent: 0,
+        firstDate: "",
+        lastDate: "",
+        durationYears: 0,
+        isValid: false,
+        errorMessage: `Non-finite or missing amount at row ${i + 1}.`,
+        summary: "Non-finite cash flow amount.",
+      };
+    }
+
+    if (!cf.date || typeof cf.date !== "string") {
+      return {
+        cashflows,
+        xirr: 0,
+        totalInvested: 0,
+        totalWithdrawn: 0,
+        netGain: 0,
+        absoluteGainPercent: 0,
+        firstDate: "",
+        lastDate: "",
+        durationYears: 0,
+        isValid: false,
+        errorMessage: `Missing or invalid date string at row ${i + 1}.`,
+        summary: "Missing cash flow date.",
+      };
+    }
+
+    const d = new Date(cf.date);
+    if (isNaN(d.getTime())) {
+      return {
+        cashflows,
+        xirr: 0,
+        totalInvested: 0,
+        totalWithdrawn: 0,
+        netGain: 0,
+        absoluteGainPercent: 0,
+        firstDate: "",
+        lastDate: "",
+        durationYears: 0,
+        isValid: false,
+        errorMessage: `Invalid calendar date "${cf.date}" at row ${i + 1}.`,
+        summary: "Invalid calendar date.",
+      };
+    }
+
+    // Strict calendar day validity for YYYY-MM-DD
+    const isoMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(cf.date.trim());
+    if (isoMatch) {
+      const year = Number(isoMatch[1]);
+      const month = Number(isoMatch[2]);
+      const day = Number(isoMatch[3]);
+      if (d.getUTCFullYear() !== year || d.getUTCMonth() + 1 !== month || d.getUTCDate() !== day) {
+        return {
+          cashflows,
+          xirr: 0,
+          totalInvested: 0,
+          totalWithdrawn: 0,
+          netGain: 0,
+          absoluteGainPercent: 0,
+          firstDate: "",
+          lastDate: "",
+          durationYears: 0,
+          isValid: false,
+          errorMessage: `Invalid calendar date "${cf.date}" at row ${i + 1}.`,
+          summary: "Invalid calendar date.",
+        };
+      }
+    }
+  }
+
   const parsed = cashflows
     .map((cf) => ({
       date: new Date(cf.date),
       dateStr: cf.date,
-      amount: safeNum(cf.amount),
+      amount: cf.amount,
     }))
-    .filter((cf) => !isNaN(cf.date.getTime()))
     .sort((a, b) => a.date.getTime() - b.date.getTime());
 
-  if (parsed.length < 2) {
+  let totalOutflows = 0;
+  let totalInflows = 0;
+  let allZero = true;
+
+  for (const cf of parsed) {
+    if (cf.amount !== 0) allZero = false;
+    if (cf.amount < 0) totalOutflows += Math.abs(cf.amount);
+    else totalInflows += cf.amount;
+  }
+
+  if (allZero) {
     return {
       cashflows,
       xirr: 0,
@@ -4928,20 +5130,35 @@ export function calcXIRR(cashflows: CashFlowPoint[]): XirrOutput {
       totalWithdrawn: 0,
       netGain: 0,
       absoluteGainPercent: 0,
-      firstDate: "",
-      lastDate: "",
+      firstDate: parsed[0].dateStr,
+      lastDate: parsed[parsed.length - 1].dateStr,
       durationYears: 0,
       isValid: false,
-      errorMessage: "Invalid dates in cash flow series.",
-      summary: "Invalid dates.",
+      errorMessage: "All cash flows are zero.",
+      summary: "All cash flows are zero.",
     };
   }
 
-  let totalOutflows = 0;
-  let totalInflows = 0;
-  for (const cf of parsed) {
-    if (cf.amount < 0) totalOutflows += Math.abs(cf.amount);
-    else totalInflows += cf.amount;
+  const d0 = parsed[0].date.getTime();
+  const dN = parsed[parsed.length - 1].date.getTime();
+  const durationYears = (dN - d0) / (365.0 * 24 * 3600 * 1000);
+
+  // Degenerate case: multiple cashflows on the exact same date
+  if (durationYears <= 0) {
+    return {
+      cashflows,
+      xirr: 0,
+      totalInvested: Math.round(totalOutflows),
+      totalWithdrawn: Math.round(totalInflows),
+      netGain: Math.round(totalInflows - totalOutflows),
+      absoluteGainPercent: 0,
+      firstDate: parsed[0].dateStr,
+      lastDate: parsed[parsed.length - 1].dateStr,
+      durationYears: 0,
+      isValid: false,
+      errorMessage: "Indeterminate rate of return: all cash flows occur on the same date (zero duration).",
+      summary: "Indeterminate rate of return (zero duration).",
+    };
   }
 
   // Must have at least one positive and one negative cash flow
@@ -4955,25 +5172,23 @@ export function calcXIRR(cashflows: CashFlowPoint[]): XirrOutput {
       absoluteGainPercent: 0,
       firstDate: parsed[0].dateStr,
       lastDate: parsed[parsed.length - 1].dateStr,
-      durationYears: 0,
+      durationYears: round2(durationYears),
       isValid: false,
       errorMessage: "Cash flows must contain at least one investment outflow (negative) and at least one redemption / current value (positive).",
       summary: "No valid rate of return exists when cash flows are all of the same sign.",
     };
   }
 
-  const d0 = parsed[0].date.getTime();
-  const dN = parsed[parsed.length - 1].date.getTime();
-  // Standardize on 365-day day-count convention
-  const durationYears = (dN - d0) / (365.0 * 24 * 3600 * 1000);
+  const cashflowScale = totalOutflows + totalInflows;
 
-  // Normalized time fractions in years
+  // Normalized time fractions in years (Act/365 convention)
   const normalized = parsed.map((cf) => ({
     t: (cf.date.getTime() - d0) / (365.0 * 24 * 3600 * 1000),
     amount: cf.amount,
   }));
 
   const npv = (rate: number): number => {
+    if (rate <= -1) return NaN;
     let sum = 0;
     for (const cf of normalized) {
       const denom = Math.pow(1 + rate, cf.t);
@@ -4984,6 +5199,7 @@ export function calcXIRR(cashflows: CashFlowPoint[]): XirrOutput {
   };
 
   const dNpv = (rate: number): number => {
+    if (rate <= -1) return NaN;
     let sum = 0;
     for (const cf of normalized) {
       const denom = Math.pow(1 + rate, cf.t + 1);
@@ -5001,9 +5217,9 @@ export function calcXIRR(cashflows: CashFlowPoint[]): XirrOutput {
 
   for (let currR = -0.95; currR <= 10.0; currR = round4(currR + scanStep)) {
     const currF = npv(currR);
-    if (Math.abs(currF) < 1e-5) {
+    if (Math.abs(currF) / cashflowScale < 1e-6) {
       if (!discoveredRoots.some((r) => Math.abs(r - currR) < 0.005)) {
-        discoveredRoots.push(round4(currR));
+        discoveredRoots.push(currR);
       }
     } else if (Number.isFinite(prevF) && Number.isFinite(currF) && prevF * currF < 0) {
       // Bisection inside [prevR, currR]
@@ -5046,8 +5262,11 @@ export function calcXIRR(cashflows: CashFlowPoint[]): XirrOutput {
         const df = dNpv(r);
 
         if (!Number.isFinite(f) || !Number.isFinite(df)) break;
-        if (Math.abs(f) < 1e-5) {
+        if (Math.abs(f) / cashflowScale < 1e-6) {
           convergedRate = r;
+          if (!discoveredRoots.some((dr) => Math.abs(dr - r) < 0.005)) {
+            discoveredRoots.push(r);
+          }
           break;
         }
         if (Math.abs(df) < 1e-12) break;
@@ -5058,6 +5277,8 @@ export function calcXIRR(cashflows: CashFlowPoint[]): XirrOutput {
       if (convergedRate !== null) break;
     }
   }
+
+  discoveredRoots.sort((a, b) => a - b);
 
   const isValid = convergedRate !== null && Number.isFinite(convergedRate);
   const xirrPercent = isValid ? round2(convergedRate! * 100) : 0;
