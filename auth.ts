@@ -19,44 +19,14 @@ import { prisma } from "@/lib/prisma";
  *   - GOOGLE_CLIENT_SECRET
  *   - DATABASE_URL
  */
-const baseAdapter = PrismaAdapter(prisma);
-
-const customAdapter: typeof baseAdapter = {
-  ...baseAdapter,
-  async getSessionAndUser(sessionToken: string) {
-    // Safe test-only session strategy for Playwright E2E browser tests.
-    // Strictly disarmed in production and Vercel environments.
-    if (
-      process.env.ENABLE_TEST_AUTH === "true" &&
-      !process.env.VERCEL &&
-      sessionToken === "test-e2e-session-token"
-    ) {
-      return {
-        user: {
-          id: "test-e2e-user-id",
-          name: "Test Investor",
-          email: "test.investor@example.com",
-          emailVerified: new Date(),
-          image: null,
-        },
-        session: {
-          id: "test-e2e-session-id",
-          sessionToken: "test-e2e-session-token",
-          userId: "test-e2e-user-id",
-          expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        },
-      };
-    }
-    return baseAdapter.getSessionAndUser ? baseAdapter.getSessionAndUser(sessionToken) : null;
-  },
-};
+const adapter = PrismaAdapter(prisma);
 
 const config: NextAuthConfig = {
-  adapter: customAdapter,
+  adapter,
   secret:
     process.env.NEXTAUTH_SECRET ??
     process.env.AUTH_SECRET ??
-    (process.env.ENABLE_TEST_AUTH === "true" || process.env.NODE_ENV !== "production"
+    (process.env.NODE_ENV !== "production"
       ? "dev_secret_only_for_local_development_testing_min_32_chars"
       : undefined),
   trustHost: true,
