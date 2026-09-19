@@ -68,7 +68,8 @@ export function encodeCalculationState<T = Record<string, unknown>>(
  * Safely decodes a URL-safe Base64 calculation state with integrity checks
  */
 export function decodeCalculationState<T = Record<string, unknown>>(
-  encoded: string
+  encoded: string,
+  dataSchema?: z.ZodType<T>
 ): SerializedCalculationState<T> | null {
   if (!encoded || typeof encoded !== "string") {
     return null;
@@ -106,6 +107,17 @@ export function decodeCalculationState<T = Record<string, unknown>>(
     const validated = serializedCalculationStateSchema.safeParse(parsed);
     if (!validated.success) {
       return null;
+    }
+
+    if (dataSchema) {
+      const dataValidated = dataSchema.safeParse(validated.data.data);
+      if (!dataValidated.success) {
+        return null;
+      }
+      return {
+        ...validated.data,
+        data: dataValidated.data,
+      } as SerializedCalculationState<T>;
     }
 
     return validated.data as unknown as SerializedCalculationState<T>;

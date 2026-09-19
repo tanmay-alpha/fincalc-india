@@ -30,9 +30,9 @@ test.describe.serial("Calculation Lifecycle E2E Workflows", () => {
           type: "sip",
           label: "E2E Lifecycle SIP Calculation",
           inputs: {
-            monthlyInvestment: 15000,
-            expectedReturnRate: 12,
-            timePeriodYears: 10,
+            monthlyAmount: 15000,
+            annualRate: 12,
+            years: 10,
           },
           outputs: {
             investedAmount: 1800000,

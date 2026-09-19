@@ -55,7 +55,10 @@ export function generateCalculationPdf(options: PdfExportOptions): jsPDF {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(148, 163, 184); // slate-400
-  doc.text("Authoritative Indian Financial & Tax Engine | FY 2026-27 (AY 2027-28)", margin + 6, y + 18);
+  const headerSubtitle = options.taxYear
+    ? `Authoritative Indian Financial & Tax Engine | ${options.taxYear}`
+    : "Authoritative Indian Financial & Regulatory Engine";
+  doc.text(headerSubtitle, margin + 6, y + 18);
 
   const timestamp = new Date().toLocaleDateString("en-IN", {
     day: "numeric",
@@ -85,13 +88,16 @@ export function generateCalculationPdf(options: PdfExportOptions): jsPDF {
 
   // Summary Box if present
   if (options.summaryText) {
+    const cleanSummary = options.summaryText.replace(/₹/g, "Rs. ");
+    const splitSummary = doc.splitTextToSize(cleanSummary, contentWidth - 8);
+    const boxHeight = Math.max(14, splitSummary.length * 4.5 + 5);
     doc.setFillColor(241, 245, 249); // slate-100
-    doc.roundedRect(margin, y, contentWidth, 14, 2, 2, "F");
+    doc.roundedRect(margin, y, contentWidth, boxHeight, 2, 2, "F");
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(30, 41, 59);
-    doc.text(options.summaryText, margin + 4, y + 9, { maxWidth: contentWidth - 8 });
-    y += 20;
+    doc.text(splitSummary, margin + 4, y + 6);
+    y += boxHeight + 6;
   }
 
   // Section 1: Inputs
@@ -116,7 +122,8 @@ export function generateCalculationPdf(options: PdfExportOptions): jsPDF {
     doc.text(inp.label, margin + 2, y);
     doc.setTextColor(15, 23, 42);
     doc.setFont("helvetica", "bold");
-    doc.text(String(inp.value), pageWidth - margin - 2, y, { align: "right" });
+    const cleanVal = String(inp.value).replace(/₹/g, "Rs. ");
+    doc.text(cleanVal, pageWidth - margin - 2, y, { align: "right" });
     doc.setFont("helvetica", "normal");
     y += 6;
   }
@@ -145,7 +152,8 @@ export function generateCalculationPdf(options: PdfExportOptions): jsPDF {
     doc.text(res.label, margin + 2, y);
     doc.setTextColor(16, 185, 129); // emerald-600
     doc.setFont("helvetica", "bold");
-    doc.text(String(res.value), pageWidth - margin - 2, y, { align: "right" });
+    const cleanRes = String(res.value).replace(/₹/g, "Rs. ");
+    doc.text(cleanRes, pageWidth - margin - 2, y, { align: "right" });
     doc.setFont("helvetica", "normal");
     y += 6;
   }
@@ -167,8 +175,14 @@ export function generateCalculationPdf(options: PdfExportOptions): jsPDF {
     doc.setFontSize(8);
     doc.setTextColor(100, 116, 139);
     for (const note of options.notes) {
-      doc.text(`• ${note}`, margin + 2, y, { maxWidth: contentWidth - 4 });
-      y += 5;
+      const cleanNote = note.replace(/₹/g, "Rs. ");
+      const splitNote = doc.splitTextToSize(`• ${cleanNote}`, contentWidth - 4);
+      if (y + splitNote.length * 4 > 275) {
+        doc.addPage();
+        y = margin;
+      }
+      doc.text(splitNote, margin + 2, y);
+      y += splitNote.length * 4 + 2;
     }
   }
 

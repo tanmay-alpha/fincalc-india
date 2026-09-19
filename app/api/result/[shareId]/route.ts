@@ -34,6 +34,12 @@ export async function GET(
         outputs: true,
         type: true,
         createdAt: true,
+        mode: true,
+        engineVersion: true,
+        schemaVersion: true,
+        rulesetId: true,
+        inputsHash: true,
+        computedAt: true,
       },
     });
 
@@ -60,6 +66,12 @@ export async function GET(
           outputs: calculation.outputs,
           type: calculation.type,
           createdAt: calculation.createdAt,
+          mode: calculation.mode,
+          engineVersion: calculation.engineVersion,
+          schemaVersion: calculation.schemaVersion,
+          rulesetId: calculation.rulesetId,
+          inputsHash: calculation.inputsHash,
+          computedAt: calculation.computedAt,
         },
       },
       {

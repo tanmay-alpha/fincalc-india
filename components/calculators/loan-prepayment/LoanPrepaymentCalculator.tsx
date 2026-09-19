@@ -12,6 +12,8 @@ import type { PrepaymentType } from "@/lib/math";
 import { formatINR, formatCompact } from "@/lib/format";
 import { clsx } from "clsx";
 import { Zap } from "lucide-react";
+import SaveCalculationButton from "@/components/SaveCalculationButton";
+import ShareButton from "@/components/ui/ShareButton";
 
 const LoanPrepaymentChart = dynamic(
   () => import("@/components/calculators/loan-prepayment/LoanPrepaymentChart"),
@@ -21,6 +23,7 @@ const LoanPrepaymentChart = dynamic(
 export default function LoanPrepaymentCalculator() {
   const [prepaymentType, setPrepaymentType] = useState<PrepaymentType>("extra_emi_yearly");
   const [tenureUnit, setTenureUnit] = useState<"years" | "months">("years");
+  const [shareId, setShareId] = useState<string | null>(null);
 
   const [inputs, setInputs] = useState({
     principal: 5000000, // ₹50 Lakhs
@@ -389,6 +392,23 @@ export default function LoanPrepaymentCalculator() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex flex-wrap items-center gap-3 pt-4">
+        <SaveCalculationButton
+          calcType="loan-prepayment"
+          data={{
+            inputs: {
+              ...inputs,
+              tenureMonths,
+              prepaymentType,
+            },
+            results: result as unknown as Record<string, unknown>,
+          }}
+          onSaved={(id) => setShareId(id)}
+        />
+        <ShareButton shareId={shareId} />
       </div>
     </>
   );
