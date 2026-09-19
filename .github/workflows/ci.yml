@@ -34,6 +34,8 @@ jobs:
       NEXTAUTH_SECRET: "ci-testing-secret-at-least-32-characters-long"
       NEXTAUTH_URL: "http://localhost:3000"
       DATABASE_URL: "postgresql://postgres:postgrespassword@localhost:5432/fincalc_test"
+      GOOGLE_CLIENT_ID: "ci-dummy-google-client-id"
+      GOOGLE_CLIENT_SECRET: "ci-dummy-google-client-secret"
 
     steps:
       - name: Checkout Source Code
@@ -93,6 +95,8 @@ jobs:
       NEXTAUTH_SECRET: "ci-testing-secret-at-least-32-characters-long"
       NEXTAUTH_URL: "http://localhost:3000"
       DATABASE_URL: "postgresql://postgres:postgrespassword@localhost:5432/fincalc_test"
+      GOOGLE_CLIENT_ID: "ci-dummy-google-client-id"
+      GOOGLE_CLIENT_SECRET: "ci-dummy-google-client-secret"
 
     steps:
       - name: Checkout Source Code
